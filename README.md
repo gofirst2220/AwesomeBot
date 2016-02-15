@@ -18,12 +18,12 @@ That's right! AwesomeBot is an all-in-one Discord bot packed with features, writ
  - Google Play Store links
  
  In addition, he has many built-in utility functions:
- 
-  - Natural language unit conversion
-  - Random number generator
-  - Discord user profile
-  - Reminders via PM
-  - Year countdown
+
+ - Natural language unit conversion
+ - Random number generator
+ - Discord user profile
+ - Reminders via PM
+ - Year countdown
 
 And finally, AwesomeBot can conduct **in-chat polls** and offers a fun **live trivia game**. He is fully configurable via PM, and can be controlled independently between servers. New servers can be added simply by private messaging the bot, and admins are automatically detected.
 
