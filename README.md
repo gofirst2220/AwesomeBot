@@ -17,7 +17,7 @@ That's right! AwesomeBot is an all-in-one Discord bot packed with features, writ
  - Stock fetching
  - Google Play Store links
  
- In addition, he has many built-in utility functions:
+In addition, he has many built-in utility functions:
 
  - Natural language unit conversion
  - Random number generator
