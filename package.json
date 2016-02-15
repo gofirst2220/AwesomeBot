@@ -1,0 +1,43 @@
+{
+  "name": "Awesomebot",
+  "version": "0.1.1",
+  "author": "anandroiduser",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anandroiduser/AwesomeBot.git"
+  },
+  "license": "GNU",
+  "dependencies": {
+    "discord.js": "*",
+    "request": ">=2.58.0",
+    "querystring": "*",
+    "underscore": "1.8.x",
+    "winston": "1.0.x",
+    "sinon": "1.14.x",
+    "nock": "1.7.x",
+    "cleverbot-node": "0.2.x",
+    "tumblr.js": "0.0.x",
+    "youtube-node": "1.2.x",
+    "google": "1.1.x",
+    "google-images": "0.1.x",
+    "imgflipper": "*",
+    "wikijs": "*",
+    "feedparser": "*",
+    "html-to-text": "*",
+    "cheerio": "*",
+    "mitsuku-api": "*",
+    "fs": "*",
+    "express": "*",
+    "http": "*",
+    "unirest": "*",
+    "readline": "*",
+    "fast-levenshtein": "*",
+    "convert-units": "*",
+    "exec": "*",
+    "imgur-node-api": "*"
+  },
+  "scripts": {
+    "start": "node start.js"
+  },
+  "main": "start.js"
+}
