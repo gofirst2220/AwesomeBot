@@ -37,14 +37,6 @@ var cleverbot = new Cleverbot;
 // Spam detection stuff
 var spams = {};
 
-// Uptime counter, updates every second
-var seconds = 0;
-var timer = setInterval(
-    function() {
-        seconds++;
-    }, 1000
-);
-
 // Stuff for ongoing polls, trivia games, and admin console sessions
 var polls = {};
 var trivia = {};
@@ -71,7 +63,7 @@ var commands = {
     // Checks if bot is alive and shows version and uptime
     "ping": {
         process: function(bot, msg) {
-            var info = "Pong! " + bot.user.username + " v" + version + " running for " + secondsToString(seconds);
+            var info = "Pong! " + bot.user.username + " v" + version + " running for " + secondsToString(bot.uptime);
             if(configs.hosting!="") {
                 info =  info.substring(0, info.length-1);
                 info += ". Find out more at " + configs.hosting;
@@ -609,7 +601,7 @@ bot.on("ready", function() {
             response.writeHead(200);
             var html = "";
             try {
-                html = "<html><head><title>" + bot.user.username + "</title><script type='text/javascript'>function invertColors() {if(document.body.style.backgroundColor=='black') {document.body.style.backgroundColor='white';document.body.style.color='black';} else {document.body.style.backgroundColor='black';document.body.style.color='white';}}</script></head><body onload='javascript:document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;'><span style='font-family: \"Arial\"; margin-bottom: 0px;'><span style='font-size: 28;'><b>" + bot.user.username + "</b> Info</span><p><span style='font-size: 20;'><u>Statistics</u></span><br><b>Status:</b> Online<br><b>Bot ID:</b> " + bot.user.id + "<br><b>Version:</b> v" + version + "<br><b>Uptime:</b> " + secondsToString(seconds) + "<br><b>Disconnections:</b> " + disconnects + " so far<p></span><span style='font-size: 20;'><u>Servers</u><br></span><i>Number of messages only includes the past 24 hours.</i>";
+                html = "<html><head><title>" + bot.user.username + "</title><script type='text/javascript'>function invertColors() {if(document.body.style.backgroundColor=='black') {document.body.style.backgroundColor='white';document.body.style.color='black';} else {document.body.style.backgroundColor='black';document.body.style.color='white';}}</script></head><body onload='javascript:document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;'><span style='font-family: \"Arial\"; margin-bottom: 0px;'><span style='font-size: 28;'><b>" + bot.user.username + "</b> Info</span><p><span style='font-size: 20;'><u>Statistics</u></span><br><b>Status:</b> Online<br><b>Bot ID:</b> " + bot.user.id + "<br><b>Version:</b> v" + version + "<br><b>Uptime:</b> " + secondsToString(bot.uptime) + "<br><b>Disconnections:</b> " + disconnects + " so far<p></span><span style='font-size: 20;'><u>Servers</u><br></span><i>Number of messages only includes the past 24 hours.</i>";
                 for(var svrid in messages) {
                     var svr = bot.servers.get("id", svrid);
                     if(svr) {
@@ -630,7 +622,7 @@ bot.on("ready", function() {
                 html += "</div><br><button onclick='javascript:location.reload()'>Refresh</button>&nbsp;<button onclick='javascript:invertColors();'>Toggle Colors</button></body></html>";
             } catch(err) {
                 console.log(prettyDate() + "[ERROR] Failed to write web interface");
-                html = bot.user.username + " v" + version + " running for " + secondsToString(seconds);
+                html = bot.user.username + " v" + version + " running for " + secondsToString(bot.uptime);
             }
             response.end(html);
         }
