@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 var Discord = require("discord.js");
 var botOn = {};
-var version = "3.1.7p1";
+var version = "3.1.7p2";
 var outOfDate = 0;
 var configs = require("./config.json");
 var AuthDetails = require("./auth.json");
@@ -507,7 +507,13 @@ var commands = {
             }
             if(usr) {
                 var info = "**User Profile: " + usr + "**\n\tID: " + usr.id + "\n\tStatus: " + usr.status + "\n\tAvatar: ";
-                imgur.upload(usr.avatarURL, function(error, res) {
+                var avatar = "";
+                if(usr.avatarURL) {
+                    avatar = usr.avatarURL;
+                } else {
+                    avatar = "http://i.imgur.com/fU70HJK.png";
+                }
+                imgur.upload(avatar, function(error, res) {
                     if(error) {
                         info += usr.avatarURL;
                     } else {
