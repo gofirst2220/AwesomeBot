@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 var Discord = require("discord.js");
 var botOn = {};
-var version = "3.1.7";
+var version = "3.1.7p1";
 var outOfDate = 0;
 var configs = require("./config.json");
 var AuthDetails = require("./auth.json");
@@ -1780,10 +1780,16 @@ function checkVersion() {
             
             var info;
             var change = "";
-            if(response.body[0][0]!=version && response.body.indexOf(version)!=outOfDate) {
+            var v = "";
+            if(version.indexOf("-UNOFFICIAL")>-1) {
+                v = version.substring(0, version.indexOf("-UNOFFICIAL"));
+            } else {
+                v = version;
+            }
+            if(response.body[0][0]!=v && response.body.indexOf(version)!=outOfDate) {
                 outOfDate = -1;
                 for(var i=0; i<response.body.length; i++) {
-                    if(response.body[i][0]==version) {
+                    if(response.body[i][0]==v) {
                         outOfDate = i;
                     }
                 }
