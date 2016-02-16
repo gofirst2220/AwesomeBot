@@ -99,25 +99,16 @@ var commands = {
         usage: " <display or switch>",
         process: function(bot, msg, suffix) {
             if(contains(configs.servers[msg.channel.server.id].admins, msg.author.id)>-1) {
-                var using = "";
-                if(!cleverOn[msg.channel.server.id]) {
-                    using = "Mitsuku";
-                } else {
-                    using = "Cleverbot";
-                }
-
-                if(suffix.toLowerCase()=="switch") {
-                    cleverOn[msg.channel.server.id] = !cleverOn[msg.channel.server.id];
-                    if(!cleverOn[msg.channel.server.id]) {
-                        using = "Mitsuku";
-                    } else {
-                        using = "Cleverbot";
-                    }
-                    console.log(prettyDate() + "[INFO] Switched to " + using + " in " + msg.channel.server.name);
-                    bot.sendMessage(msg.channel,"Now using " + using + " for conversations.");
-                } else {
-                    bot.sendMessage(msg.channel,"Currently using " + using + " for conversations.");
-                }
+		var isSwitch = suffix.toLowerCase() === "switch";
+		if (isSwitch) cleverOn[msg.channel.server.id] = !cleverOn[msg.channel.server.id];
+		var using = !cleverOn[msg.channel.server.id] ? "Mitsuku" : "Cleverbot";
+		
+		if(isSwitch) {
+		    console.log(prettyDate() + "[INFO] Switched to " + using + " in " + msg.channel.server.name);
+		    bot.sendMessage(msg.channel,"Now using " + using + " for conversations.");
+		} else {
+		    bot.sendMessage(msg.channel,"Currently using " + using + " for conversations.");
+		}
             } else {
                 console.log(prettyDate() + "[WARN] User is not a bot admin");
                 bot.sendMessage(msg.channel,msg.author + " Only my friends can do that.");
