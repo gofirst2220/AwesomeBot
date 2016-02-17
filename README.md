@@ -51,6 +51,35 @@ Setup
 
 You can PM the bot `config <server name>` to access the admin console for the bot in any server where you are the admin.
 
+Extensions
+----------
+
+Starting with version 3.2, AwesomeBot supports extensions! They are code snippets run in response to a keyword or command, managed per-server via the admin console. To add an extension to a server, send a JSON file (described below) to the bot after logging into the admin console for a server.
+
+The file you attach should have the following basic structure:
+
+```
+{
+    name: "name of extension",
+    type: "keyword or command",
+    key: "string to match or one-word command",
+    usage: "(optional) parameters for a command, preceded and separated by spaces",
+    channels: "(optional) array of applicable channel names",
+    process: "code to execute, as a string"
+}
+```
+
+`process` is the crucial component here. This code is given 1.5 seconds to run in a sandbox, with access to the following:
+
+ - `unirest`: lightweight HTTP request library
+ - `imgur`: preauthenticated `imgur-node-api` module
+ - `message`: full content of the message
+ - `author`: tag for the sender
+ - `setTimeout`, `JSON`, `Math`, `isNaN`, `Date`, `Array`, `Number`
+ - `send`: write final output to this
+ 
+Outside of this sandbox, the extension cannot use other Node modules or methods. If a message is identified as an extension target, `send` must have a value within 1.5 seconds or the bot will not repond to the command/keyword. When sending the JSON file to the bot, it will run several tests to verify its integrity and validity. If it is acceptable, you can remove it at any time with option #25 in the admin console.
+
 Contribute
 ----------
 

@@ -34,7 +34,9 @@
     "fast-levenshtein": "*",
     "convert-units": "*",
     "exec": "*",
-    "imgur-node-api": "*"
+    "imgur-node-api": "*",
+    "vm": "*",
+    "util": "*"
   },
   "scripts": {
     "start": "node start.js"
