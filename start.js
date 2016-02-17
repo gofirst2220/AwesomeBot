@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2";
+var version = "3.2.0p1";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -127,7 +127,18 @@ var commands = {
                 bot.sendMessage(msg.channel, msg.author + " I don't know what image to get...");
                 return;
             }
-            giSearch(suffix, msg.channel, bot, "");
+            var img = giSearch(suffix, "");
+            if(!img) {
+                bot.sendMessage(msg.channel, "Couldn't find anything, sorry");
+            } else {
+                imgur.upload(img, function(error, res) {
+                    if(error) {
+                        bot.sendMessage(msg.channel, img);
+                    } else {
+                        bot.sendMessage(msg.channel, res.data.link);
+                    }
+                });
+            }
         }
     },
     // Get GIF from Giphy
@@ -574,7 +585,7 @@ function rssfeed(bot, msg, url, count, full){
 var bot = new Discord.Client();
 bot.on("ready", function() {
     checkVersion();
-
+    
     // Make sure servers are properly configured and set variables
     for(var i=0; i<bot.servers.length; i++) {
         if(!configs.servers[bot.servers[i].id]) {
@@ -705,6 +716,7 @@ bot.on("message", function (msg, user) {
                                 var params = {
                                     unirest: unirest,
                                     imgur: imgur,
+                                    image: giSearch,
                                     message: bot.user.mention() + " " + extension.key + " test",
                                     author: msg.author.mention(),
                                     setTimeout: setTimeout,
@@ -1284,7 +1296,16 @@ bot.on("message", function (msg, user) {
                 }
                 if(msg.content.toLowerCase().indexOf("praise duarte")>-1) {
                     console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as circlejerk command");
-                    giSearch("Matias Duarte",msg.channel,bot,"&start=" + getRandomInt(0, 20));
+                    var img = giSearch("Matias Duarte", "&start=" + getRandomInt(0, 19));
+                    if(img) {
+                        imgur.upload(data.items[0].link, function(error, res) {
+                            if(error) {
+                                bot.sendMessage(msg.channel, img);
+                            } else {
+                                bot.sendMessage(msg.channel, res.data.link);
+                            }
+                        });
+                    }
                 }
                 if(msg.content.toLowerCase().indexOf("fuck duarte")>-1 && msg.channel.name == "circlejerk") {
                     console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as circlejerk command");
@@ -1398,6 +1419,7 @@ bot.on("message", function (msg, user) {
                         var params = {
                             unirest: unirest,
                             imgur: imgur,
+                            image: giSearch,
                             message: msg.content.substring((bot.user.mention() + " " + configs.servers[msg.channel.server.id].extensions[ext].key).length),
                             author: msg.author.mention(),
                             setTimeout: setTimeout,
@@ -1823,7 +1845,7 @@ function kickUser(msg, desc1, desc2) {
 }
 
 // Searches Google Images for keyword(s)
-function giSearch(query, channel, bot, num) {
+function giSearch(query, num) {
 	var url = "https://www.googleapis.com/customsearch/v1?key=" + AuthDetails.google_api_key + "&cx=" + AuthDetails.custom_search_id + "&safe=high&q=" + (query.replace(/\s/g, '+').replace(/&/g, '')) + "&alt=json&searchType=image" + num;
 	request(url, function(err, res, body) {
 		var data;
@@ -1834,17 +1856,10 @@ function giSearch(query, channel, bot, num) {
 			return;
 		}
 		if(!data.items || data.items.length == 0 || query.indexOf("<#")>-1) {
-            console.log(prettyDate() + "[WARN] No results for " + query + " in " + channel.server.name);
-			bot.sendMessage(channel, "Can't find anything, sorry.");
+            console.log(prettyDate() + "[WARN] No image results for " + query);
             return;
 		} else {
-		    imgur.upload(data.items[0].link, function(error, res) {
-		        if(error) {
-		            bot.sendMessage(channel, data.items[0].link);
-	            } else {
-	                bot.sendMessage(channel, res.data.link);
-                }
-	        });
+            return data.items[0].link;
 		}
 	});	
 }

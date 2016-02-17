@@ -73,6 +73,7 @@ The file you attach should have the following basic structure:
 
  - `unirest`: lightweight HTTP request library
  - `imgur`: preauthenticated `imgur-node-api` module
+ - `image`: Google Image Search, `image(query, "&start=num")` returns URL
  - `message`: full content of the message
  - `author`: tag for the sender
  - `setTimeout`, `JSON`, `Math`, `isNaN`, `Date`, `Array`, `Number`
