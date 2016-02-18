@@ -96,6 +96,8 @@ Latest, version **3.2.1**:
  - Added `games` command
  - Added total vote count to poll results
  
+ Patch #1: Re-add new member greetings list 
+ 
 Feel free to open an issue to report a bug or suggest a new feature!
 
 Contribute

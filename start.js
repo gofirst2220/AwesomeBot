@@ -53,6 +53,9 @@ imgur.setClientID(AuthDetails.imgur_client_id);
 const util = require('util');
 const vm = require('vm');
 
+// List of possible greetings for new server members
+var greetings = ["++ Welcome to our little corner of hell!", "++ has joined the server.", "++ You're gonna have a jolly good time here!", "++ is new here.", "++ is here, everybody!", "++ sends his/her regards.", "++, welcome to the server!", "++ is our next victim...", "Hello ++!", "Please welcome our newest member, ++"];
+
 // List of bot commands along with usage and process for each
 var commands = {
     // Checks if bot is alive and shows version and uptime
