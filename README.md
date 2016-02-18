@@ -63,23 +63,40 @@ The file you attach should have the following basic structure:
     name: "name of extension",
     type: "keyword or command",
     key: "string to match or one-word command",
+    case: "boolean for case sensitivity for a keyword", 
     usage: "(optional) parameters for a command, preceded and separated by spaces",
     channels: "(optional) array of applicable channel names",
     process: "code to execute, as a string"
 }
 ```
 
-`process` is the crucial component here. This code is given 1.5 seconds to run in a sandbox, with access to the following:
+`process` is the crucial component here (you can compress your code into a string [here](http://javascriptcompressor.com/)). This code is given 1.5 seconds to run in a sandbox, with access to the following:
 
  - `unirest`: lightweight HTTP request library
  - `imgur`: preauthenticated `imgur-node-api` module
- - `image`: Google Image Search, `image(query, "&start=num")` returns URL
+ - `image`: Google Image Search, usage `image(query, "&start=num", callback(url))`
  - `message`: full content of the message
  - `author`: tag for the sender
  - `setTimeout`, `JSON`, `Math`, `isNaN`, `Date`, `Array`, `Number`
  - `send`: write final output to this
  
 Outside of this sandbox, the extension cannot use other Node modules or methods. If a message is identified as an extension target, `send` must have a value within 1.5 seconds or the bot will not repond to the command/keyword. When sending the JSON file to the bot, it will run several tests to verify its integrity and validity. If it is acceptable, you can remove it at any time with option #25 in the admin console.
+
+Changelog
+---------
+
+Latest, version **3.2.1**:
+
+ - Fixed build error with `package.json`
+ - Updated extension documentation
+ - Fixed tons of bugs with extensions
+ - Removed /r/acj circlejerk responses
+ - Fixed usage display errors on Discord mobile
+ - Fixed null image search bug
+ - Added `games` command
+ - Added total vote count to poll results
+ 
+Feel free to open an issue to report a bug or suggest a new feature!
 
 Contribute
 ----------

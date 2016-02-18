@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.0p1";
+var version = "3.2.1";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -21,13 +21,6 @@ var log = [];
 
 // Set up message counter
 var messages = {};
-
-// List of words that are corrected (and replacements) for #circlejerk
-var correctedWords = ["nexus", "samsung", "htc", "motorola", "lg", "the verge", "touchwiz", "htc sense", "cyanogen", "apple", "iphone", "ipad", "huawei", "xiaomi", "galaxy", "oneplus", "macbook", "blackberry", "blu", "sony", "ios", "snapdragon", "nokia", "moto ", "honor"];
-var goodWords = ["Sexus", "Sam*shit*", "**H**itler's **T**ech **C**orporation", "Lenovorola", "**L**ags **G**ratuitously", "iVerge", "TouchJizz", "HTShit", "Cyanoshit", "**CrAp**ple", "iShit", "iShit", "Nowei", "Xiao**mistake**", "Gulagsy", "OneMinus", "MaterialBook because **DuARTe uses a MacBook**", "ShitBerry", "**B**ullshit **L**ike **U**s", "So*shit*", "**Bye** OS", "Snap**oven**", "**No**kia", "*No*to", "Disgrace"];
-
-// List of possible greetings for new server members
-var greetings = ["++ Welcome to our little corner of hell!", "++ has joined the server.", "++ You're gonna have a jolly good time here!", "++ is new here.", "++ is here, everybody!", "++ sends his/her regards.", "++, welcome to the server!", "++ is our next victim...", "Hello ++!", "Please welcome our newest member, ++"];
 
 // Chatterbot setup, both Mitsuku and Cleverbot
 var cleverOn = {};
@@ -127,18 +120,19 @@ var commands = {
                 bot.sendMessage(msg.channel, msg.author + " I don't know what image to get...");
                 return;
             }
-            var img = giSearch(suffix, "");
-            if(!img) {
-                bot.sendMessage(msg.channel, "Couldn't find anything, sorry");
-            } else {
-                imgur.upload(img, function(error, res) {
-                    if(error) {
-                        bot.sendMessage(msg.channel, img);
-                    } else {
-                        bot.sendMessage(msg.channel, res.data.link);
-                    }
-                });
-            }
+            giSearch(suffix, "", function(img) {
+                if(!img) {
+                    bot.sendMessage(msg.channel, "Couldn't find anything, sorry");
+                } else {
+                    imgur.upload(img, function(error, res) {
+                        if(error) {
+                            bot.sendMessage(msg.channel, img);
+                        } else {
+                            bot.sendMessage(msg.channel, res.data.link);
+                        }
+                    });
+                }
+            });
         }
     },
     // Get GIF from Giphy
@@ -211,7 +205,7 @@ var commands = {
             var toi = suffix.lastIndexOf(" to ");
             if(toi==-1) {
                 console.log(prettyDate() + "[WARN] User used incorrect syntax");
-                bot.sendMessage(msg.channel, msg.author + " Sorry, I didn't get that. Make sure you're using the right syntax: `@" + bot.user.username + " <#> <unit> to <unit>`");
+                bot.sendMessage(msg.channel, msg.author + " Sorry, I didn't get that. Make sure you're using the right syntax: `@" + bot.user.username + " <no.> <unit> to <unit>`");
             } else {
                 try {
                     var num = suffix.substring(0, suffix.indexOf(" "));
@@ -286,7 +280,7 @@ var commands = {
                     if(!triviaOn) {
                         console.log(prettyDate() + "[INFO] Trivia game started in " + msg.channel.name + ", " + msg.channel.server.name);
                         trivia[msg.channel.id] = {answer: "", attempts: 0, score: 0, possible: 0};
-                        bot.sendMessage(msg.channel, "Welcome to **AwesomeTrivia**! Here's your first question: " + triviaQ(msg.channel.id) + "\nAnswer by tagging me like this: `@" + bot.user.username + " trivia <# of choice>` or skip by doing this: `@" + bot.user.username + " trivia next`\nGood Luck!");
+                        bot.sendMessage(msg.channel, "Welcome to **AwesomeTrivia**! Here's your first question: " + triviaQ(msg.channel.id) + "\nAnswer by tagging me like this: `@" + bot.user.username + " trivia <no. of choice>` or skip by doing this: `@" + bot.user.username + " trivia next`\nGood Luck!");
                         trivia[msg.channel.id].possible++;
                     } else {
                         console.log(prettyDate() + "[WARN] Ongoing trivia game in channel " + msg.channel.name + ", " + msg.channel.server.name);
@@ -342,7 +336,7 @@ var commands = {
     },
     // Sends reminders in given time for given note
     "remindme": {
-        usage: " <#> <h, m, or s> <note>",
+        usage: " <no.> <h, m, or s> <note>",
         process: function(bot, msg, suffix) {
             var num, time, remind;
             if(suffix.indexOf("to ")==0) {
@@ -372,7 +366,7 @@ var commands = {
             }
 
             if(isNaN(num) || ["h", "m", "s"].indexOf(time)==-1 || remind=="") {
-                bot.sendMessage(msg.channel, msg.author + " Sorry, I don't know what that means. Make sure you're using the syntax `@" + bot.user.username + " <#> <h, m, or s> <note>`");
+                bot.sendMessage(msg.channel, msg.author + " Sorry, I don't know what that means. Make sure you're using the syntax `@" + bot.user.username + " <no.> <h, m, or s> <note>`");
                 return;
             } else if(num<0) {
                 bot.sendMessage(msg.channel, msg.author + " Uh...Why don't you check that again?");
@@ -490,6 +484,29 @@ var commands = {
             }
         }
     },
+    // Show list of games being played
+    "games": {
+        process: function(bot, msg) {
+            var games = {};
+            for(var i=0; i<msg.channel.server.members.length; i++) {
+                if(msg.channel.server.members[i].game) {
+                    if(!games[msg.channel.server.members[i].game.name]) {
+                        games[msg.channel.server.members[i].game.name] = [];
+                    }
+                    games[msg.channel.server.members[i].game.name][games[msg.channel.server.members[i].game.name].length] = msg.channel.server.members[i].username;
+                }
+            }
+            var info = "";
+            for(var game in games) {
+                info += "**" + game + "** (" + games[game].length + ")";
+                for(var i=0; i<games[game].length; i++) {
+                    info += "\n\t" + games[game][i];
+                }
+                info += "\n";
+            }
+            bot.sendMessage(msg.channel, info);
+        }
+    },
     // Get a user's full profile
     "profile": {
         usage: " <username>",
@@ -515,7 +532,7 @@ var commands = {
                         info += res.data.link;
                     }
                     if(usr.game) {
-                        info += "\n\tPlaying " + usr.game;
+                        info += "\n\tPlaying " + usr.game.name;
                     }
                     if(profileData[msg.author.id]) {
                         for(var field in profileData[msg.author.id]) {
@@ -626,7 +643,7 @@ bot.on("ready", function() {
                 for(var i=0; i<log.length; i++) {
                     html += log[i] + "<br>";
                 }
-                html += "</div><br><button onclick='javascript:location.reload()'>Refresh</button>&nbsp;<button onclick='javascript:invertColors();'>Toggle Colors</button></body></html>";
+                html += "</div><br><button onclick='javascript:location.reload()'>Refresh</button>&nbsp;<button onclick='javascript:invertColors();'>Toggle Colors</button><br><i>Created by @anandroiduser, <a href='https://git.io/vg5mc'>https://git.io/vg5mc</a></i></body></html>";
             } catch(err) {
                 console.log(prettyDate() + "[ERROR] Failed to write web interface");
                 html = bot.user.username + " v" + version + " running for " + secondsToString(bot.uptime);
@@ -672,7 +689,7 @@ bot.on("message", function (msg, user) {
                         info += "\n\t 24: close all ongoing polls and trivia games";
                         info += "\n\t 25: extension, name of extension to delete"
                         info += "\n\t 26: display all current settings";
-                        info += "\nUse the syntax `<# of option> <parameter>`, or PM me a JSON file to set up an extension (to learn more about this, go to https://git.io/vg5mc)";
+                        info += "\nUse the syntax `<no. of option> <parameter>`, or PM me a JSON file to set up an extension (to learn more about this, go to https://git.io/vg5mc)";
                         bot.sendMessage(msg.channel, info);
                         admintime[msg.author.id] = setTimeout(function() {
                             if(adminconsole[msg.author.id]) {
@@ -738,7 +755,7 @@ bot.on("message", function (msg, user) {
                                         }
                                     }, 1500);
                                 } catch(runError) {
-                                    validity = "invalid code, possibly malicious";
+                                    validity = runError;
                                 }
                                     
                                 if(validity) {
@@ -962,7 +979,7 @@ bot.on("message", function (msg, user) {
                                 var act = activePolls(svr.channels[i].id);
                                 if(act) {
                                     bot.sendMessage(svr.channels[i], "The ongoing poll in this channel has been closed by an admin.");
-                                    bot.sendMessage(svr.channels[i], pollResults(act, "The results are in", "And the winner is"));
+                                    bot.sendMessage(svr.channels[i], pollResults(act, "The results are in", "and the winner is"));
                                     console.log(prettyDate() + "[INFO] Closed active poll in " + svr.channels[i].name + ", " + svr.name);
                                     delete polls[act];
                                     bot.sendMessage(msg.channel, "Closed a poll in " + svr.channels[i].name);
@@ -1139,7 +1156,7 @@ bot.on("message", function (msg, user) {
                 
                 // Displays poll results if voting had occurred
                 if(polls[msg.author.id].open) {
-                    bot.sendMessage(ch, pollResults(msg.author.id, "The results are in", "And the winner is"));
+                    bot.sendMessage(ch, pollResults(msg.author.id, "The results are in", "and the winner is"));
                 }
 
                 // Clear out all the poll stuff
@@ -1202,13 +1219,14 @@ bot.on("message", function (msg, user) {
                 for(var i=0; i<polls[msg.author.id].options.length; i++) {
                     info += "\n\t" + i + ": " + polls[msg.author.id].options[i];
                 }
-                info += "\nYou can vote by typing `@" + bot.user.username + " vote <# of choice>`. If you don't include a number, I'll just show results";
+                info += "\nYou can vote by typing `@" + bot.user.username + " vote <no. of choice>`. If you don't include a number, I'll just show results";
                 bot.sendMessage(ch, info);
                 return;
             }
         }
 
         // Stuff that only applies to public messages
+        var extensionApplied = false;
         if(!msg.channel.isPrivate) {
             // Count new message
             messages[msg.channel.server.id]++;
@@ -1261,14 +1279,14 @@ bot.on("message", function (msg, user) {
                 if(polls[act].open) {
                     if(msg.content.substring(msg.content.indexOf(" ")+1).length==4) {
                         var ch = bot.channels.get("id", polls[act].channel);
-                        var info = pollResults(act, "Ongoing results", "Current leader");
-                        info += "\nRemember, vote by typing `@" + bot.user.username + " vote <# of choice>`";
+                        var info = pollResults(act, "Ongoing results", "current leader");
+                        info += "\nRemember, vote by typing `@" + bot.user.username + " vote <no. of choice>`";
                         bot.sendMessage(ch, info);
                     } else {
                         var vt = msg.content.substring(msg.content.toLowerCase().indexOf("vote ")+5);
                         if(isNaN(vt)) {
                             console.log(prettyDate() + "[WARN] User used incorrect voting syntax in " + msg.channel.name + ", " + msg.channel.server.name);
-                            bot.sendMessage(msg.channel, msg.author + " Use the syntax `@" + bot.user.username + " vote <# of choice>`");
+                            bot.sendMessage(msg.channel, msg.author + " Use the syntax `@" + bot.user.username + " vote <no. of choice>`");
                             return;
                         }
                         if(polls[act].responderIDs.indexOf(msg.author.id)==-1 && vt<polls[act].options.length && vt>=0) {
@@ -1283,53 +1301,49 @@ bot.on("message", function (msg, user) {
                     return;
                 }
             }
-            // Circlejerk features, completely optional
-            if(configs.servers[msg.channel.server.id].circlejerk && msg.author.id!=bot.user.id) {
-                if(msg.author.id != bot.user.id && correctedWords.indexOf(msg.content.toLowerCase())>-1 && msg.channel.name == "circlejerk") {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as circlejerk command");
-                    var index = correctedWords.indexOf(msg.content.toLowerCase());
-                    bot.sendMessage(msg.channel, msg.content.substring(msg.content.toLowerCase().indexOf(correctedWords[index]), msg.content.toLowerCase().indexOf(correctedWords[index])+correctedWords[index].length) + "? More like " + goodWords[index]);
-                }
-                if(msg.author.id != bot.user.id && msg.content.toLowerCase().indexOf("sexus")>-1 && msg.channel.name == "circlejerk") {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as circlejerk command");
-                    bot.sendMessage(msg.channel, "http://i.imgur.com/jQb7QH9.png");
-                }
-                if(msg.content.toLowerCase().indexOf("praise duarte")>-1) {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as circlejerk command");
-                    var img = giSearch("Matias Duarte", "&start=" + getRandomInt(0, 19));
-                    if(img) {
-                        imgur.upload(data.items[0].link, function(error, res) {
-                            if(error) {
-                                bot.sendMessage(msg.channel, img);
-                            } else {
-                                bot.sendMessage(msg.channel, res.data.link);
-                            }
-                        });
+            
+            // Apply extensions for this server
+            for(var ext in configs.servers[msg.channel.server.id].extensions) {
+                var extension = configs.servers[msg.channel.server.id].extensions[ext];
+                if(extension.channels) {
+                    if(extension.channels.indexOf(msg.channel.name)==-1) {
+                        continue;
                     }
                 }
-                if(msg.content.toLowerCase().indexOf("fuck duarte")>-1 && msg.channel.name == "circlejerk") {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as circlejerk command");
-                    bot.sendMessage(msg.channel, msg.author + " is a shill.");
-                }
-                if(msg.content.toLowerCase().indexOf("praise him")>-1 && msg.channel.name == "circlejerk") {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as circlejerk command");
-                    bot.sendMessage(msg.channel, "Praise DuARTe!");
-                }
-                if(msg.content.toLowerCase().indexOf("praise")>-1 && msg.content.toLowerCase().indexOf("praise duarte")==-1 && msg.content.toLowerCase().indexOf("praise him")==-1  && msg.channel.name == "circlejerk") {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as circlejerk command");
-                    bot.sendMessage(msg.channel, "Only DuARTe should be praised.");
-                }
-                if((msg.content.toLowerCase().indexOf("material")>-1 || msg.content.toLowerCase().indexOf("materiyolo")>-1) && msg.channel.name == "circlejerk") {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as circlejerk command");
-                    bot.sendMessage(msg.channel, "http://i.imgur.com/5fb7D17.jpg");
-                }
-                if (msg.content.toLowerCase().indexOf("(╯°□°）╯︵ ┻━┻")>-1 && msg.channel.name == "circlejerk") {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as circlejerk command");
-                    bot.sendMessage(msg.channel, msg.author + " ┬─┬ノ( º _ ºノ)");
-                }
-                if (msg.content.toLowerCase().indexOf("?")>-1 && msg.content.toLowerCase().indexOf("approved")>-1 && msg.channel.name == "circlejerk") {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as circlejerk command");
-                    bot.sendMessage(msg.channel, msg.author + " http://i.imgur.com/4mGCm3J.jpg");
+                
+                if((extension.type.toLowerCase()=="keyword" && extension.case && msg.content.indexOf(extension.key)>-1) || (extension.type.toLowerCase()=="keyword" && !extension.case && msg.content.toLowerCase().indexOf(extension.key.toLowerCase())>-1) || (extension.type.toLowerCase()=="command" && msg.content.indexOf(bot.user.mention() + " " + extension.key)==0)) {
+                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as an extension " + configs.servers[msg.channel.server.id].extensions[ext].type);
+                    extensionApplied = true;
+                    
+                    var params = {
+                        unirest: unirest,
+                        imgur: imgur,
+                        image: giSearch,
+                        message: msg.content.substring((bot.user.mention() + " " + configs.servers[msg.channel.server.id].extensions[ext].key).length),
+                        author: msg.author.mention(),
+                        setTimeout: setTimeout,
+                        JSON: JSON,
+                        Math: Math,
+                        isNaN: isNaN,
+                        Date: Date,
+                        Array: Array,
+                        Number: Number,
+                        send: ""
+                    }
+                    try {
+                        var context = new vm.createContext(params);
+                        var script = new vm.Script(configs.servers[msg.channel.server.id].extensions[ext].process);
+                        script.runInContext(context);
+                        setTimeout(function() {
+                            if(params.send=="" || !params.send) {
+                                console.log(prettyDate() + "[WARN] Extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + " produced no output");   
+                            } else {
+                                bot.sendMessage(msg.channel, params.send);
+                            }
+                        }, 1500);
+                    } catch(runError) {
+                        console.log(prettyDate() + "[ERROR] Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + ": " + runError);
+                    }
                 }
             }
 
@@ -1402,52 +1416,6 @@ bot.on("message", function (msg, user) {
             }
             var suffix = msg.content.substring(advance);
             var cmd = commands[cmdTxt];
-            
-            // Apply extensions for this server
-            var extensionApplied = false;
-            if(!msg.channel.isPrivate) {
-                for(var ext in configs.servers[msg.channel.server.id].extensions) {
-                    if(configs.servers[msg.channel.server.id].extensions[ext].channels) {
-                        if(configs.servers[msg.channel.server.id].extensions[ext].channels.indexOf(msg.channel.name)==-1) {
-                            continue;
-                        }
-                    }
-                    if((configs.servers[msg.channel.server.id].extensions[ext].type.toLowerCase()=="keyword" && msg.content.indexOf(configs.servers[msg.channel.server.id].extensions[ext].key)>-1) || (configs.servers[msg.channel.server.id].extensions[ext].type.toLowerCase()=="command" && msg.content.indexOf(bot.user.mention() + " " + configs.servers[msg.channel.server.id].extensions[ext].key)==0)) {
-                        console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as an extension " + configs.servers[msg.channel.server.id].extensions[ext].type);
-                        extensionApplied = true;
-                        
-                        var params = {
-                            unirest: unirest,
-                            imgur: imgur,
-                            image: giSearch,
-                            message: msg.content.substring((bot.user.mention() + " " + configs.servers[msg.channel.server.id].extensions[ext].key).length),
-                            author: msg.author.mention(),
-                            setTimeout: setTimeout,
-                            JSON: JSON,
-                            Math: Math,
-                            isNaN: isNaN,
-                            Date: Date,
-                            Array: Array,
-                            Number: Number,
-                            send: ""
-                        }
-                        try {
-                            var context = new vm.createContext(params);
-                            var script = new vm.Script(configs.servers[msg.channel.server.id].extensions[ext].process);
-                            script.runInContext(context);
-                            setTimeout(function() {
-                                if(params.send=="" || !params.send) {
-                                    console.log(prettyDate() + "[WARN] Extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + " produced no output");   
-                                } else {
-                                    bot.sendMessage(msg.channel, params.send);
-                                }
-                            }, 1500);
-                        } catch(runError) {
-                            console.log(prettyDate() + "[ERROR] Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + ": " + runError);
-                        }
-                    }
-                }
-            }
             
             // Process commands
             if(cmd && !msg.channel.isPrivate && !extensionApplied) {
@@ -1742,7 +1710,6 @@ function defaultConfig(svr) {
             servermod: true,
             spamfilter: true,
             nsfwfilter: true,
-            circlejerk: true,
             chatterbot: true,
             linkme: true,
             convert: true,
@@ -1754,6 +1721,7 @@ function defaultConfig(svr) {
             stock: true,
             reddit: true,
             roll: true,
+            games: true,
             profile: true,
             tagreaction: true,
             poll: true,
@@ -1820,10 +1788,11 @@ function pollResults(usrid, intro, outro) {
     }
 
     var winner = maxIndex(responseCount);
+    info += "\n" + polls[usrid].responses.length + " votes, ";
     if((responseCount.allValuesSame() || duplicateMax(responseCount)) && polls[usrid].options.length > 1) {
-        info += "\nTie!";
+        info += "tie!";
     } else {
-        info += "\n" + outro + ": " + polls[usrid].options[winner];
+        info += outro + ": " + polls[usrid].options[winner];
     }
     
     return info;
@@ -1845,7 +1814,7 @@ function kickUser(msg, desc1, desc2) {
 }
 
 // Searches Google Images for keyword(s)
-function giSearch(query, num) {
+function giSearch(query, num, callback) {
 	var url = "https://www.googleapis.com/customsearch/v1?key=" + AuthDetails.google_api_key + "&cx=" + AuthDetails.custom_search_id + "&safe=high&q=" + (query.replace(/\s/g, '+').replace(/&/g, '')) + "&alt=json&searchType=image" + num;
 	request(url, function(err, res, body) {
 		var data;
@@ -1857,9 +1826,9 @@ function giSearch(query, num) {
 		}
 		if(!data.items || data.items.length == 0 || query.indexOf("<#")>-1) {
             console.log(prettyDate() + "[WARN] No image results for " + query);
-            return;
+            callback(null);
 		} else {
-            return data.items[0].link;
+            callback(data.items[0].link);
 		}
 	});	
 }

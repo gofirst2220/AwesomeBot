@@ -35,7 +35,6 @@
     "convert-units": "*",
     "exec": "*",
     "imgur-node-api": "*",
-    "vm": "*",
     "util": "*"
   },
   "scripts": {
