@@ -62,7 +62,7 @@ The file you attach should have the following basic structure:
 {
     name: "name of extension",
     type: "keyword or command",
-    key: "string to match or one-word command",
+    key: "array of keywords or one-word command",
     case: "boolean for case sensitivity for a keyword", 
     usage: "(optional) parameters for a command, preceded and separated by spaces",
     channels: "(optional) array of applicable channel names",
@@ -70,7 +70,7 @@ The file you attach should have the following basic structure:
 }
 ```
 
-`process` is the crucial component here (you can compress your code into a string [here](http://javascriptcompressor.com/)). This code is given 1.5 seconds to run in a sandbox, with access to the following:
+`process` is the crucial component here (you can compress your code into a string [here](http://javascriptcompressor.com/)). This code is given 3 seconds to run in a sandbox, with access to the following:
 
  - `unirest`: lightweight HTTP request library
  - `imgur`: preauthenticated `imgur-node-api` module

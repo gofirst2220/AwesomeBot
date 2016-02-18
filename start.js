@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.1";
+var version = "3.2.2";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -713,6 +713,13 @@ bot.on("message", function (msg, user) {
             // Check if this is an admin command
             } else if(adminconsole[msg.author.id]) {
                 clearTimeout(admintime[msg.author.id]);
+                admintime[msg.author.id] = setTimeout(function() {
+                    if(adminconsole[msg.author.id]) {
+                        console.log(prettyDate() + "[INFO] Timeout on " + msg.author.username + "'s admin console session for " + svr.name);
+                        delete adminconsole[msg.author.id];
+                        bot.sendMessage(msg.channel, "It's been 3 minutes, so I'm assuming you're done here. Goodbye!");
+                    }
+                }, 180000);
                 // Get the server in question
                 var svr = bot.servers.get("id", adminconsole[msg.author.id]);
                 
@@ -730,6 +737,12 @@ bot.on("message", function (msg, user) {
                                 validity = "command has spaces";
                             } else if(extension.type=="command" && commands[extension.key]) {
                                 validity = "replaces default command";
+                            } else if(extension.type=="keyword" && !Array.isArray(extension.key)) {
+                                validity = "keyword must be in an array";
+                            } else if(extension.type=="command" && Array.isArray(extension.key)) {
+                                validity = "array as command key";
+                            } else if(extension.type=="keyword" && extension.case==null) {
+                                validity = "case sensitivity not specified";
                             } else if(configs.servers[svr.id].extensions[extension.name]) {
                                 validity = "extension already exists";
                             } else {
@@ -756,34 +769,31 @@ bot.on("message", function (msg, user) {
                                         if(params.send=="" || !params.send) {
                                             validity = "no output";   
                                         }
-                                    }, 1500);
+                                    }, 3000);
                                 } catch(runError) {
                                     validity = runError;
                                 }
-                                    
-                                if(validity) {
-                                    console.log(prettyDate() + "[WARN] Extension by " + msg.author.username + " is invalid: " +  validity);
-                                    bot.sendMessage(msg.channel, "Well, that didn't work. Here's the error: `" + validity + "`");
-                                } else {
-                                    configs.servers[svr.id].extensions[extension.name] = extension;
-                                    console.log(prettyDate() + "[INFO] Extension " + extension.name + " added to server " + svr.name);
-                                    delete configs.servers[svr.id].extensions[extension.name].name;
-                                    saveConfig("./config.json", function(err) {
-                                        if(err) {
-                                            console.log(prettyDate() + "[ERROR] Could not save new config for " + svr.name);
-                                            bot.sendMessage(msg.channel, "An unknown error occurred, but at least *your* code was fine");
-                                        } else {
-                                            var info = "Great, it works! You can use this extension on the server now.\nUpdated extension list:";
-                                            for(var ext in configs.servers[svr.id].extensions) {
-                                                info += "\n\t" + ext + ", " + configs.servers[svr.id].extensions[ext].type;
-                                            }
-                                            bot.sendMessage(msg.channel, info);
-                                        }
-                                    });
-                                }
                             }
+                            
                             if(validity) {
-                                console.log(prettyDate() + "[WARN] Could not verify extension provided by " + msg.author.username);
+                                console.log(prettyDate() + "[WARN] Extension by " + msg.author.username + " is invalid: " +  validity);
+                                bot.sendMessage(msg.channel, "Well, that didn't work. Here's the error: `" + validity + "`");
+                            } else {
+                                configs.servers[svr.id].extensions[extension.name] = extension;
+                                console.log(prettyDate() + "[INFO] Extension " + extension.name + " added to server " + svr.name);
+                                delete configs.servers[svr.id].extensions[extension.name].name;
+                                saveConfig("./config.json", function(err) {
+                                    if(err) {
+                                        console.log(prettyDate() + "[ERROR] Could not save new config for " + svr.name);
+                                        bot.sendMessage(msg.channel, "An unknown error occurred, but at least *your* code was fine");
+                                    } else {
+                                        var info = "Great, it works! You can use this extension on the server now.\nUpdated extension list:";
+                                        for(var ext in configs.servers[svr.id].extensions) {
+                                            info += "\n\t" + ext + ", " + configs.servers[svr.id].extensions[ext].type;
+                                        }
+                                        bot.sendMessage(msg.channel, info);
+                                    }
+                                });
                             }
                         } catch(error) {
                             console.log(prettyDate() + "[WARN] Invalid extension file provided by " + msg.author.username);
@@ -998,7 +1008,6 @@ bot.on("message", function (msg, user) {
                                 for(var ext in configs.servers[svr.id].extensions) {
                                     info += "\n\t" + ext + ", " + configs.servers[svr.id].extensions[ext].type;
                                 }
-                                bot.sendMessage(msg.channel, info);
                             } else {
                                 console.log(prettyDate() + "[WARN] Extension " + suffix + " not found in " + svr.name);
                                 bot.sendMessage(msg.channel, "Extension " + suffix + " isn't on this server.");
@@ -1015,7 +1024,7 @@ bot.on("message", function (msg, user) {
                         // Display all current options
                         case 26:
                             var info = "Bot admins:";
-                            for(var i=0; i<configs.servers[svr.id].admins.length; i++) {
+                            for(var i=0; i<configs.servers[svr.id].admins.length-1; i++) {
                                 info += "\n\t" + bot.users.get("id", configs.servers[svr.id].admins[i]).username + ", ID " + configs.servers[svr.id].admins[i];
                             }
                             info += "\nBlocked users:";
@@ -1024,6 +1033,12 @@ bot.on("message", function (msg, user) {
                             }
                             if(configs.servers[svr.id].blocked.length==0) {
                                 info += "\n\tNo users are blocked.";
+                            }
+                            if(Object.keys(configs.servers[svr.id].extensions).length>0) {
+                                info += "\nExtension list:";
+                                for(var ext in configs.servers[svr.id].extensions) {
+                                    info += "\n\t" + ext + ", " + configs.servers[svr.id].extensions[ext].type;
+                                }
                             }
                             info += "\nRSS feeds:";
                             for(var i=0; i<configs.servers[svr.id].rss[2].length; i++) {
@@ -1306,46 +1321,54 @@ bot.on("message", function (msg, user) {
             }
             
             // Apply extensions for this server
-            for(var ext in configs.servers[msg.channel.server.id].extensions) {
-                var extension = configs.servers[msg.channel.server.id].extensions[ext];
-                if(extension.channels) {
-                    if(extension.channels.indexOf(msg.channel.name)==-1) {
-                        continue;
+            if(bot.user.id!=msg.author.id) {
+                for(var ext in configs.servers[msg.channel.server.id].extensions) {
+                    var extension = configs.servers[msg.channel.server.id].extensions[ext];
+                    if(extension.channels) {
+                        if(extension.channels.indexOf(msg.channel.name)==-1) {
+                            continue;
+                        }
                     }
-                }
-                
-                if((extension.type.toLowerCase()=="keyword" && extension.case && msg.content.indexOf(extension.key)>-1) || (extension.type.toLowerCase()=="keyword" && !extension.case && msg.content.toLowerCase().indexOf(extension.key.toLowerCase())>-1) || (extension.type.toLowerCase()=="command" && msg.content.indexOf(bot.user.mention() + " " + extension.key)==0)) {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as an extension " + configs.servers[msg.channel.server.id].extensions[ext].type);
-                    extensionApplied = true;
                     
-                    var params = {
-                        unirest: unirest,
-                        imgur: imgur,
-                        image: giSearch,
-                        message: msg.content.substring((bot.user.mention() + " " + configs.servers[msg.channel.server.id].extensions[ext].key).length),
-                        author: msg.author.mention(),
-                        setTimeout: setTimeout,
-                        JSON: JSON,
-                        Math: Math,
-                        isNaN: isNaN,
-                        Date: Date,
-                        Array: Array,
-                        Number: Number,
-                        send: ""
-                    }
-                    try {
-                        var context = new vm.createContext(params);
-                        var script = new vm.Script(configs.servers[msg.channel.server.id].extensions[ext].process);
-                        script.runInContext(context);
-                        setTimeout(function() {
-                            if(params.send=="" || !params.send) {
-                                console.log(prettyDate() + "[WARN] Extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + " produced no output");   
-                            } else {
-                                bot.sendMessage(msg.channel, params.send);
-                            }
-                        }, 1500);
-                    } catch(runError) {
-                        console.log(prettyDate() + "[ERROR] Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + ": " + runError);
+                    if((extension.type.toLowerCase()=="keyword" && contains(extension.key, msg.content, extension.case)) || (extension.type.toLowerCase()=="command" && msg.content.indexOf(bot.user.mention() + " " + extension.key)==0)) {
+                        console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as an extension " + configs.servers[msg.channel.server.id].extensions[ext].type);
+                        extensionApplied = true;
+                        
+                        var params = {
+                            unirest: unirest,
+                            imgur: imgur,
+                            image: giSearch,
+                            message: msg.content.substring((bot.user.mention() + " " + configs.servers[msg.channel.server.id].extensions[ext].key).length),
+                            author: msg.author.mention(),
+                            setTimeout: setTimeout,
+                            JSON: JSON,
+                            Math: Math,
+                            isNaN: isNaN,
+                            Date: Date,
+                            Array: Array,
+                            Number: Number,
+                            send: ""
+                        }
+                        try {
+                            var context = new vm.createContext(params);
+                            var script = new vm.Script(configs.servers[msg.channel.server.id].extensions[ext].process);
+                            script.runInContext(context);
+                            var wait = function(count) {
+                                if(params.send=="" || !params.send) {
+                                    setTimeout(function() {
+                                        wait(count);
+                                    }, 100);
+                                } else if(count>30) {
+                                    console.log(prettyDate() + "[WARN] Extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + " produced no output");
+                                } else {
+                                    bot.sendMessage(msg.channel, params.send);
+                                }
+                            };
+                            wait(0);
+                        } catch(runError) {
+                            console.log(prettyDate() + "[ERROR] Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + ": " + runError);
+                        }
+                        break;
                     }
                 }
             }
@@ -1636,7 +1659,17 @@ function countOccurrences(arr, ref) {
     return a;
 }
 
-// Finds the index of the max value in an array
+// Determine if string contains substring in an array
+function contains(arr, str, sens) {
+    for(var i=0; i<arr.length; i++) {
+        if((sens && str.indexOf(arr[i])>-1) || (!sens && str.toLowerCase().indexOf(arr[i].toLowerCase())>-1)) {
+            return true;
+        }
+    }
+    return false;
+} 
+
+// Find the index of the max value in an array
 function maxIndex(arr) {
     var max = arr[0];
     var maxIndex = 0;
