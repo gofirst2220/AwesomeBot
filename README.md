@@ -85,18 +85,11 @@ Outside of this sandbox, the extension cannot use other Node modules or methods.
 Changelog
 ---------
 
-Latest, version **3.2.1**:
+Latest, version **3.2.2**:
 
- - Fixed build error with `package.json`
- - Updated extension documentation
- - Fixed tons of bugs with extensions
- - Removed /r/acj circlejerk responses
- - Fixed usage display errors on Discord mobile
- - Fixed null image search bug
- - Added `games` command
- - Added total vote count to poll results
- 
- Patch #1: Re-add new member greetings list 
+ - Added support for multiple-keyword extensions
+ - Fixed several bugs with extensions
+ - Implemented smart timeout for extensions 
  
 Feel free to open an issue to report a bug or suggest a new feature!
 
