@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.2p3";
+var version = "3.2.3";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -50,6 +50,8 @@ const Wiki = require("wikijs");
 const convert = require("convert-units");
 const imgur = require("imgur-node-api");
 imgur.setClientID(AuthDetails.imgur_client_id);
+const urban = require("urban");
+const weather = require("weather-js");
 const util = require('util');
 const vm = require('vm');
 
@@ -162,6 +164,16 @@ var commands = {
 		    }, rating);
 		}
 	},
+    // Defines word from Urban Dictionary
+    "urban": {
+        usage: " <term>",
+        process: function(bot, msg, suffix) {
+            var def = urban(suffix);
+            def.first(function(data) {
+                bot.sendMessage(msg.channel, "**" + suffix + "**: " + data.definition.replace("\r\n\r\n", "\n") + "\n*" + data.example.replace("\r\n\r\n", "\n") + "*\n`" + data.thumbs_up + " up, " + data.thumbs_down + " down`");
+            });
+        }
+    },
     // Gets Wikipedia article with given title
     "wiki": {
         usage: " <search terms>",
@@ -255,6 +267,27 @@ var commands = {
                 } else {
                     console.log(prettyDate() + "[WARN] Stock symbol " + suffix + " not found")
                     bot.sendMessage(msg.channel, "Sorry, I can't find that stock symbol.");
+                }
+            });
+        }
+    },
+    // Displays the weather for an area
+    "weather": {
+        usage: " <location> <(optional) F or C>",
+        process: function(bot, msg, suffix) {
+            var unit = "F";
+            var location = suffix;
+            if([" F", " C"].indexOf(suffix.substring(suffix.length-2))>-1) {
+                unit = suffix.charAt(suffix.length-1).toString();
+                location = suffix.substring(0, suffix.length-2);
+            }
+            weather.find({search: location, degreeType: unit}, function(err, data) {
+                if(err) {
+                    console.log(prettyDate() + "[WARN] Could not find location " + location + " in " + msg.channel.server.name);
+                    bot.sendMessage(msg.channel, msg.author + " I can't find weather info for " + location);
+                } else {
+                    data = data[0];
+                    bot.sendMessage(msg.channel, "**" + data.location.name + " right now:**\n" + data.current.temperature + "°" + unit + " " + data.current.skytext + ", feels like " + data.current.feelslike + "°\n**Forecast for tomorrow:**\nHigh: " + data.forecast[1].high + "°, low: " + data.forecast[1].low + "° " + data.forecast[1].skytextday + " with " + data.forecast[1].precip + "% chance precip.");
                 }
             });
         }
@@ -683,7 +716,7 @@ bot.on("message", function (msg, user) {
                         
                         // Display options for the admin
                         var info = "Welcome to the admin console for server " + svr.name + ". Your options are:";
-                        var params = ["username or ID to add/remove", "username or ID to block/unblock", "new member greeting", "feed name to remove, `<url> <name>` to add, or y/n", "enabled? y/n", "enabled? y/n", "enabled? y/n", "enabled? y/n", "enabled? y/n", "enabled? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "enabled? y/n", "enabled? y/n", "enabled?y/n"];
+                        var params = ["username or ID to add/remove", "username or ID to block/unblock", "new member greeting", "feed name to remove, `<url> <name>` to add, or y/n", "enabled? y/n", "enabled? y/n", "enabled? y/n", "enabled? y/n", "enabled? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "enabled? y/n", "enabled? y/n", "enabled?y/n"];
                         info += "\n\t 0: quit";
                         for(var i=0; i<Object.keys(configs.servers[svr.id]).length-1; i++) {
                             info += "\n\t " + (i+1) + ": " + Object.keys(configs.servers[svr.id])[i] + ", " + params[i];

@@ -85,15 +85,10 @@ Outside of this sandbox, the extension cannot use other Node modules or methods.
 Changelog
 ---------
 
-Latest, version **3.2.2**:
+Latest, version **3.2.3**:
 
- - Added support for multiple-keyword extensions
- - Fixed several bugs with extensions
- - Implemented smart timeout for extensions
-
-Patch #1: Fixed uptime count error 
-Patch #2: Fixed `secondsToString()` rounding, added GitHub link to update notification
-Patch #3: Changed some repo URLs to page URLs
+ - Added `weather` command
+ - Added `urban` command for definitions
  
 Feel free to open an issue to report a bug or suggest a new feature!
 

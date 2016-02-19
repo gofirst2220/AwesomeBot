@@ -35,7 +35,9 @@
     "convert-units": "*",
     "exec": "*",
     "imgur-node-api": "*",
-    "util": "*"
+    "util": "*",
+    "urban": "*",
+    "weather-js": "*"
   },
   "scripts": {
     "start": "node start.js"
