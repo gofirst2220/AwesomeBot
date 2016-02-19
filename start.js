@@ -88,7 +88,7 @@ var commands = {
         process: function(bot, msg) {
             var a = new Date();
             var e = new Date(a.getFullYear()+1, 0, 1, 0, 0, 0, 0);
-            var info = secondsToString(Math.ceil((e-a)/1000)) + "until " + (a.getFullYear()+1) + "!";
+            var info = secondsToString((e-a)/1000) + "until " + (a.getFullYear()+1) + "!";
             bot.sendMessage(msg.channel, info);
         }
     },
@@ -1699,7 +1699,7 @@ function secondsToString(seconds) {
     var numdays = Math.floor((seconds % 31536000) / 86400);
     var numhours = Math.floor(((seconds % 31536000) % 86400) / 3600);
     var numminutes = Math.floor((((seconds % 31536000) % 86400) % 3600) / 60);
-    var numseconds = (((seconds % 31536000) % 86400) % 3600) % 60;
+    var numseconds = Math.round((((seconds % 31536000) % 86400) % 3600) % 60);
     
     var str = "";
     if(numyears>0) {
