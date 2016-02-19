@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.2p2";
+var version = "3.2.2p3";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -615,7 +615,7 @@ bot.on("ready", function() {
         cleverOn[bot.servers[i].id] = true;
         spams[bot.servers[i].id] = {};
         clearMessageCounter();
-        bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/vg5mc*");
+        bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
     }
 
     // Set up webserver for online bot status, optimized for RedHat OpenShift deployment
@@ -646,7 +646,7 @@ bot.on("ready", function() {
                 for(var i=0; i<log.length; i++) {
                     html += log[i] + "<br>";
                 }
-                html += "</div><br><button onclick='javascript:location.reload()'>Refresh</button>&nbsp;<button onclick='javascript:invertColors();'>Toggle Colors</button><br><i>Created by @anandroiduser, <a href='https://git.io/vg5mc'>https://git.io/vg5mc</a></i></body></html>";
+                html += "</div><br><button onclick='javascript:location.reload()'>Refresh</button>&nbsp;<button onclick='javascript:invertColors();'>Toggle Colors</button><br><br><i>Created by @anandroiduser, <a href='https://git.io/v2e1w'>https://git.io/v2e1w</a></i></body></html>";
             } catch(err) {
                 console.log(prettyDate() + "[ERROR] Failed to write web interface");
                 html = bot.user.username + " v" + version + " running for " + secondsToString(bot.uptime/1000);
@@ -1969,7 +1969,7 @@ function getHelp(svr) {
         }
     }
 
-    info += "\n\nFor example, you could do `@" + bot.user.username + " remindme 5 s Hello`. You can also PM me to start a poll (`poll <server> <channel>`) or just talk to me about anything, and you can get app links from the Google Play store by using `linkme <some app>` in the main chat.\n\nVersion " + version + " by @anandroiduser, https://git.io/vg5mc";
+    info += "\n\nFor example, you could do `@" + bot.user.username + " remindme 5 s Hello`. You can also PM me to start a poll (`poll <server> <channel>`) or just talk to me about anything, and you can get app links from the Google Play store by using `linkme <some app>` in the main chat.\n\nVersion " + version + " by @anandroiduser, https://git.io/v2e1w";
     return info;
 }
 
