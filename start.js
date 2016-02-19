@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.2p1";
+var version = "3.2.2p2";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -2016,6 +2016,7 @@ function checkVersion() {
                         send += response.body[i][1];
                     }
                 }
+                send += "\nLearn more at https://git.io/vg5mc";
                 
                 if(configs.maintainer && configs.maintainer!="") {
                     var usr = bot.users.get("id", configs.maintainer);

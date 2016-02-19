@@ -92,6 +92,7 @@ Latest, version **3.2.2**:
  - Implemented smart timeout for extensions
 
 Patch #1: Fixed uptime count error 
+Patch #2: Fixed `secondsToString()` rounding, added GitHub link to update notification
  
 Feel free to open an issue to report a bug or suggest a new feature!
 
