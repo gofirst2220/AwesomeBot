@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.3";
+var version = "3.2.3p1";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -170,7 +170,12 @@ var commands = {
         process: function(bot, msg, suffix) {
             var def = urban(suffix);
             def.first(function(data) {
-                bot.sendMessage(msg.channel, "**" + suffix + "**: " + data.definition.replace("\r\n\r\n", "\n") + "\n*" + data.example.replace("\r\n\r\n", "\n") + "*\n`" + data.thumbs_up + " up, " + data.thumbs_down + " down`");
+                if(data) {
+                    bot.sendMessage(msg.channel, "**" + suffix + "**: " + data.definition.replace("\r\n\r\n", "\n") + "\n*" + data.example.replace("\r\n\r\n", "\n") + "*\n`" + data.thumbs_up + " up, " + data.thumbs_down + " down`");
+                } else {
+                    console.log(prettyDate() + "[WARN] Definition not found in " + msg.channel.server.name);
+                    bot.sendMessage(msg.channel, "Wtf?! Urban Dictionary doesn't have an entry for " + suffix);
+                }
             });
         }
     },

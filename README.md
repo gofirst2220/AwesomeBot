@@ -89,6 +89,8 @@ Latest, version **3.2.3**:
 
  - Added `weather` command
  - Added `urban` command for definitions
+
+Patch #1: Fix crash for no matches in `urban` command
  
 Feel free to open an issue to report a bug or suggest a new feature!
 
