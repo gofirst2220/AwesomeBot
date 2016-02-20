@@ -85,12 +85,10 @@ Outside of this sandbox, the extension cannot use other Node modules or methods.
 Changelog
 ---------
 
-Latest, version **3.2.3**:
+Latest, version **3.2.4**:
 
- - Added `weather` command
- - Added `urban` command for definitions
-
-Patch #1: Fix crash for no matches in `urban` command
+ - Fixed a few bugs in the admin console
+ - Added admin option to clean bot messages 
  
 Feel free to open an issue to report a bug or suggest a new feature!
 

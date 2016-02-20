@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.3p1";
+var version = "3.2.4";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -724,13 +724,14 @@ bot.on("message", function (msg, user) {
                         var params = ["username or ID to add/remove", "username or ID to block/unblock", "new member greeting", "feed name to remove, `<url> <name>` to add, or y/n", "enabled? y/n", "enabled? y/n", "enabled? y/n", "enabled? y/n", "enabled? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "allow? y/n", "enabled? y/n", "enabled? y/n", "enabled?y/n"];
                         info += "\n\t 0: quit";
                         for(var i=0; i<Object.keys(configs.servers[svr.id]).length-1; i++) {
-                            info += "\n\t " + (i+1) + ": " + Object.keys(configs.servers[svr.id])[i] + ", " + params[i];
+                            info += "\n\t" + (i+1) + ": " + Object.keys(configs.servers[svr.id])[i] + ", " + params[i];
                         }
-                        info += "\n\t 23: remove bot from this server";
-                        info += "\n\t 24: close all ongoing polls and trivia games";
-                        info += "\n\t 25: extension, name of extension to delete"
-                        info += "\n\t 26: display all current settings";
-                        info += "\nUse the syntax `<no. of option> <parameter>`, or PM me a JSON file to set up an extension (to learn more about this, go to https://git.io/vg5mc)";
+                        info += "\n\t23: clean, number of messages and channel name"
+                        info += "\n\t24: remove bot from this server";
+                        info += "\n\t25: close all ongoing polls and trivia games";
+                        info += "\n\t26: extension, name of extension to delete"
+                        info += "\n\t27: display all current settings";
+                        info += "\nUse the syntax `<no. of option> <parameter>`, or PM me a JSON file to set up an extension (to learn more about this, go to https://git.io/v2UGr)";
                         bot.sendMessage(msg.channel, info);
                         admintime[msg.author.id] = setTimeout(function() {
                             if(adminconsole[msg.author.id]) {
@@ -841,16 +842,17 @@ bot.on("message", function (msg, user) {
                 } else {
                     // Parses option number in message
                     var n = parseInt(msg.content);
+                    var suffix = "";
                     if(msg.content.indexOf(" ")>-1) {
                         n = parseInt(msg.content.substring(0, msg.content.indexOf(" ")));
-                        var suffix = msg.content.substring(msg.content.indexOf(" ")+1);
+                        suffix = msg.content.substring(msg.content.indexOf(" ")+1);
                     }
                     if(isNaN(n) && msg.attachments.length==0) {
                         console.log(prettyDate() + "[WARN] " + msg.author.username + " provided an invalid admin console option");
                         bot.sendMessage(msg.channel, "Invalid option, try again.");
                         return;
                     }
-                    if(n>0 && n<17 && !suffix) {
+                    if(n<=1 && n<=23 && suffix=="") {
                         console.log(prettyDate() + "[WARN] " + msg.author.username + " did not provide a parameter for option " + n);
                         bot.sendMessage(msg.channel, "Missing parameter. Please see your options above.");
                         return;
@@ -1002,8 +1004,24 @@ bot.on("message", function (msg, user) {
                                 }
                             });
                             break;
-                        // Server management
+                        // Clean past messages
                         case 23:
+                            if(suffix.indexOf(" ")==-1) {
+                                console.log(prettyDate() + "[WARN] " + msg.author.username + " did not provide a parameter for option " + n);
+                                bot.sendMessage(msg.channel, "Missing parameter. Make sure to include the number of messages to delete *and* the channel name.");
+                                return;
+                            }
+                            var ch = svr.channels.get("name", suffix.substring(0, suffix.indexOf(" ")));
+                            var count = suffix.substring(suffix.indexOf(" ")+1);
+                            if(isNaN(count) || !ch) {
+                                console.log(prettyDate() + "[WARN] " + msg.author.username + " provided incorrect parameter(s) for option " + count);
+                                bot.sendMessage(msg.channel, "You've made a terrible mistake! Something's wrong with your command...");
+                                return;
+                            }
+                            cleanMessages(msg.channel, ch, count, null);
+                            break;
+                        // Server management
+                        case 24:
                             bot.leaveServer(svr, function(error) {
                                 if(error) {
                                     console.log(prettyDate() + "[ERROR] Failed to leave server " + svr.name);
@@ -1018,7 +1036,7 @@ bot.on("message", function (msg, user) {
                             });
                             break;
                         // Close polls and trivia games by force
-                        case 24:
+                        case 25:
                             for(var i=0; i<svr.channels.length; i++) {
                                 if(trivia[svr.channels[i].id]) {
                                     bot.sendMessage(svr.channels[i], "Sorry to interrupt your game, but an admin has closed this trivia session.");
@@ -1038,7 +1056,7 @@ bot.on("message", function (msg, user) {
                             }
                             break;
                         // Delete an extension
-                        case 25:
+                        case 26:
                             if(configs.servers[svr.id].extensions[suffix]) {
                                 delete configs.servers[svr.id].extensions[suffix];
                                 console.log(prettyDate() + "[INFO] Deleted extension " + suffix + " from " + svr.name);
@@ -1060,7 +1078,7 @@ bot.on("message", function (msg, user) {
                             });
                             break;
                         // Display all current options
-                        case 26:
+                        case 27:
                             var info = "Bot admins:";
                             for(var i=0; i<configs.servers[svr.id].admins.length-1; i++) {
                                 info += "\n\t" + bot.users.get("id", configs.servers[svr.id].admins[i]).username + ", ID " + configs.servers[svr.id].admins[i];
@@ -1472,7 +1490,7 @@ bot.on("message", function (msg, user) {
                 return;
             }
             if(!msg.channel.isPrivate) {
-                var cmdTxt = msg.content.split(" ")[1].toLowerCase().toLowerCase();
+                var cmdTxt = msg.content.split(" ")[1].toLowerCase();
                 var advance = bot.user.mention().length+cmdTxt.length+2;
             } else {
                 var cmdTxt = msg.content;
@@ -1958,6 +1976,44 @@ function ytSearch(query, cb) {
         }
         cb(q);
     });
+}
+
+// Delete last n bot messages
+function cleanMessages(open, ch, count, option) {
+    getMessages(ch, option, function(error, messages) {
+        if(!error) {
+            for(var i=0; i<messages.length; i++) {
+                if(messages[i].author.id==bot.user.id) {
+                    count--;
+                    bot.deleteMessage(messages[i]);
+                    if(count==0) {
+                        console.log(prettyDate() + "[INFO] Deleted messages in " + ch.name + ", " + ch.server.name);
+                        bot.sendMessage(open, "Deleted those messages in " + ch.name);
+                        break;
+                    }
+                }
+            }
+            if(count>0) {
+                cleanMessages(open, ch, count, {before: messages[messages.length-1]});
+            }
+        } else {
+            console.log(error);
+            console.log(prettyDate() + "[ERROR] Failed to fetch old messages in " + ch.name + ", " + ch.server.name);
+            bot.sendMessage(open, "Something went wrong getting past messages from Discord :cry:");
+        }
+    });
+}
+
+function getMessages(ch, option, callback) {
+    if(option) {
+        bot.getChannelLogs(ch, option, function(error, messages) {
+            callback(error, messages);
+        });
+    } else {
+        bot.getChannelLogs(ch, function(error, messages) {
+            callback(error, messages);
+        })
+    }
 }
 
 // Message online bot admins in a server
