@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.5";
+var version = "3.2.5p1";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -703,7 +703,7 @@ bot.on("ready", function() {
 });
 
 bot.on("message", function (msg, user) {
-    //try {
+    try {
         // Stuff that only applies to PMs
         if(msg.channel.isPrivate) {
             // Admin control panel, check to make sure we're on PM and config command was valid
@@ -1598,14 +1598,14 @@ bot.on("message", function (msg, user) {
                 return;
             }
             if(msg.author != bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction.value && botOn[msg.channel.server.id]) {
-                console.log(prettyDate() + "[INFO] Tagged by " + msg.author.username + " in " + svr.name);
+                console.log(prettyDate() + "[INFO] Tagged by " + msg.author.username + " in " + msg.channel.server.name);
                 bot.sendMessage(msg.channel,msg.author + ", you called?");
             }
         }
-    /*} catch(mainError) {
+    } catch(mainError) {
         console.log(prettyDate() + "[ERROR] Failed to process new message");
         console.log(mainError);
-    }*/
+    }
 });
 
 // Leave server if deleted

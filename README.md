@@ -91,6 +91,7 @@ Latest, version **3.2.5**:
  - Overhauled admin console
  - Fixed many miscellaneous bugs 
  
+Patch #1: Fixed giant try/catch and bot tag crash 
 Feel free to open an issue to report a bug or suggest a new feature!
 
 Contribute
