@@ -91,6 +91,8 @@ Latest, version **3.2.6**:
  - Fixed `linkme` cheerio crash 
  - Added bot typing indicators
  
+Patch #1: Fixed weather display precipitation bug
+ 
 Feel free to open an issue to report a bug or suggest a new feature!
 
 Contribute
