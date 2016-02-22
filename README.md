@@ -16,12 +16,14 @@ That's right! AwesomeBot is an all-in-one Discord bot packed with features, writ
  - Full Wikipedia articles
  - Stock fetching
  - Google Play Store links
+ - MSN Weather forecast
  
 In addition, he has many built-in utility functions:
 
  - Natural language unit conversion
  - Random number generator
  - Discord user profile
+ - Server game list
  - Reminders via PM
  - Year countdown
 
