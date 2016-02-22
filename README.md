@@ -85,13 +85,12 @@ Outside of this sandbox, the extension cannot use other Node modules or methods.
 Changelog
 ---------
 
-Latest, version **3.2.5**:
+Latest, version **3.2.6**:
 
- - Implemented new config format
- - Overhauled admin console
- - Fixed many miscellaneous bugs 
+ - Made `quiet` per-channel and per-server
+ - Fixed `linkme` cheerio crash 
+ - Added bot typing indicators
  
-Patch #1: Fixed giant try/catch and bot tag crash 
 Feel free to open an issue to report a bug or suggest a new feature!
 
 Contribute

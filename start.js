@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.5p1";
+var version = "3.2.6";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -300,16 +300,20 @@ var commands = {
     },
     // Silences the bot until the start statement is issued
     "quiet": {
-        process: function(bot, msg) {
-            if(configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1) {
-                bot.sendMessage(msg.channel,"Ok, I'll shut up.");
-                console.log(prettyDate() + "[INFO] Bot has been quieted by an admin in " + msg.channel.server.name);
-                botOn[msg.channel.server.id] = false;
+        process: function(bot, msg, suffix) {
+            if(configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1 && suffix.toLowerCase()=="all") {
+                for(var i=0; i<msg.channel.server.channels; i++) {
+                    botOn[msg.channel.server.id][msg.channel.server.channels[i].id] = false;
+                }
+            } else if(configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1) {
+                botOn[msg.channel.server.id][msg.channel.id] = false;
             } else {
                 console.log(prettyDate() + "[WARN] User is not a bot admin");
                 bot.sendMessage(msg.channel,msg.author + " Sorry, I won't listen to you :P");
+                return;
             }
-
+            bot.sendMessage(msg.channel, "Ok, I'll shut up.");
+            console.log(prettyDate() + "[INFO] Bot has been quieted by an admin in " + msg.channel.server.name);
         }
     },
     // Starts, ends, and answers live trivia game
@@ -647,15 +651,20 @@ bot.on("ready", function() {
     
     // Make sure servers are properly configured and set variables
     for(var i=0; i<bot.servers.length; i++) {
+        bot.startTyping(bot.servers[i].defaultChannel);
         if(!configs.servers[bot.servers[i].id]) {
             defaultConfig(bot.servers[i]);
         }
         checkConfig(bot.servers[i]);
-        botOn[bot.servers[i].id] = true;
         cleverOn[bot.servers[i].id] = true;
         spams[bot.servers[i].id] = {};
         clearMessageCounter();
+        botOn[bot.servers[i].id] = {};
+        for(var j=0; j<bot.servers[i].channels.length; j++) {
+            botOn[bot.servers[i].id][bot.servers[i].channels[j].id] = true;
+        }
         bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
+        bot.stopTyping(bot.servers[i].defaultChannel);
     }
 
     // Set up webserver for online bot status, optimized for RedHat OpenShift deployment
@@ -1028,7 +1037,6 @@ bot.on("message", function (msg, user) {
                                 bot.sendMessage(msg.channel, "You've made a terrible mistake! Something's wrong with your command...");
                                 return;
                             }
-                            bot.sendMessage(msg.channel, "Ok, let me think...");
                             cleanMessages(msg.channel, ch, count, null);
                             break;
                         // Server management
@@ -1222,6 +1230,7 @@ bot.on("message", function (msg, user) {
             // Join new servers via PM
             if((msg.content.indexOf("https://discord.gg")>-1 || msg.content.indexOf("https://discordapp.com/invite/")>-1)) {
                 try {
+                    bot.startTyping(msg.channel);
                     bot.joinServer(msg.content, function(error, server) {
                         if(error) {
                             console.log(prettyDate() + "[WARN] Failed to join new server, most likely user error");
@@ -1229,11 +1238,15 @@ bot.on("message", function (msg, user) {
                         } else {
                             console.log(prettyDate() + "Joined server " + server.name);
                             defaultConfig(server);
-                            botOn[server.id] = true;
                             messages[server.id] = 0;
                             cleverOn[server.id] = 0;
+                            botOn[server.id] = {};
+                            for(var i=0; i<server.channels; i++) {
+                                botOn[server.id][server.channels[i].id] = true;
+                            }
                             bot.sendMessage(msg.channel, "Successfully joined " + server.name);
                         }
+                        bot.stopTyping(msg.channel);
                     });
                 } catch(err) {
                     console.log(prettyDate() + "[ERROR] Failed to join new server");
@@ -1262,12 +1275,12 @@ bot.on("message", function (msg, user) {
                 if(!svr) {
                     console.log(prettyDate() + "[WARN] Invalid server provided by " + msg.author.username + " for new poll");
                     bot.sendMessage(msg.channel, "That server doesn't exist or I'm not on it.");
-                } else if(botOn[svr.id]) {
+                } else {
                     var ch = svr.channels.get("name", msg.content.substring(msg.content.lastIndexOf(" ")+1));
                     if(!ch) {
                         console.log(prettyDate() + "[WARN] Invalid channel provided by " + msg.author.username + " for new poll");
                         bot.sendMessage(msg.channel, "Invalid channel.");
-                    } else {
+                    } else if(botOn[svr.id][ch.id]) {
                         if(configs.servers[svr.id].poll.value) {
                             if(polls[msg.author.id]) {
                                 console.log(prettyDate() + "[WARN] " + msg.author.username + " has already started a poll");
@@ -1324,15 +1337,15 @@ bot.on("message", function (msg, user) {
             messages[msg.channel.server.id]++;
             
             // If start statement is issued, say hello and begin listening
-            if(msg.content.indexOf(bot.user.mention()) == 0 && msg.content.indexOf("start") > -1 && configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1 && !botOn[msg.channel.server.id]) {
+            if(msg.content.indexOf(bot.user.mention()) == 0 && msg.content.indexOf("start") > -1 && configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1 && !botOn[msg.channel.server.id][msg.channel.id]) {
                 console.log(prettyDate() + "[INFO] Bot has been started by an admin in " + msg.channel.server.name);
-                botOn[msg.channel.server.id] = true;
+                botOn[msg.channel.server.id][msg.channel.id] = true;
                 bot.sendMessage(msg.channel, "Hello!");
                 return;
             }
             
             // Stop responding if the author is a blocked user or bot isn't on
-            if(configs.servers[msg.channel.server.id].blocked.value.indexOf(msg.author.id)>-1 || !botOn[msg.channel.server.id]) {
+            if(configs.servers[msg.channel.server.id].blocked.value.indexOf(msg.author.id)>-1 || !botOn[msg.channel.server.id][msg.channel.id]) {
                 return;
             }
             
@@ -1406,6 +1419,7 @@ bot.on("message", function (msg, user) {
                     
                     if((extension.type.toLowerCase()=="keyword" && contains(extension.key, msg.content, extension.case)) || (extension.type.toLowerCase()=="command" && msg.content.indexOf(bot.user.mention() + " " + extension.key)==0)) {
                         console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as an extension " + configs.servers[msg.channel.server.id].extensions[ext].type);
+                        bot.startTyping(msg.channel);
                         extensionApplied = true;
                         
                         var params = {
@@ -1442,6 +1456,7 @@ bot.on("message", function (msg, user) {
                         } catch(runError) {
                             console.log(prettyDate() + "[ERROR] Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + ": " + runError);
                         }
+                        bot.stopTyping(msg.channel);
                         break;
                     }
                 }
@@ -1472,6 +1487,7 @@ bot.on("message", function (msg, user) {
                 
                 // Fetch app links
                 console.log(prettyDate() + "[INFO] " + msg.author.username + " requested the following app(s) in " + msg.channel.server.name + ": " + apps);
+                bot.startTyping(msg.channel);
                 for(var i=0; i<apps.length; i++) {
                     var basePath = "https://play.google.com/store/search?&c=apps&q=" + apps[i] + "&hl=en";
                     var data;
@@ -1492,6 +1508,7 @@ bot.on("message", function (msg, user) {
                                 console.log(prettyDate() + "[WARN] App " + apps[i] + " not found to link in " + msg.channel.server.name);
                                 send = msg.author + " Sorry, no such app exists.\n";
                             }
+                            bot.stopTyping(msg.channel);
                             bot.sendMessage(msg.channel, send);
                         }
                     });
@@ -1517,29 +1534,32 @@ bot.on("message", function (msg, user) {
             var cmd = commands[cmdTxt];
             
             // Process commands
-            if(cmd && !msg.channel.isPrivate && !extensionApplied && botOn[msg.channel.server.id]) {
+            if(cmd && !msg.channel.isPrivate && !extensionApplied && botOn[msg.channel.server.id][msg.channel.id]) {
                 if(configs.servers[msg.channel.server.id][cmdTxt]) {
                     if(!configs.servers[msg.channel.server.id][cmdTxt].value) {
                         return;
                     }
                 }
+                bot.startTyping(msg.channel);
                 if(filter.indexOf(suffix)>-1 && configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].nsfwfilter.value && configs.servers[msg.channel.server.id].servermod.value && cmdTxt!="reddit") {
                     console.log(prettyDate() + "[INFO] Handling filtered query \"" + msg.content + "\" from " + msg.author.username + " in " +  msg.channel.server.name);
                     kickUser(msg, "is abusing the bot", "attempting to fetch NSFW content");
-                } else if(botOn[msg.channel.server.id]) {
+                } else if(botOn[msg.channel.server.id][msg.channel.id]) {
                     console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as a command");
                     cmd.process(bot, msg, suffix);
                 }
-            // Process message as chatterbot input if not a command
+                bot.stopTyping(msg.channel);
+            // Process message as chatterbot prompt if not a command
             } else if(msg.author.id != bot.user.id && !extensionApplied) {
                 if(!msg.channel.isPrivate) {
-                    if(!configs.servers[msg.channel.server.id].chatterbot.value || !botOn[msg.channel.server.id]) {
+                    if(!configs.servers[msg.channel.server.id].chatterbot.value || !botOn[msg.channel.server.id][msg.channel.id]) {
                         return;
                     }
                     console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as chatterbot prompt"); 
                 } else {
                     console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " as chatterbot prompt"); 
                 }
+                bot.startTyping(msg.channel);
                 
                 var prompt = "", clever = true;
                 if(!msg.channel.isPrivate) {
@@ -1579,6 +1599,7 @@ bot.on("message", function (msg, user) {
                             } else {
                                 bot.sendMessage(msg.channel, msg.author + " " + res);
                             }
+                            bot.stopTyping(msg.channel);
                         });
                 } else {
                     Cleverbot.prepare(function(){
@@ -1588,6 +1609,7 @@ bot.on("message", function (msg, user) {
                             } else {
                                 bot.sendMessage(msg.channel, msg.author + " " + response.message);
                             }
+                            bot.stopTyping(msg.channel);
                         });
                     });
                 }
@@ -1597,12 +1619,13 @@ bot.on("message", function (msg, user) {
             if(msg.author == bot.user){
                 return;
             }
-            if(msg.author != bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction.value && botOn[msg.channel.server.id]) {
+            if(msg.author != bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction.value && botOn[msg.channel.server.id][msg.channel.id]) {
                 console.log(prettyDate() + "[INFO] Tagged by " + msg.author.username + " in " + msg.channel.server.name);
                 bot.sendMessage(msg.channel,msg.author + ", you called?");
             }
         }
     } catch(mainError) {
+        bot.stopTyping(msg.channel);
         console.log(prettyDate() + "[ERROR] Failed to process new message");
         console.log(mainError);
     }
@@ -1619,7 +1642,7 @@ bot.on("serverDeleted", function(svr) {
 // New server member handling
 bot.on("serverNewMember", function(svr, usr) {
     // Check if this has been enabled in admin console and the bot is listening
-    if(configs.servers[svr.id].servermod.value && botOn[svr.id]) {
+    if(configs.servers[svr.id].servermod.value && botOn[svr.id][svr.defaultChannel.id]) {
         console.log(prettyDate() + "[INFO] " + usr.username + " has joined " + svr.name);
         bot.sendMessage(svr.defaultChannel, greetings[getRandomInt(0, greetings.length-1)].replace("++", usr));
         var info = "Welcome to the " + svr.name + " Discord chat! " + configs.servers[svr.id].newgreeting.value + "\n\nI'm " + bot.user.username + " by the way. You can interact with me in any of the channels by tagging me with `@" + bot.user.username + "` and then stating any one of the following commands:" + getHelp(svr);
@@ -1629,7 +1652,7 @@ bot.on("serverNewMember", function(svr, usr) {
 
 // Message on user banned
 bot.on("userBanned", function(usr, svr) {
-    if(configs.servers[svr.id].servermod.value && botOn[svr.id]) {
+    if(configs.servers[svr.id].servermod.value && botOn[svr.id][svr.defaultChannel.id]) {
         console.log(prettyDate() + "[INFO] User " + usr.username + " has been banned from " + svr.name);
         bot.sendMessage(svr.defaultChannel, usr.username + " has been banned.");
     }
@@ -1637,7 +1660,7 @@ bot.on("userBanned", function(usr, svr) {
 
 // Message on user unbanned
 bot.on("userUnbanned", function(usr, svr) {
-    if(configs.servers[svr.id].servermod.value && botOn[svr.id]) {
+    if(configs.servers[svr.id].servermod.value && botOn[svr.id][svr.defaultChannel.id]) {
         console.log(prettyDate() + "[INFO] User " + usr.username + " has been unbanned from " + svr.name);
         bot.sendMessage(svr.defaultChannel, usr.username + " is no longer banned.");
     }
@@ -2051,7 +2074,7 @@ function scrapeSearch(data) {
     var items = [];
     card_list.find('.card').each(function() {
         var card = {};
-        var card_data = $(this);
+        var card_data = x(this);
         card['cover-image'] = card_data.find('img.cover-image').attr('src');
         card['click-target'] = card_data.find('.card-click-target').attr('src');
         card['name'] = card_data.find('.details .title').attr('title');
