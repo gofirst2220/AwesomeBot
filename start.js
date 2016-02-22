@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.6p1";
+var version = "3.2.6p2";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -1938,7 +1938,7 @@ function defaultConfig(svr) {
             console.log(prettyDate() + "[ERROR] Failed to auto-add admins in " + svr.name + ", using only the owner");
             console.log(err);
         }
-        configs.servers[svr.id] = defaultConfigFile; 
+        configs.servers[svr.id] = JSON.parse(JSON.stringify(defaultConfigFile)); 
         configs.servers[svr.id].admins.value = adminList;
         saveConfig("./config.json", function(err) {
             if(err) {

@@ -92,6 +92,7 @@ Latest, version **3.2.6**:
  - Added bot typing indicators
  
 Patch #1: Fixed weather display precipitation bug
+Patch #2: Fixed `defaultConfig` file writing bug
  
 Feel free to open an issue to report a bug or suggest a new feature!
 
