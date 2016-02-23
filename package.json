@@ -37,7 +37,8 @@
     "imgur-node-api": "*",
     "util": "*",
     "urban": "*",
-    "weather-js": "*"
+    "weather-js": "*",
+    "wolfram": "*"
   },
   "scripts": {
     "start": "node start.js"

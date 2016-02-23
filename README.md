@@ -46,7 +46,7 @@ Setup
 1. Create a new Discord account for the bot
 2. Make sure you have at least one mutual server with the bot's account
 3. Clone this repository or download ZIP
-4. Fill `auth.json` with your credentials. The first two items are for the bot's Discord account. The Google API key is used for YouTube and Image Search queries, and can be found [here](https://console.developers.google.com/). Make sure to add the YouTube Data API to your account and create a [custom search engine](https://cse.google.com/cse/create/new) that is configured to emulated Google Image Search. The final two items are self-explanatory. You do not need a redirect URL for the Imgur API, and your Client ID can be anonymous.
+4. Fill `auth.json` with your credentials. The first two items are for the bot's Discord account. The Google API key is used for YouTube and Image Search queries, and can be found [here](https://console.developers.google.com/). Make sure to add the YouTube Data API to your account and create a [custom search engine](https://cse.google.com/cse/create/new) that is configured to emulated Google Image Search. The final three items are self-explanatory. You do not need a redirect URL for the Imgur API, and your Client ID can be anonymous.
 5. In `config.json`, provide your *personal* Discord ID for `maintainer` and the URL of your application if you are using cloud hosting or a static IP
 6. Get [NodeJS](https://nodejs.org/en/) and NPM if you need to
 7. Run `npm install` in the bot's directory to install the dependencies and then `node start.js` to get started!
@@ -87,14 +87,10 @@ Outside of this sandbox, the extension cannot use other Node modules or methods.
 Changelog
 ---------
 
-Latest, version **3.2.6**:
+Latest, version **3.2.7**:
 
- - Made `quiet` per-channel and per-server
- - Fixed `linkme` cheerio crash 
- - Added bot typing indicators
- 
-Patch #1: Fixed weather display precipitation bug
-Patch #2: Fixed `defaultConfig` file writing bug
+ - Added option to set bot game
+ - Added `wolfram` command
  
 Feel free to open an issue to report a bug or suggest a new feature!
 

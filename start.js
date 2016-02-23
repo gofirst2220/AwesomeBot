@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.6p2";
+var version = "3.2.7";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -52,6 +52,7 @@ const imgur = require("imgur-node-api");
 imgur.setClientID(AuthDetails.imgur_client_id);
 const urban = require("urban");
 const weather = require("weather-js");
+const wolfram = require("wolfram-node").init(AuthDetails.wolfram_app_id);
 const cheerio = require("cheerio");
 const util = require('util');
 const vm = require('vm');
@@ -180,13 +181,37 @@ var commands = {
             });
         }
     },
+    // Queries Wolfram Alpha
+    "wolfram" : {
+        usage: " <Wolfram|Alpha query>",
+        process(bot, msg, suffix) {
+            if(!suffix) {
+                console.log(prettyDate() + "[WARN] User did not provide Wolfram|Alpha query in " + msg.channel.server.name);
+                bot.sendMessage(msg.channel, msg.author + " I'm confused...");
+                return;
+            }
+            wolfram.ask({query: suffix}, function(err, results) {
+                if(err) {
+                    console.log(prettyDate() + "[ERROR] Unable to connect to Wolfram|Alpha");
+                    bot.sendMessage(msg.channel, "Unfortunately, I didn't get anything back from Wolfram|Alpha");
+                } else {
+                    var info = ""
+                    for(var i=0; i<results.pod.length; i++) {
+                        var fact = (results.pod[i].subpod[0].plaintext[0]) ? results.pod[i].subpod[0].plaintext[0] : results.pod[i].subpod[0].img[0].$.src;
+                        info += "**" + results.pod[i].$.title + "**\n" + fact + "\n";
+                    }
+                    bot.sendMessage(msg.channel, info);
+                }
+            });
+        }
+    },
     // Gets Wikipedia article with given title
     "wiki": {
         usage: " <search terms>",
         process: function(bot, msg, suffix) {
             var query = suffix;
             if(!query) {
-                console.log(prettyDate() + "[WARN] User did not provide search term(s)");
+                console.log(prettyDate() + "[WARN] User did not provide search term(s) in " + msg.channel.server.name);
                 bot.sendMessage(msg.channel, msg.author + " You need to provide a search term.");
                 return;
             }
@@ -665,6 +690,11 @@ bot.on("ready", function() {
         }
         bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
         bot.stopTyping(bot.servers[i].defaultChannel);
+    }
+    
+    // Set playing game if applicable
+    if(configs.game && configs.game!="") {
+        bot.setStatus("online", configs.game);
     }
 
     // Set up webserver for online bot status, optimized for RedHat OpenShift deployment
@@ -1874,6 +1904,10 @@ var defaultConfigFile = {
         option: "<allow? y/n>"
     },
     gif: {
+        value: true,
+        option: "<allow? y/n>"
+    },
+    wolfram: {
         value: true,
         option: "<allow? y/n>"
     },
