@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.7";
+var version = "3.2.7p1";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -2165,7 +2165,7 @@ function getGIF(tags, func, rating) {
 }
 
 // Get YouTube URL given tags as query
-function ytSearch(query, cb) {
+function ytSearch(query, callback) {
     var youtube = new youtube_node();
     youtube.setKey(AuthDetails.google_api_key);
     var q;
@@ -2184,7 +2184,7 @@ function ytSearch(query, cb) {
                 q = "http://www.youtube.com/watch?v=" + result.items[0].id.videoId;
             }
         }
-        cb(q);
+        callback(q);
     });
 }
 
