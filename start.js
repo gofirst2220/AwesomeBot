@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.7p2";
+var version = "3.2.7p3";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -611,16 +611,18 @@ var commands = {
                             info += "\n\t" + field.charAt(0).toUpperCase() + field.slice(1) + ": " + profileData[msg.author.id][field];
                         }
                     }
-                    info += "\n**On " + msg.channel.server.name + "**";
                     var details = msg.channel.server.detailsOfUser(usr);
-                    if(details.roles.length>0) {
-                        info += "\n\tRoles: " + details.roles[0].name;
-                        for(var i=1; i<details.roles.length; i++) {
-                            info += ", " + details.roles[i].name;
+                    if(details) {
+                        info += "\n**On " + msg.channel.server.name + "**";
+                        if(details.roles.length>0) {
+                            info += "\n\tRoles: " + details.roles[0].name;
+                            for(var i=1; i<details.roles.length; i++) {
+                                info += ", " + details.roles[i].name;
+                            }
                         }
+                        var joined = new Date(details.joinedAt);
+                        info += "\n\tJoined: " + (joined.getMonth()+1) + "/" + joined.getDate() + "/" + joined.getFullYear() + " " + joined.getHours() + ":" + joined.getMinutes();
                     }
-                    var joined = new Date(details.joinedAt);
-                    info += "\n\tJoined: " + (joined.getMonth()+1) + "/" + joined.getDate() + "/" + joined.getFullYear() + " " + joined.getHours() + ":" + joined.getMinutes();
                     bot.sendMessage(msg.channel, info);
                 });
             } else {
