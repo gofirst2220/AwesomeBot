@@ -93,6 +93,7 @@ Latest, version **3.2.7**:
  - Added `wolfram` command
  
 Patch #1: Fixed `package.json` errors
+Patch #2: Fixed recent issues with `wiki`
  
 Feel free to open an issue to report a bug or suggest a new feature!
 

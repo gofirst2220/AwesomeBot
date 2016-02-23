@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.7p1";
+var version = "3.2.7p2";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -209,28 +209,29 @@ var commands = {
     "wiki": {
         usage: " <search terms>",
         process: function(bot, msg, suffix) {
-            var query = suffix;
-            if(!query) {
+            if(!suffix) {
                 console.log(prettyDate() + "[WARN] User did not provide search term(s) in " + msg.channel.server.name);
                 bot.sendMessage(msg.channel, msg.author + " You need to provide a search term.");
                 return;
             }
-            new Wiki().search(query,1).then(function(data) {
+            new Wiki().search(suffix,1).then(function(data) {
                 if(data.results.length==0) {
-                    console.log(prettyDate() + "[WARN] Wikipedia article not found for " + query);
+                    console.log(prettyDate() + "[WARN] Wikipedia article not found for " + suffix);
                     bot.sendMessage(msg.channel, "I don't think Wikipedia has an article on that.");
                     return;
                 }
                 new Wiki().page(data.results[0]).then(function(page) {
                     page.summary().then(function(summary) {
-                        if(summary.indexOf(" may refer to:")==query.length) {
+                        if(summary.indexOf(" may refer to:")==suffix.length) {
                             console.log(prettyDate() + "[WARN] Ambiguous search term provided");
                             bot.sendMessage(msg.channel, "There are several matching Wikipedia articles; try making your query more specific.");
                         } else {
                             var sumText = summary.toString().split('\n');
+                            var count = 0;
                             var continuation = function() {
                                 var paragraph = sumText.shift();
-                                if(paragraph) {
+                                if(paragraph && count<3) {
+                                    count++;
                                     bot.sendMessage(msg.channel, paragraph, continuation);
                                 }
                             };
