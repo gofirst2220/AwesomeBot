@@ -95,6 +95,7 @@ Latest, version **3.2.7**:
 Patch #1: Fixed `package.json` errors
 Patch #2: Fixed recent issues with `wiki`
 Patch #3: Fixed possible `profile` crash
+Patch #4: Fixed `wolfram` no data crash
  
 Feel free to open an issue to report a bug or suggest a new feature!
 

@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.7p3";
+var version = "3.2.7p4";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -196,11 +196,16 @@ var commands = {
                     bot.sendMessage(msg.channel, "Unfortunately, I didn't get anything back from Wolfram|Alpha");
                 } else {
                     var info = ""
-                    for(var i=0; i<results.pod.length; i++) {
-                        var fact = (results.pod[i].subpod[0].plaintext[0]) ? results.pod[i].subpod[0].plaintext[0] : results.pod[i].subpod[0].img[0].$.src;
-                        info += "**" + results.pod[i].$.title + "**\n" + fact + "\n";
+                    try {
+                        for(var i=0; i<results.pod.length; i++) {
+                            var fact = (results.pod[i].subpod[0].plaintext[0]) ? results.pod[i].subpod[0].plaintext[0] : results.pod[i].subpod[0].img[0].$.src;
+                            info += "**" + results.pod[i].$.title + "**\n" + fact + "\n";
+                        }
+                        bot.sendMessage(msg.channel, info);
+                    } catch(notFound) {
+                        console.log(prettyDate() + "[WARN] Could not find Wolfram|Alpha data for " + suffix + " in " + msg.channel.server.name);
+                        bot.sendMessage(msg.channel, "Wolfram|Alpha has nothing.");
                     }
-                    bot.sendMessage(msg.channel, info);
                 }
             });
         }
