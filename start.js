@@ -227,8 +227,7 @@ var commands = {
                 }
                 new Wiki().page(data.results[0]).then(function(page) {
                     page.summary().then(function(summary) {
-                        if(summary.indexOf(" may refer to:") === suffix.length ||
-                           summary.indexOf("  may stand for:" === suffix.length) {
+                        if(summary.indexOf(" may refer to:") > -1 || summary.indexOf(" may stand for:" > -1) {
                             console.log(prettyDate() + "[WARN] Ambiguous search term provided");
                             bot.sendMessage(msg.channel, "There are several matching Wikipedia articles; try making your query more specific.");
                         } else {
