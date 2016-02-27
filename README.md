@@ -93,10 +93,15 @@ Latest, version **3.2.7**:
  - Added `wolfram` command
  
 Patch #1: Fixed `package.json` errors
+
 Patch #2: Fixed recent issues with `wiki`
+
 Patch #3: Fixed possible `profile` crash
+
 Patch #4: Fixed `wolfram` no data crash
+
 Patch #5: Fixed errors with `wiki` (thanks @Enchanted13)
+
  
 Feel free to open an issue to report a bug or suggest a new feature!
 
