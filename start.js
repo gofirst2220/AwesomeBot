@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.9p1";
+var version = "3.2.9p2";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -713,7 +713,7 @@ function rssfeed(bot, msg, url, count, full) {
     if(count > 4 || !count || count=="" || count=="null") {
         count = 4;
     }
-    var FeedParser = require('feedparser');
+    var FeedParser = require("feedparser");
     var feedparser = new FeedParser();
     request(url).pipe(feedparser);
     feedparser.on('error', function(error){
@@ -770,7 +770,7 @@ bot.on("ready", function() {
     }
 
     // Set up webserver for online bot status, optimized for RedHat OpenShift deployment
-    var http = require('http');
+    var http = require("http");
     var server_port = process.env.OPENSHIFT_NODEJS_PORT || 8080;
     var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
     var server = http.createServer(function(request, response) {
@@ -1684,7 +1684,7 @@ bot.on("message", function (msg, user) {
                 
                 if(!clever) {
                     if(!bots[msg.author.id]) {
-                        bots[msg.author.id] = require('mitsuku-api')();
+                        bots[msg.author.id] = require("mitsuku-api")();
                     }
                     var ai = bots[msg.author.id];
                     ai.send(prompt)
@@ -2362,7 +2362,7 @@ function getHelp(svr) {
 
 // Check for updates
 function checkVersion() {
-    unirest.post('http://awesomebot-botmakersinc.rhcloud.com/')
+    unirest.post('http://awesome-botmakersinc.rhcloud.com/')
     .header('Accept', 'application/json')
     .end(function(response) {
         try {

@@ -90,7 +90,10 @@ Changelog
 Latest, version **3.2.9**:
 
  - Added Google `search` command
- - Improved feed count system 
+ - Improved feed count system
+ 
+Patch #1: Removed preceding space in usage strings  
+Patch #2: Updated version check URL  
  
 Feel free to open an issue to report a bug or suggest a new feature!
 
