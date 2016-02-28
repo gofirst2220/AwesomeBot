@@ -39,7 +39,8 @@
     "urban": "*",
     "weather-js": "*",
     "wolfram-node": "*",
-    "twitter-node-client": "*"
+    "google-search-scraper": "*",
+    "url-info-scraper": "*"
   },
   "scripts": {
     "start": "node start.js"

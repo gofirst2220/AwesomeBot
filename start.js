@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.8";
+var version = "3.2.9";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -54,8 +54,10 @@ const urban = require("urban");
 const weather = require("weather-js");
 const wolfram = require("wolfram-node").init(AuthDetails.wolfram_app_id);
 const cheerio = require("cheerio");
-const util = require('util');
-const vm = require('vm');
+const util = require("util");
+const vm = require("vm");
+const searcher = require("google-search-scraper");
+const urlInfo = require("url-info-scraper");
 
 // List of possible greetings for new server members
 var greetings = ["++ Welcome to our little corner of hell!", "++ has joined the server.", "++ You're gonna have a jolly good time here!", "++ is new here.", "++ is here, everybody!", "++ sends his/her regards.", "++, welcome to the server!", "++ is our next victim...", "Hello ++!", "Please welcome our newest member, ++"];
@@ -73,18 +75,62 @@ var commands = {
             bot.sendMessage(msg.channel, info);
         }
     },
+    // Searches Google for a given query
+    "search": {
+        usage: " <query> <count>",
+        process: function(bot, msg, suffix) {
+            if(suffix) {
+                var query = suffix.substring(0, suffix.lastIndexOf(" "));
+                var count = parseInt(suffix.substring(suffix.lastIndexOf(" ")+1));
+
+                if(query=="" || !query || isNaN(count)) {
+                    query = suffix;
+                    count = 5;
+                }
+                if(count<1 || count>5) {
+                    count = 5;
+                }
+                var options = {
+                    query: query,
+                    limit: count
+                };
+                var i = 0;
+                searcher.search(options, function(err, url) {
+                    if(!err) {
+                        urlInfo(url, function(error, linkInfo) {
+                            if(i<count) {
+                                i++;
+                                if(!error) {
+                                    bot.sendMessage(msg.channel, "**" + linkInfo.title + "**\n" + url + "\n");
+                                } else {
+                                    bot.sendMessage(msg.channel, url + "\n");
+                                }
+                            }
+                        });
+                    }
+                });
+            } else {
+                console.log(prettyDate() + "[WARN] No search parameters in " + msg.channel.server.name);
+                bot.sendMessage(msg.channel, msg.author + " ???");
+            }
+        }
+    },
     // Fetches Twitter timelines and tweets
     "twitter": {
         usage: " <username> <count>",
         process: function(bot, msg, suffix) {
-            var user = suffix.substring(0, suffix.indexOf(" "));
-            var count = parseInt(suffix.substring(suffix.indexOf(" ")+1));
+            if(suffix) {
+                var user = suffix.substring(0, suffix.indexOf(" "));
+                var count = parseInt(suffix.substring(suffix.indexOf(" ")+1));
 
-            if(user=="" || !user) {
-                console.log(prettyDate() + "[WARN] User did not provide a Twitter handle in " + msg.channel.server.name);
-                bot.sendMessage(msg.channel, msg.author + " Please include both a handle and number of tweets to get.");
-            } else if(!isNaN(count)) {
+                if(user=="" || !user || isNaN(count)) {
+                    user = suffix;
+                    count = 0;
+                }
                 rssfeed(bot, msg, "http://twitrss.me/twitter_user_to_rss/?user=" + user, count, false);
+            } else {
+                console.log(prettyDate() + "[WARN] Twitter parameters not provided in " + msg.channel.server.name);
+                bot.sendMessage(msg.channel, msg.author + " You confuse me.");
             }
         }
     },
@@ -267,7 +313,7 @@ var commands = {
     },
     // Converts between units
     "convert": {
-        usage: " <#> <unit> to <unit>",
+        usage: " <no.> <unit> to <unit>",
         process: function(bot, msg, suffix) {
             var toi = suffix.lastIndexOf(" to ");
             if(toi==-1) {
@@ -501,12 +547,15 @@ var commands = {
                 } else {
                     path = "/r/" + suffix + path;
                 }
+            } else {
+                sub = "all";
+                count = 5;
             }
-            if(!sub || !count) {
-                console.log(prettyDate() + "[WARN] User did not provide subreddit and count");
-                bot.sendMessage(msg.channel, msg.author + " Make sure you include a subreddit and number of posts to get.");
-                return;
-            } else if(count<1 || isNaN(count) || count>5) {
+            if(!sub || !count || isNaN(count)) {
+                sub = suffix;
+                count = 5;
+            }
+            if(count<1 || count>5) {
                 count = 5;
             }
             unirest.get("https://www.reddit.com" + path)
@@ -548,10 +597,11 @@ var commands = {
                 var site = suffix.substring(0, suffix.indexOf(" "));
                 var count = parseInt(suffix.substring(suffix.indexOf(" ")+1));
 
-                if(site=="" || !site) {
-                    console.log(prettyDate() + "[WARN] User did not provide feed name and count");
-                    bot.sendMessage(msg.channel, msg.author + " Please include both a feed name and number of posts to get.");
-                } else if(!isNaN(count) && configs.servers[msg.channel.server.id].rss.value[2].indexOf(site.toLowerCase())>-1) {
+                if(site=="" || !site || isNaN(count)) {
+                    site = suffix;
+                    count = 0;
+                }
+                if(configs.servers[msg.channel.server.id].rss.value[2].indexOf(site.toLowerCase())>-1) {
                     rssfeed(bot,msg,configs.servers[msg.channel.server.id].rss.value[1][configs.servers[msg.channel.server.id].rss.value[2].indexOf(site.toLowerCase())], count, false);
                 } else {
                     console.log(prettyDate() + "[WARN] Feed " + site + " not found");
@@ -562,7 +612,7 @@ var commands = {
     },
     // Generates a random number
     "roll": {
-        usage: " <max # inclusive>",
+        usage: " <max no. inclusive>",
         process: function(bot, msg, suffix) {
             if(!suffix || suffix=="null" || isNaN(suffix) || suffix < 1) {
                 console.log(prettyDate() + "[WARN] User provided nonsensical parameter");
@@ -660,7 +710,7 @@ var commands = {
 };
 
 // Fetches posts from RSS feeds listed in config.json
-function rssfeed(bot, msg, url, count, full){
+function rssfeed(bot, msg, url, count, full) {
     if(count > 4 || !count || count=="" || count=="null") {
         count = 4;
     }

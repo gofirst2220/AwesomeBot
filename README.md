@@ -87,10 +87,10 @@ Outside of this sandbox, the extension cannot use other Node modules or methods.
 Changelog
 ---------
 
-Latest, version **3.2.8**:
+Latest, version **3.2.9**:
 
- - Added `twitter` command to read Twitter RSS
- - Added admin notification when joining new server 
+ - Added Google `search` command
+ - Improved feed count system 
  
 Feel free to open an issue to report a bug or suggest a new feature!
 
