@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.9";
+var version = "3.2.9p1";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -77,7 +77,7 @@ var commands = {
     },
     // Searches Google for a given query
     "search": {
-        usage: " <query> <count>",
+        usage: "<query> <count>",
         process: function(bot, msg, suffix) {
             if(suffix) {
                 var query = suffix.substring(0, suffix.lastIndexOf(" "));
@@ -117,7 +117,7 @@ var commands = {
     },
     // Fetches Twitter timelines and tweets
     "twitter": {
-        usage: " <username> <count>",
+        usage: "<username> <count>",
         process: function(bot, msg, suffix) {
             if(suffix) {
                 var user = suffix.substring(0, suffix.indexOf(" "));
@@ -136,7 +136,7 @@ var commands = {
     },
     // Gets YouTube link with given keywords
     "youtube": {
-        usage: " <video tags>",
+        usage: "<video tags>",
         process: function(bot, msg, suffix) {
             if(!suffix) {
                 console.log(prettyDate() + "[WARN] User did not provide search term(s)");
@@ -159,7 +159,7 @@ var commands = {
     },
     // Allows approved users (essentially bot admins) to change chatterbot engine
     "chatterbot": {
-        usage: " <display or switch>",
+        usage: "<display or switch>",
         process: function(bot, msg, suffix) {
             if(configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1) {
                 var isSwitch = suffix.toLowerCase() === "switch";
@@ -176,13 +176,12 @@ var commands = {
                 console.log(prettyDate() + "[WARN] User is not a bot admin");
                 bot.sendMessage(msg.channel,msg.author + " Only my friends can do that.");
             }
-
         }
     },
     // Searches Google Images with keyword(s)
     "image": {
-        usage: " <image tags>",
-        process: function(bot,msg,suffix) {
+        usage: "<image tags>",
+        process: function(bot, msg, suffix) {
             if(!suffix) {
                 console.log(prettyDate() + "[WARN] User did not provide search term(s)");
                 bot.sendMessage(msg.channel, msg.author + " I don't know what image to get...");
@@ -205,7 +204,7 @@ var commands = {
     },
     // Get GIF from Giphy
     "gif": {
-		usage: " <GIF tags>",
+		usage: "<GIF tags>",
 		process: function(bot, msg, suffix) {
             if(!suffix) {
                 console.log(prettyDate() + "[WARN] User did not provide search term(s)");
@@ -229,7 +228,7 @@ var commands = {
 	},
     // Defines word from Urban Dictionary
     "urban": {
-        usage: " <term>",
+        usage: "<term>",
         process: function(bot, msg, suffix) {
             var def = urban(suffix);
             def.first(function(data) {
@@ -244,7 +243,7 @@ var commands = {
     },
     // Queries Wolfram Alpha
     "wolfram" : {
-        usage: " <Wolfram|Alpha query>",
+        usage: "<Wolfram|Alpha query>",
         process(bot, msg, suffix) {
             if(!suffix) {
                 console.log(prettyDate() + "[WARN] User did not provide Wolfram|Alpha query in " + msg.channel.server.name);
@@ -273,7 +272,7 @@ var commands = {
     },
     // Gets Wikipedia article with given title
     "wiki": {
-        usage: " <search terms>",
+        usage: "<search terms>",
         process: function(bot, msg, suffix) {
             if(!suffix) {
                 console.log(prettyDate() + "[WARN] User did not provide search term(s) in " + msg.channel.server.name);
@@ -313,7 +312,7 @@ var commands = {
     },
     // Converts between units
     "convert": {
-        usage: " <no.> <unit> to <unit>",
+        usage: "<no.> <unit> to <unit>",
         process: function(bot, msg, suffix) {
             var toi = suffix.lastIndexOf(" to ");
             if(toi==-1) {
@@ -347,7 +346,7 @@ var commands = {
     },
     // Fetches stock symbol from Yahoo Finance
     "stock": {
-        usage: " <stock symbol>",
+        usage: "<stock symbol>",
         process: function(bot, msg, suffix) {
             if(!suffix) {
                 console.log(prettyDate() + "[WARN] User did not provide stock symbol");
@@ -371,7 +370,7 @@ var commands = {
     },
     // Displays the weather for an area
     "weather": {
-        usage: " <location> <(optional) F or C>",
+        usage: "<location> <(optional) F or C>",
         process: function(bot, msg, suffix) {
             var unit = "F";
             var location = suffix;
@@ -410,7 +409,7 @@ var commands = {
     },
     // Starts, ends, and answers live trivia game
     "trivia": {
-        usage: " <start, end, next, or answer choice>",
+        usage: "<start, end, next, or answer choice>",
         process: function(bot, msg, suffix) {
             var triviaOn = trivia[msg.channel.id]!=null;
             switch(suffix) {
@@ -474,7 +473,7 @@ var commands = {
     },
     // Sends reminders in given time for given note
     "remindme": {
-        usage: " <no.> <h, m, or s> <note>",
+        usage: "<no.> <h, m, or s> <note>",
         process: function(bot, msg, suffix) {
             var num, time, remind;
             if(suffix.indexOf("to ")==0) {
@@ -532,7 +531,7 @@ var commands = {
     },
     // Gets top (max 4) posts in given subreddit, sorting hot, includes pinned
     "reddit": {
-        usage: " <subreddit> <count>",
+        usage: "<subreddit> <count>",
         process: function(bot, msg, suffix) {
             var path = "/.json"
             var count = 5;
@@ -591,7 +590,7 @@ var commands = {
     },
     // Gets top (max 4) posts in given RSS feed name 
     "rss": {
-        usage: " <site> <count>",
+        usage: "<site> <count>",
         process: function(bot, msg, suffix) {
             if(configs.servers[msg.channel.server.id].rss.value[0]) {
                 var site = suffix.substring(0, suffix.indexOf(" "));
@@ -612,7 +611,7 @@ var commands = {
     },
     // Generates a random number
     "roll": {
-        usage: " <max no. inclusive>",
+        usage: "<max no. inclusive>",
         process: function(bot, msg, suffix) {
             if(!suffix || suffix=="null" || isNaN(suffix) || suffix < 1) {
                 console.log(prettyDate() + "[WARN] User provided nonsensical parameter");
@@ -651,7 +650,7 @@ var commands = {
     },
     // Get a user's full profile
     "profile": {
-        usage: " <username>",
+        usage: "<username>",
         process: function(bot, msg, suffix) {
             var usr = msg.channel.server.members.get("username", suffix);
             if(!suffix) {
@@ -1315,7 +1314,7 @@ bot.on("message", function (msg, user) {
                     if(!profileData[msg.author.id]) {
                         profileData[msg.author.id] = {};
                     }
-                    info = "Alright, got it!";
+                    info = "Alright, got it! PM me `" + key + ",.` to delete that.";
                     profileData[msg.author.id][key] = value;
                 }
                 saveConfig("./data.json", function(err) {
@@ -2337,7 +2336,7 @@ function getHelp(svr) {
             }
             info += "\n\t" + cmd;
             if(commands[cmd].usage) {
-                info += commands[cmd].usage;
+                info += " " + commands[cmd].usage;
             }
         }
     }
@@ -2345,7 +2344,7 @@ function getHelp(svr) {
         if(configs.servers[svr.id].extensions[ext].type.toLowerCase()=="command") {
             info += "\n\t" + configs.servers[svr.id].extensions[ext].key;
             if(configs.servers[svr.id].extensions[ext].usage) {
-                info += configs.servers[svr.id].extensions[ext].usage;
+                info += " " + configs.servers[svr.id].extensions[ext].usage;
             }
         }
     }
