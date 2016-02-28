@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.7p5";
+var version = "3.2.8";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -71,6 +71,21 @@ var commands = {
                 info += ". Find out more at " + configs.hosting;
             }
             bot.sendMessage(msg.channel, info);
+        }
+    },
+    // Fetches Twitter timelines and tweets
+    "twitter": {
+        usage: " <username> <count>",
+        process: function(bot, msg, suffix) {
+            var user = suffix.substring(0, suffix.indexOf(" "));
+            var count = parseInt(suffix.substring(suffix.indexOf(" ")+1));
+
+            if(user=="" || !user) {
+                console.log(prettyDate() + "[WARN] User did not provide a Twitter handle in " + msg.channel.server.name);
+                bot.sendMessage(msg.channel, msg.author + " Please include both a handle and number of tweets to get.");
+            } else if(!isNaN(count)) {
+                rssfeed(bot, msg, "http://twitrss.me/twitter_user_to_rss/?user=" + user, count, false);
+            }
         }
     },
     // Gets YouTube link with given keywords
@@ -227,7 +242,7 @@ var commands = {
                 }
                 new Wiki().page(data.results[0]).then(function(page) {
                     page.summary().then(function(summary) {
-                        if(summary.indexOf(" may refer to:") > -1 || summary.indexOf(" may stand for:" > -1) {
+                        if(summary.indexOf(" may refer to:") > -1 || summary.indexOf(" may stand for:") > -1) {
                             console.log(prettyDate() + "[WARN] Ambiguous search term provided");
                             bot.sendMessage(msg.channel, "There are several matching Wikipedia articles; try making your query more specific.");
                         } else {
@@ -1283,6 +1298,7 @@ bot.on("message", function (msg, user) {
                                 botOn[server.id][server.channels[i].id] = true;
                             }
                             bot.sendMessage(msg.channel, "Successfully joined " + server.name);
+                            adminMsg(false, server, msg.author, " has added me to " + server.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + server.name + "`. Check out https://git.io/v2e1w to learn more.");
                         }
                         bot.stopTyping(msg.channel);
                     });
@@ -1900,6 +1916,10 @@ var defaultConfigFile = {
         option: "<allow? y/n>"
     },
     ping: {
+        value: true,
+        option: "<allow? y/n>"
+    },
+    twitter: {
         value: true,
         option: "<allow? y/n>"
     },

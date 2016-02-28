@@ -38,7 +38,8 @@
     "util": "*",
     "urban": "*",
     "weather-js": "*",
-    "wolfram-node": "*"
+    "wolfram-node": "*",
+    "twitter-node-client": "*"
   },
   "scripts": {
     "start": "node start.js"

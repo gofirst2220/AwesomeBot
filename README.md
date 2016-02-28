@@ -87,18 +87,10 @@ Outside of this sandbox, the extension cannot use other Node modules or methods.
 Changelog
 ---------
 
-Latest, version **3.2.7**:
+Latest, version **3.2.8**:
 
- - Added option to set bot game
- - Added `wolfram` command
-
-
-Patch #1: Fixed `package.json` errors
-Patch #2: Fixed recent issues with `wiki`
-Patch #3: Fixed possible `profile` crash
-Patch #4: Fixed `wolfram` no data crash
-Patch #5: Fixed errors with `wiki` (thanks @Enchanted13)
-
+ - Added `twitter` command to read Twitter RSS
+ - Added admin notification when joining new server 
  
 Feel free to open an issue to report a bug or suggest a new feature!
 
