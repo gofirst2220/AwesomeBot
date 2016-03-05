@@ -87,10 +87,20 @@ Outside of this sandbox, the extension cannot use other Node modules or methods.
 Changelog
 ---------
 
-Latest, version **3.2.9**:
+Latest, version **3.3**:
 
- - Added Google `search` command
- - Improved feed count system
+ - Added last seen in user profiles
+ - New `say` command, just for fun
+ - Character and emoji lookup with `char`
+ - Added `timer` extension type
+ - New auto-update system and forever support
+ - Ability to change bot game live
+ - Fixed external join server bug
+ - Option for PMs when mentioned
+ - Command usage stats for maintainer
+ - New stats system for members and games
+ - Improved toggles in admin console
+ - Fixed many, many bugs
  
 Patch #1: Removed preceding space in usage strings  
 Patch #2: Updated version check URL  

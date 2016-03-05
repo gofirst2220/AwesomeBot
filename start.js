@@ -1,12 +1,16 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.9p2";
+var version = "3.3";
+/*
+    TODO: timer extension type, maintainer console + command usage stats, character/emoji info, lots of testing
+*/
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
 var disconnects = 0;
-var profileData = require("./data.json");
+var profileData = require("./profiles.json");
+var stats = require("./stats.json");
 var filter = require("./filter.json");
 
 // Hijack console to display in web interface
@@ -18,6 +22,12 @@ var log = [];
         log[log.length] = msg;
     }
 })();
+
+// Hijack spawn for auto-update to work properly
+(function() {
+    var childProcess = require("child_process");
+    childProcess.spawn = require('cross-spawn');
+})(); 
 
 // Set up message counter
 var messages = {};
@@ -37,6 +47,7 @@ var polls = {};
 var trivia = {};
 var adminconsole = {};
 var admintime = {};
+var updateconsole = false;
 
 // Misc. modules to make everything work
 const youtube_node = require("youtube-node");
@@ -71,6 +82,55 @@ var commands = {
             if(configs.hosting!="") {
                 info =  info.substring(0, info.length-1);
                 info += ". Find out more at " + configs.hosting;
+            }
+            bot.sendMessage(msg.channel, info);
+        }
+    },
+    // Shows top 5 games and active members
+    "stats": {
+        usage: "<(optional) clear>",
+        process: function(bot, msg, suffix) {
+            if(!stats[msg.channel.server.id]) {
+                console.log(prettyDate(new Date()) + "[ERROR] Failed to read stats for " + msg.channel.server.name);
+                bot.sendMessage(msg.channel, "Somehow, some way, I don't have any stats for this server :worried:");
+                return;
+            }
+            
+            var sortedMembers = [];
+            for(var member in stats[msg.channel.server.id].members) {
+                sortedMembers.push([member, stats[msg.channel.server.id].members[member].messages]);
+            }
+            sortedMembers.sort(function(a, b) {
+                var aUsr = msg.channel.server.members.get("id", a[0]);
+                var aTime = dayDiff(new Date(aUsr.joinedAt), new Date());
+                var aScore = a[1] / aTime;
+                var bUsr = msg.channel.server.members.get("id", b[0]);
+                var bTime = dayDiff(new Date(bUsr.joinedAt), new Date());
+                var bScore = b[1] / bTime;
+                return aScore - bScore;
+            });
+            var sortedGames = [];
+            for(var game in stats[msg.channel.server.id].games) {
+                sortedMembers.push([game, stats[msg.channel.server.id].games[game]]);
+            }
+            sortedGames.sort(function(a, b) {
+                return a[1] - b[1];
+            });
+            
+            var info = "**" + msg.channel.server.name + " (this week)**\nMost active members:";
+            for(var i=sortedMembers.length-1; i=>sortedMembers.length-5; i--) {
+                if(i<0) {
+                    break;
+                }
+                var usr = msg.channel.server.members.get("id", sortedMembers[i][0]);
+                info += "\n\t" + usr.username + ": " + sortedMembers[i][1] + " messages";
+            }
+            info += "\nMost-played games:";
+            for(var i=sortedGames.length-1; i=>sortedGames.length-5; i--) {
+                if(i<0) {
+                    break;
+                }
+                info += "\n\t" + sortedGames[i][0] + ": " + secondsToString(sortedGames[i][1] * 3000);
             }
             bot.sendMessage(msg.channel, info);
         }
@@ -110,7 +170,7 @@ var commands = {
                     }
                 });
             } else {
-                console.log(prettyDate() + "[WARN] No search parameters in " + msg.channel.server.name);
+                console.log(prettyDate(new Date()) + "[WARN] No search parameters in " + msg.channel.server.name);
                 bot.sendMessage(msg.channel, msg.author + " ???");
             }
         }
@@ -129,7 +189,7 @@ var commands = {
                 }
                 rssfeed(bot, msg, "http://twitrss.me/twitter_user_to_rss/?user=" + user, count, false);
             } else {
-                console.log(prettyDate() + "[WARN] Twitter parameters not provided in " + msg.channel.server.name);
+                console.log(prettyDate(new Date()) + "[WARN] Twitter parameters not provided in " + msg.channel.server.name);
                 bot.sendMessage(msg.channel, msg.author + " You confuse me.");
             }
         }
@@ -139,7 +199,7 @@ var commands = {
         usage: "<video tags>",
         process: function(bot, msg, suffix) {
             if(!suffix) {
-                console.log(prettyDate() + "[WARN] User did not provide search term(s)");
+                console.log(prettyDate(new Date()) + "[WARN] User did not provide search term(s)");
                 bot.sendMessage(msg.channel, msg.author + " What should I search YouTube for?");
                 return;
             }
@@ -157,6 +217,17 @@ var commands = {
             bot.sendMessage(msg.channel, info);
         }
     },
+    // Says something
+    "say": {
+        usage: "<something>",
+        process: function(bot, msg, suffix) {
+            if(!suffix) {
+                bot.sendMessage(msg.channel, "\t\n");
+            } else {
+                bot.sendMessage(msg.channel, suffix);
+            }
+        }
+    },
     // Allows approved users (essentially bot admins) to change chatterbot engine
     "chatterbot": {
         usage: "<display or switch>",
@@ -167,13 +238,13 @@ var commands = {
                 var using = !cleverOn[msg.channel.server.id] ? "Mitsuku" : "Cleverbot";
                 
                 if(isSwitch) {
-                    console.log(prettyDate() + "[INFO] Switched to " + using + " in " + msg.channel.server.name);
+                    console.log(prettyDate(new Date()) + "[INFO] Switched to " + using + " in " + msg.channel.server.name);
                     bot.sendMessage(msg.channel,"Now using " + using + " for conversations.");
                 } else {
                     bot.sendMessage(msg.channel,"Currently using " + using + " for conversations.");
                 }
             } else {
-                console.log(prettyDate() + "[WARN] User is not a bot admin");
+                console.log(prettyDate(new Date()) + "[WARN] User is not a bot admin");
                 bot.sendMessage(msg.channel,msg.author + " Only my friends can do that.");
             }
         }
@@ -183,7 +254,7 @@ var commands = {
         usage: "<image tags>",
         process: function(bot, msg, suffix) {
             if(!suffix) {
-                console.log(prettyDate() + "[WARN] User did not provide search term(s)");
+                console.log(prettyDate(new Date()) + "[WARN] User did not provide search term(s)");
                 bot.sendMessage(msg.channel, msg.author + " I don't know what image to get...");
                 return;
             }
@@ -207,7 +278,7 @@ var commands = {
 		usage: "<GIF tags>",
 		process: function(bot, msg, suffix) {
             if(!suffix) {
-                console.log(prettyDate() + "[WARN] User did not provide search term(s)");
+                console.log(prettyDate(new Date()) + "[WARN] User did not provide search term(s)");
                 bot.sendMessage(msg.channel, msg.author + " I don't know of a GIF for nothing.");
                 return;
             }
@@ -220,7 +291,7 @@ var commands = {
                 if(typeof id !== "undefined") {
                     bot.sendMessage(msg.channel, "http://media.giphy.com/media/" + id + "/giphy.gif");
                 } else {
-                    console.log(prettyDate() + "[WARN] GIF not found for " + suffix);
+                    console.log(prettyDate(new Date()) + "[WARN] GIF not found for " + suffix);
                     bot.sendMessage(msg.channel, "The Internet has run out of memes :/");
                 }
 		    }, rating);
@@ -235,7 +306,7 @@ var commands = {
                 if(data) {
                     bot.sendMessage(msg.channel, "**" + suffix + "**: " + data.definition.replace("\r\n\r\n", "\n") + "\n*" + data.example.replace("\r\n\r\n", "\n") + "*\n`" + data.thumbs_up + " up, " + data.thumbs_down + " down`");
                 } else {
-                    console.log(prettyDate() + "[WARN] Definition not found in " + msg.channel.server.name);
+                    console.log(prettyDate(new Date()) + "[WARN] Definition not found in " + msg.channel.server.name);
                     bot.sendMessage(msg.channel, "Wtf?! Urban Dictionary doesn't have an entry for " + suffix);
                 }
             });
@@ -246,13 +317,13 @@ var commands = {
         usage: "<Wolfram|Alpha query>",
         process(bot, msg, suffix) {
             if(!suffix) {
-                console.log(prettyDate() + "[WARN] User did not provide Wolfram|Alpha query in " + msg.channel.server.name);
+                console.log(prettyDate(new Date()) + "[WARN] User did not provide Wolfram|Alpha query in " + msg.channel.server.name);
                 bot.sendMessage(msg.channel, msg.author + " I'm confused...");
                 return;
             }
             wolfram.ask({query: suffix}, function(err, results) {
                 if(err) {
-                    console.log(prettyDate() + "[ERROR] Unable to connect to Wolfram|Alpha");
+                    console.log(prettyDate(new Date()) + "[ERROR] Unable to connect to Wolfram|Alpha");
                     bot.sendMessage(msg.channel, "Unfortunately, I didn't get anything back from Wolfram|Alpha");
                 } else {
                     var info = ""
@@ -263,7 +334,7 @@ var commands = {
                         }
                         bot.sendMessage(msg.channel, info);
                     } catch(notFound) {
-                        console.log(prettyDate() + "[WARN] Could not find Wolfram|Alpha data for " + suffix + " in " + msg.channel.server.name);
+                        console.log(prettyDate(new Date()) + "[WARN] Could not find Wolfram|Alpha data for " + suffix + " in " + msg.channel.server.name);
                         bot.sendMessage(msg.channel, "Wolfram|Alpha has nothing.");
                     }
                 }
@@ -275,20 +346,20 @@ var commands = {
         usage: "<search terms>",
         process: function(bot, msg, suffix) {
             if(!suffix) {
-                console.log(prettyDate() + "[WARN] User did not provide search term(s) in " + msg.channel.server.name);
+                console.log(prettyDate(new Date()) + "[WARN] User did not provide search term(s) in " + msg.channel.server.name);
                 bot.sendMessage(msg.channel, msg.author + " You need to provide a search term.");
                 return;
             }
             new Wiki().search(suffix,1).then(function(data) {
                 if(data.results.length==0) {
-                    console.log(prettyDate() + "[WARN] Wikipedia article not found for " + suffix);
+                    console.log(prettyDate(new Date()) + "[WARN] Wikipedia article not found for " + suffix);
                     bot.sendMessage(msg.channel, "I don't think Wikipedia has an article on that.");
                     return;
                 }
                 new Wiki().page(data.results[0]).then(function(page) {
                     page.summary().then(function(summary) {
                         if(summary.indexOf(" may refer to:") > -1 || summary.indexOf(" may stand for:") > -1) {
-                            console.log(prettyDate() + "[WARN] Ambiguous search term provided");
+                            console.log(prettyDate(new Date()) + "[WARN] Ambiguous search term provided");
                             bot.sendMessage(msg.channel, "There are several matching Wikipedia articles; try making your query more specific.");
                         } else {
                             var sumText = summary.split('\n');
@@ -305,7 +376,7 @@ var commands = {
                     });
                 });
             }, function(err) {
-                console.log(prettyDate() + "[ERROR] Unable to connect to Wikipedia");
+                console.log(prettyDate(new Date()) + "[ERROR] Unable to connect to Wikipedia");
                 bot.sendMessage(msg.channel, "Uhhh...Something went wrong :(");
             });
         }
@@ -316,7 +387,7 @@ var commands = {
         process: function(bot, msg, suffix) {
             var toi = suffix.lastIndexOf(" to ");
             if(toi==-1) {
-                console.log(prettyDate() + "[WARN] User used incorrect syntax");
+                console.log(prettyDate(new Date()) + "[WARN] User used incorrect syntax");
                 bot.sendMessage(msg.channel, msg.author + " Sorry, I didn't get that. Make sure you're using the right syntax: `@" + bot.user.username + " <no.> <unit> to <unit>`");
             } else {
                 try {
@@ -325,7 +396,7 @@ var commands = {
                     var end = suffix.substring(suffix.lastIndexOf(" ")+1).toLowerCase();
                     
                     if(isNaN(num)) {
-                        console.log(prettyDate() + "[WARN] User did not provide a numeric quantity");
+                        console.log(prettyDate(new Date()) + "[WARN] User did not provide a numeric quantity");
                         bot.sendMessage(msg.channel, msg.author + " That's not a number...");
                         return;
                     }
@@ -335,10 +406,10 @@ var commands = {
                             return;
                         }
                     }
-                    console.log(prettyDate() + "[WARN] Unsupported unit(s)");
+                    console.log(prettyDate(new Date()) + "[WARN] Unsupported unit(s)");
                     bot.sendMessage(msg.channel, msg.author + " I don't support that unit, try something else.");
                 } catch(err) {
-                    console.log(prettyDate() + "[WARN] User used incorrect syntax");
+                    console.log(prettyDate(new Date()) + "[WARN] User used incorrect syntax");
                     bot.sendMessage(msg.channel, msg.author + " Are you sure you're using the correct syntax?");
                 }
             }
@@ -349,7 +420,7 @@ var commands = {
         usage: "<stock symbol>",
         process: function(bot, msg, suffix) {
             if(!suffix) {
-                console.log(prettyDate() + "[WARN] User did not provide stock symbol");
+                console.log(prettyDate(new Date()) + "[WARN] User did not provide stock symbol");
                 bot.sendMessage(msg.channel, msg.author + " You never gave me a stock symbol! I'm not a magician, you know.");
                 return;
             }
@@ -357,12 +428,12 @@ var commands = {
             .header("Accept", "application/json")
             .end(function(result) {
                 if(result.status==200 && JSON.parse(result.raw_body).list.resources[0]) {
-                    var stats = JSON.parse(result.raw_body).list.resources[0].resource.fields;
-                    var info = stats.issuer_name + " (" + stats.symbol + ")\n\t$" + (Math.round((stats.price)*100)/100) + "\n\t";
-                    info += " " + (Math.round((stats.change)*100)/100) + " (" + (Math.round((stats.chg_percent)*100)/100) + "%)\n\t$" + (Math.round((stats.day_low)*100)/100) + "-$" + (Math.round((stats.day_high)*100)/100);
+                    var data = JSON.parse(result.raw_body).list.resources[0].resource.fields;
+                    var info = data.issuer_name + " (" + data.symbol + ")\n\t$" + (Math.round((data.price)*100)/100) + "\n\t";
+                    info += " " + (Math.round((data.change)*100)/100) + " (" + (Math.round((data.chg_percent)*100)/100) + "%)\n\t$" + (Math.round((data.day_low)*100)/100) + "-$" + (Math.round((data.day_high)*100)/100);
                     bot.sendMessage(msg.channel, info);
                 } else {
-                    console.log(prettyDate() + "[WARN] Stock symbol " + suffix + " not found")
+                    console.log(prettyDate(new Date()) + "[WARN] Stock symbol " + suffix + " not found")
                     bot.sendMessage(msg.channel, "Sorry, I can't find that stock symbol.");
                 }
             });
@@ -380,7 +451,7 @@ var commands = {
             }
             weather.find({search: location, degreeType: unit}, function(err, data) {
                 if(err) {
-                    console.log(prettyDate() + "[WARN] Could not find location " + location + " in " + msg.channel.server.name);
+                    console.log(prettyDate(new Date()) + "[WARN] Could not find location " + location + " in " + msg.channel.server.name);
                     bot.sendMessage(msg.channel, msg.author + " I can't find weather info for " + location);
                 } else {
                     data = data[0];
@@ -399,12 +470,12 @@ var commands = {
             } else if(configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1) {
                 botOn[msg.channel.server.id][msg.channel.id] = false;
             } else {
-                console.log(prettyDate() + "[WARN] User is not a bot admin");
+                console.log(prettyDate(new Date()) + "[WARN] User is not a bot admin");
                 bot.sendMessage(msg.channel,msg.author + " Sorry, I won't listen to you :P");
                 return;
             }
             bot.sendMessage(msg.channel, "Ok, I'll shut up.");
-            console.log(prettyDate() + "[INFO] Bot has been quieted by an admin in " + msg.channel.server.name);
+            console.log(prettyDate(new Date()) + "[INFO] Bot has been quieted by an admin in " + msg.channel.server.name);
         }
     },
     // Starts, ends, and answers live trivia game
@@ -415,12 +486,12 @@ var commands = {
             switch(suffix) {
                 case "start":
                     if(!triviaOn) {
-                        console.log(prettyDate() + "[INFO] Trivia game started in " + msg.channel.name + ", " + msg.channel.server.name);
+                        console.log(prettyDate(new Date()) + "[INFO] Trivia game started in " + msg.channel.name + ", " + msg.channel.server.name);
                         trivia[msg.channel.id] = {answer: "", attempts: 0, score: 0, possible: 0};
                         bot.sendMessage(msg.channel, "Welcome to **AwesomeTrivia**! Here's your first question: " + triviaQ(msg.channel.id) + "\nAnswer by tagging me like this: `@" + bot.user.username + " trivia <no. of choice>` or skip by doing this: `@" + bot.user.username + " trivia next`\nGood Luck!");
                         trivia[msg.channel.id].possible++;
                     } else {
-                        console.log(prettyDate() + "[WARN] Ongoing trivia game in channel " + msg.channel.name + ", " + msg.channel.server.name);
+                        console.log(prettyDate(new Date()) + "[WARN] Ongoing trivia game in channel " + msg.channel.name + ", " + msg.channel.server.name);
                         bot.sendMessage(msg.channel, "There's a trivia game already in progress on this server, in " + msg.channel.name);
                     }
                     break;
@@ -430,28 +501,28 @@ var commands = {
                         if(trivia[msg.channel.id].possible==1) {
                             outof = 1;
                         }
-                        console.log(prettyDate() + "[INFO] Trivia game ended in " + msg.channel.name + ", " + msg.channel.server.name);
+                        console.log(prettyDate(new Date()) + "[INFO] Trivia game ended in " + msg.channel.name + ", " + msg.channel.server.name);
                         bot.sendMessage(msg.channel, "Thanks for playing! Y'all got " + trivia[msg.channel.id].score + " out of " + outof);
                         delete trivia[msg.channel.id];
                     } else {
-                        console.log(prettyDate() + "[WARN] No ongoing trivia game to end in " + msg.channel.name + ", " + msg.channel.server.name);
+                        console.log(prettyDate(new Date()) + "[WARN] No ongoing trivia game to end in " + msg.channel.name + ", " + msg.channel.server.name);
                         bot.sendMessage(msg.channel, "There isn't a trivia game going on right now. Start one by typing `@" + bot.user.username + " trivia start`");
                     }
                     break;
                 case "next":
                     if(triviaOn) {
-                        console.log(prettyDate() + "[INFO] Trivia question skipped");
+                        console.log(prettyDate(new Date()) + "[INFO] Trivia question skipped");
                         bot.sendMessage(msg.channel, "The answer was " + trivia[msg.channel.id].answer + "\n**Next Question:** " + triviaQ(msg.channel.id));
                         trivia[msg.channel.id].possible++;
                     } else {
-                        console.log(prettyDate() + "[WARN] No ongoing trivia game in which to skip question in " + msg.channel.name + ", " + msg.channel.server.name);
+                        console.log(prettyDate(new Date()) + "[WARN] No ongoing trivia game in which to skip question in " + msg.channel.name + ", " + msg.channel.server.name);
                         bot.sendMessage(msg.channel, "There isn't a trivia game going on right now. Start one by typing `@" + bot.user.username + " trivia start`");
                     }
                     break;
                 default:
                     if(triviaOn) {
                         if(levenshtein.get(suffix.toLowerCase(), trivia[msg.channel.id].answer.toLowerCase())<3 && triviaOn) {
-                            console.log(prettyDate() + "[INFO] Correct trivia game answer in " + msg.channel.name + ", " + msg.channel.server.name);
+                            console.log(prettyDate(new Date()) + "[INFO] Correct trivia game answer in " + msg.channel.name + ", " + msg.channel.server.name);
                             bot.sendMessage(msg.channel, msg.author + " got it right! The answer is " + trivia[msg.channel.id].answer);
                             if(trivia[msg.channel.id].attempts<=2) {
                                 trivia[msg.channel.id].score++;
@@ -465,7 +536,7 @@ var commands = {
                             trivia[msg.channel.id].attempts++;
                         }
                     } else {
-                        console.log(prettyDate() + "[WARN] No ongoing trivia game to answer in " + msg.channel.name + ", " + msg.channel.server.name);
+                        console.log(prettyDate(new Date()) + "[WARN] No ongoing trivia game to answer in " + msg.channel.name + ", " + msg.channel.server.name);
                         bot.sendMessage(msg.channel, "There isn't a trivia game going on right now. Start one by typing `@" + bot.user.username + " trivia start`");
                     }
             }
@@ -508,7 +579,7 @@ var commands = {
             } else if(num<0) {
                 bot.sendMessage(msg.channel, msg.author + " Uh...Why don't you check that again?");
             }
-            console.log(prettyDate() + "[INFO] Reminder set by " + msg.author + " in " + num + time);
+            console.log(prettyDate(new Date()) + "[INFO] Reminder set by " + msg.author + " in " + num + time);
             bot.sendMessage(msg.channel, msg.author + " OK, I'll send you a PM in " + num + time.toLowerCase());
             
             var countdown = 0;
@@ -525,7 +596,7 @@ var commands = {
             }
             setTimeout(function() {
                 bot.sendMessage(msg.author, "**Reminder:** " + remind);
-                console.log(prettyDate() + "[INFO] Reminded user " + msg.author);
+                console.log(prettyDate(new Date()) + "[INFO] Reminded user " + msg.author);
             }, countdown);
         }
     },
@@ -566,11 +637,11 @@ var commands = {
                     var c = count;
                     for(var i=0; i<c; i++) {
                         if(!data[i] || !data[i].data || !data[i].data.score) {
-                            console.log(prettyDate() + "[WARN] Subreddit not found or Reddit unavailable");
+                            console.log(prettyDate(new Date()) + "[WARN] Subreddit not found or Reddit unavailable");
                             bot.sendMessage(msg.channel, "Surprisingly, I couldn't find anything in " + sub + " on reddit.");
                             return;
                         } else if(data[i].data.over_18 && configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].nsfwfilter.value && configs.servers[msg.channel.server.id].servermod.value) {
-                            console.log(prettyDate() + "[INFO] Handling filtered query from " + msg.author.username);
+                            console.log(prettyDate(new Date()) + "[INFO] Handling filtered query from " + msg.author.username);
                             kickUser(msg, "is abusing the bot", "attempting to fetch NSFW content");
                             return;
                         } else if(!data[i].data.stickied) {
@@ -582,7 +653,7 @@ var commands = {
                     }
                     bot.sendMessage(msg.channel, info);
                 } else {
-                    console.log(prettyDate() + "[WARN] Subreddit not found or Reddit unavailable");
+                    console.log(prettyDate(new Date()) + "[WARN] Subreddit not found or Reddit unavailable");
                     bot.sendMessage(msg.channel, "Surprisingly, I couldn't find anything in " + sub + " on reddit.");
                 }
             });
@@ -603,7 +674,7 @@ var commands = {
                 if(configs.servers[msg.channel.server.id].rss.value[2].indexOf(site.toLowerCase())>-1) {
                     rssfeed(bot,msg,configs.servers[msg.channel.server.id].rss.value[1][configs.servers[msg.channel.server.id].rss.value[2].indexOf(site.toLowerCase())], count, false);
                 } else {
-                    console.log(prettyDate() + "[WARN] Feed " + site + " not found");
+                    console.log(prettyDate(new Date()) + "[WARN] Feed " + site + " not found");
                     bot.sendMessage(msg.channel, msg.author + " Feed not found.");
                 }
             }
@@ -614,7 +685,7 @@ var commands = {
         usage: "<max no. inclusive>",
         process: function(bot, msg, suffix) {
             if(!suffix || suffix=="null" || isNaN(suffix) || suffix < 1) {
-                console.log(prettyDate() + "[WARN] User provided nonsensical parameter");
+                console.log(prettyDate(new Date()) + "[WARN] User provided nonsensical parameter");
                 bot.sendMessage(msg.channel, msg.author + " Wut.");
                 return;
             }
@@ -689,13 +760,17 @@ var commands = {
                                 info += ", " + details.roles[i].name;
                             }
                         }
-                        var joined = new Date(details.joinedAt);
-                        info += "\n\tJoined: " + (joined.getMonth()+1) + "/" + joined.getDate() + "/" + joined.getFullYear() + " " + joined.getHours() + ":" + joined.getMinutes();
+                        var joined = prettyDate(new Date(details.joinedAt));
+                        info += "\n\tJoined: " + joined.substring(1, joined.length-2);
+                        if(msg.author.status!="online" && configs.servers[msg.channel.server.id].stats.value) {
+                            var seen = prettyDate(new Date(stats[msg.channel.server.id].members[msg.author.id].seen));
+                            info += "\n\tLast seen: " + seen.substring(1, seen.length-2);
+                        }
                     }
                     bot.sendMessage(msg.channel, info);
                 });
             } else {
-                console.log(prettyDate() + "[WARN] Requested member does not exist");
+                console.log(prettyDate(new Date()) + "[WARN] Requested member does not exist");
                 bot.sendMessage(msg.channel, "That user doesn't exist :/");
             }
         }
@@ -717,7 +792,7 @@ function rssfeed(bot, msg, url, count, full) {
     var feedparser = new FeedParser();
     request(url).pipe(feedparser);
     feedparser.on('error', function(error){
-        console.log(prettyDate() + "[ERROR] Failed to read requested feed.");
+        console.log(prettyDate(new Date()) + "[ERROR] Failed to read requested feed.");
         bot.sendMessage(msg.channel, "Failed to read feed. Sorry.");
     });
     var shown = 0;
@@ -752,17 +827,32 @@ bot.on("ready", function() {
         if(!configs.servers[bot.servers[i].id]) {
             defaultConfig(bot.servers[i]);
         }
+        for(var j=0; j<bot.servers[i].members; j++) {
+            if(!stats[bot.servers[i].id].members[bot.servers[i].members[j].id]) {
+                stats[bot.servers[i].id].members[bot.servers[i].members[j].id] = {
+                    messages: 0,
+                    seen: new Date().getTime(),
+                    mentions: []
+                };
+            }
+        }
         checkConfig(bot.servers[i]);
         cleverOn[bot.servers[i].id] = true;
         spams[bot.servers[i].id] = {};
-        clearMessageCounter();
         botOn[bot.servers[i].id] = {};
         for(var j=0; j<bot.servers[i].channels.length; j++) {
             botOn[bot.servers[i].id][bot.servers[i].channels[j].id] = true;
         }
-        bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
+        //bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
         bot.stopTyping(bot.servers[i].defaultChannel);
     }
+    
+    // Start message and stat tallies
+    if(!stats.timestamp) {
+        stats.timestamp = new Date().getTime();
+    }
+    clearMessageCounter();
+    clearStatCounter();
     
     // Set playing game if applicable
     if(configs.game && configs.game!="") {
@@ -799,30 +889,92 @@ bot.on("ready", function() {
                 }
                 html += "</div><br><button onclick='javascript:location.reload()'>Refresh</button>&nbsp;<button onclick='javascript:invertColors();'>Toggle Colors</button><br><br><i>Created by @anandroiduser, <a href='https://git.io/v2e1w'>https://git.io/v2e1w</a></i></body></html>";
             } catch(err) {
-                console.log(prettyDate() + "[ERROR] Failed to write web interface");
+                console.log(prettyDate(new Date()) + "[ERROR] Failed to write web interface");
                 html = bot.user.username + " v" + version + " running for " + secondsToString(bot.uptime/1000);
             }
             response.end(html);
         }
     });
     server.listen(server_port, server_ip_address, function() {
-        console.log(prettyDate() + "[INFO] Opened web interface on " + server_ip_address + ", server port " + server_port)
+        console.log(prettyDate(new Date()) + "[INFO] Opened web interface on " + server_ip_address + ", server port " + server_port)
     });
     
     // Ready to go!
-	console.log(prettyDate() + "[INFO] Connected, serving in " + bot.channels.length + " channels");
+	console.log(prettyDate(new Date()) + "[INFO] Connected, serving in " + bot.channels.length + " channels");
 });
 
 bot.on("message", function (msg, user) {
     try {
         // Stuff that only applies to PMs
         if(msg.channel.isPrivate) {
+            // Update command from maintainer
+            if(updateconsole && msg.author.id==configs.maintainer && msg.content=="update") {
+                console.log(prettyDate(new Date()) + "[INFO] Updating " + bot.user.username + ":");
+	            var spawn = require("child_process").spawn;
+                var log = function(err, stdout, stderr) {
+                    if(stdout) {
+                        console.log(stdout);
+                    }
+                    if(stderr) {
+                        console.log(stderr);
+                    }
+                };
+                var fetch = spawn("git", ["fetch"]);
+                fetch.stdout.on("data", function(data) {
+                    console.log(data.toString());
+                });
+                fetch.on("close", function(code) {
+                    var checkout = spawn("git", ["checkout","--", "start.js", "package.json"]);
+                    checkout.stdout.on("data", function(data) {
+                        console.log(data.toString());
+                    });
+                    checkout.on("close", function(code) {
+                        console.log("Done with the git stuff, but this might not work");
+                        var npm = spawn("npm", ["install"]);
+                        npm.stdout.on("data", function(data) {
+                            console.log(data.toString());
+                        });
+                        npm.on("close", function(code) {
+                            console.log(prettyDate(new Date()) + "[INFO] Successfully updated");
+                            bot.sendMessage(msg.channel, "Done! Shutting down...", function() {
+                                bot.logout(function() {
+                                    process.exit();
+                                });
+                            });
+                        });
+                    });
+                });
+                console.log(prettyDate(new Date()) + "[ERROR] Could not update " + bot.user.username);
+                bot.sendMessage(msg.channel, "Something went wrong, could not update.");
+            }
+            
+            // Change bot playing game
+            if(msg.author.id==configs.maintainer && msg.content.indexOf("game ")==0 && msg.content.length>5) {
+                var game = msg.content.substring(msg.content.indexOf(" ")+1);
+                bot.setStatus("online", game);
+                if(game==".") {
+                    game = "";
+                    bot.setStatus("online", null);
+                }
+                console.log(prettyDate(new Date()) + "[INFO] Set bot game to \"" + game + "\"");
+                configs.game = game;
+                saveData("./config.json", function(err) {
+                    if(err) {
+                        console.log(prettyDate(new Date()) + "[ERROR] Could not save new config");
+                        bot.sendMessage(msg.channel, "An unknown error occurred *saving* that change :crying_cat_face:");
+                    } else {
+                        bot.sendMessage(msg.channel, game=="" ? "Ok, removed game from status" : ("Ok, now I'm playing `" + game + "`"));
+                    }
+                });
+                return;
+            }
+            
             // Admin control panel, check to make sure we're on PM and config command was valid
             if(msg.content.indexOf("config ")>-1 && msg.content.length>7 && !adminconsole[msg.author.id]) {
                 var svr = bot.servers.get("name", msg.content.substring(msg.content.indexOf(" ")+1));
                 // Check if specified server exists
                 if(!svr) {
-                    console.log(prettyDate() + "[WARN] User " + msg.author.username + " provided invalid server for admin console");
+                    console.log(prettyDate(new Date()) + "[WARN] User " + msg.author.username + " provided invalid server for admin console");
                     bot.sendMessage(msg.channel, "Sorry, invalid server. Try again?");
                 // Check if sender is an admin of the specified server
                 } else if(configs.servers[svr.id].admins.value.indexOf(msg.author.id)>-1) {
@@ -830,7 +982,7 @@ bot.on("message", function (msg, user) {
                     if(!activeAdmins(svr.id)) {
                         // Ok, all conditions met, logged into admin console
                         adminconsole[msg.author.id] = svr.id;
-                        console.log(prettyDate() + "[INFO] Admin wizard launched by " + msg.author.username + " for " + svr.name);
+                        console.log(prettyDate(new Date()) + "[INFO] Admin wizard launched by " + msg.author.username + " for " + svr.name);
                         
                         // Display options for the admin
                         var info = "Welcome to the admin console for server " + svr.name + ". Your options are:";
@@ -849,17 +1001,17 @@ bot.on("message", function (msg, user) {
                         bot.sendMessage(msg.channel, info);
                         admintime[msg.author.id] = setTimeout(function() {
                             if(adminconsole[msg.author.id]) {
-                                console.log(prettyDate() + "[INFO] Timeout on " + msg.author.username + "'s admin console session for " + svr.name);
+                                console.log(prettyDate(new Date()) + "[INFO] Timeout on " + msg.author.username + "'s admin console session for " + svr.name);
                                 delete adminconsole[msg.author.id];
                                 bot.sendMessage(msg.channel, "It's been 3 minutes, so I'm assuming you're done here. Goodbye!");
                             }
                         }, 180000);
                     } else {
-                        console.log(prettyDate() + "[WARN] Admin console for " + svr.name + " already active");
+                        console.log(prettyDate(new Date()) + "[WARN] Admin console for " + svr.name + " already active");
                         bot.sendMessage(msg.channel, "Another admin is in the console already. Please try again later.");
                     }
                 } else {
-                    console.log(prettyDate() + "[WARN] User " + msg.author.username + " is not a bot admin of " + svr.name);
+                    console.log(prettyDate(new Date()) + "[WARN] User " + msg.author.username + " is not a bot admin of " + svr.name);
                     bot.sendMessage(msg.channel, "You are not an admin for that server.");
                 }
                 return;
@@ -868,7 +1020,7 @@ bot.on("message", function (msg, user) {
                 clearTimeout(admintime[msg.author.id]);
                 admintime[msg.author.id] = setTimeout(function() {
                     if(adminconsole[msg.author.id]) {
-                        console.log(prettyDate() + "[INFO] Timeout on " + msg.author.username + "'s admin console session for " + svr.name);
+                        console.log(prettyDate(new Date()) + "[INFO] Timeout on " + msg.author.username + "'s admin console session for " + svr.name);
                         delete adminconsole[msg.author.id];
                         bot.sendMessage(msg.channel, "It's been 3 minutes, so I'm assuming you're done here. Goodbye!");
                     }
@@ -929,15 +1081,15 @@ bot.on("message", function (msg, user) {
                             }
                             
                             if(validity) {
-                                console.log(prettyDate() + "[WARN] Extension by " + msg.author.username + " is invalid: " +  validity);
+                                console.log(prettyDate(new Date()) + "[WARN] Extension by " + msg.author.username + " is invalid: " +  validity);
                                 bot.sendMessage(msg.channel, "Well, that didn't work. Here's the error: `" + validity + "`");
                             } else {
                                 configs.servers[svr.id].extensions[extension.name] = extension;
-                                console.log(prettyDate() + "[INFO] Extension " + extension.name + " added to server " + svr.name);
+                                console.log(prettyDate(new Date()) + "[INFO] Extension " + extension.name + " added to server " + svr.name);
                                 delete configs.servers[svr.id].extensions[extension.name].name;
-                                saveConfig("./config.json", function(err) {
+                                saveData("./config.json", function(err) {
                                     if(err) {
-                                        console.log(prettyDate() + "[ERROR] Could not save new config for " + svr.name);
+                                        console.log(prettyDate(new Date()) + "[ERROR] Could not save new config for " + svr.name);
                                         bot.sendMessage(msg.channel, "An unknown error occurred, but at least *your* code was fine");
                                     } else {
                                         var info = "Great, it works! You can use this extension on the server now.\nUpdated extension list:";
@@ -949,7 +1101,7 @@ bot.on("message", function (msg, user) {
                                 });
                             }
                         } catch(error) {
-                            console.log(prettyDate() + "[WARN] Invalid extension file provided by " + msg.author.username);
+                            console.log(prettyDate(new Date()) + "[WARN] Invalid extension file provided by " + msg.author.username);
                             bot.sendMessage(msg.channel, "Hmmm, couldn't process that. Make sure the file is a valid JSON.");
                         }
                     });
@@ -962,12 +1114,12 @@ bot.on("message", function (msg, user) {
                         suffix = msg.content.substring(msg.content.indexOf(" ")+1);
                     }
                     if((Object.keys(configs.servers[svr.id]).indexOf(n)==-1 && ["quit", "clean", "leave", "close", "extension", "list"].indexOf(n)==-1) || n=="extensions") {
-                        console.log(prettyDate() + "[WARN] " + msg.author.username + " provided an invalid admin console option");
+                        console.log(prettyDate(new Date()) + "[WARN] " + msg.author.username + " provided an invalid admin console option");
                         bot.sendMessage(msg.channel, "Invalid option, try again.");
                         return;
                     }
                     if(suffix=="" && ["quit", "remove", "leave", "close", "list"].indexOf(n)==-1) {
-                        console.log(prettyDate() + "[WARN] " + msg.author.username + " did not provide a parameter for option " + n);
+                        console.log(prettyDate(new Date()) + "[WARN] " + msg.author.username + " did not provide a parameter for option " + n);
                         bot.sendMessage(msg.channel, "Missing parameter. Please see your options above.");
                         return;
                     }
@@ -978,7 +1130,7 @@ bot.on("message", function (msg, user) {
                         case "quit":
                             delete adminconsole[msg.author.id];
                             bot.sendMessage(msg.channel, "Goodbye!");
-                            console.log(prettyDate() + "[INFO] Admin wizard for " + svr.name + " closed");
+                            console.log(prettyDate(new Date()) + "[INFO] Admin wizard for " + svr.name + " closed");
                             return;
                         // Add/remove users from admins list for this server
                         case "admins":
@@ -989,15 +1141,15 @@ bot.on("message", function (msg, user) {
                             }
                             var info = "";
                             if(!usr) {
-                                console.log(prettyDate() + "[WARN] Member not found for admin list in " + svr.name);
+                                console.log(prettyDate(new Date()) + "[WARN] Member not found for admin list in " + svr.name);
                                 bot.sendMessage(msg.channel, "Sorry, no such user.");
                                 return;
                             } else if(configs.servers[svr.id].admins.value.indexOf(usr.id)>0) {
-                                console.log(prettyDate() + "[INFO] Removed " + usr.username + " as a bot admin in " + svr.name);
+                                console.log(prettyDate(new Date()) + "[INFO] Removed " + usr.username + " as a bot admin in " + svr.name);
                                 configs.servers[svr.id].admins.value.splice(configs.servers[svr.id].admins.value.indexOf(usr.id), 1);
                                 info += usr.username + " is no longer a server admin.";
                             } else {
-                                console.log(prettyDate() + "[INFO] Added " + usr.username + " as a bot admin in " + svr.name);
+                                console.log(prettyDate(new Date()) + "[INFO] Added " + usr.username + " as a bot admin in " + svr.name);
                                 configs.servers[svr.id].admins.value[configs.servers[svr.id].admins.value.length] = usr.id;
                                 info += usr.username + " is now a server admin.";
                             }
@@ -1005,9 +1157,9 @@ bot.on("message", function (msg, user) {
                             for(var i=0; i<configs.servers[svr.id].admins.value.length; i++) {
                                 info += "\n\t" + bot.users.get("id", configs.servers[svr.id].admins.value[i]).username + ", ID " + configs.servers[svr.id].admins.value[i];
                             }
-                            saveConfig("./config.json", function(err) {
+                            saveData("./config.json", function(err) {
                                 if(err) {
-                                    console.log(prettyDate() + "[ERROR] Could not save new config for " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[ERROR] Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "An unknown error occurred.");
                                 } else {
                                     bot.sendMessage(msg.channel, info);
@@ -1023,22 +1175,22 @@ bot.on("message", function (msg, user) {
                             }
                             var info = "";
                             if(!usr) {
-                                console.log(prettyDate() + "[WARN] Member not found to block in " + svr.name);
+                                console.log(prettyDate(new Date()) + "[WARN] Member not found to block in " + svr.name);
                                 bot.sendMessage(msg.channel, "Sorry, no such user.");
                                 return;
                             } else if(configs.servers[svr.id].blocked.value.indexOf(usr.id)>-1) {
-                                console.log(prettyDate() + "[INFO] Unblocked " + usr.username + " in " + svr.name);
+                                console.log(prettyDate(new Date()) + "[INFO] Unblocked " + usr.username + " in " + svr.name);
                                 configs.servers[svr.id].blocked.value.splice(configs.servers[svr.id].blocked.value.indexOf(usr.id), 1);
                                 info += "Removed user " + usr.username + " from blocked list.";
                             } else {
                                 if(configs.servers[svr.id].blocked.value.indexOf(usr.id)>-1) {
-                                    console.log(prettyDate() + "[WARN] " + usr.username + " cannot block another bot admin in " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[WARN] " + usr.username + " cannot block another bot admin in " + svr.name);
                                     bot.sendMessage(msg.channel, "You can't block other bot admins in the server. That would be mean.");
                                 } else if(usr.id == msg.author.id) {
-                                    console.log(prettyDate() + "[WARN] " + usr.username + " cannot block themselves in " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[WARN] " + usr.username + " cannot block themselves in " + svr.name);
                                     bot.sendMessage(msg.channel, "You can't block yourself! Lol");
                                 } else {
-                                    console.log(prettyDate() + "[INFO] Blocked " + usr.username + " in " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[INFO] Blocked " + usr.username + " in " + svr.name);
                                     configs.servers[svr.id].blocked.value[configs.servers[svr.id].blocked.value.length] = usr.id;
                                     info += "Blocked user " + usr.username + " from using this bot in this server.";
                                 }
@@ -1050,9 +1202,9 @@ bot.on("message", function (msg, user) {
                             if(configs.servers[svr.id].blocked.value.length==0) {
                                 info += "\n\tNo users are blocked.";
                             }
-                            saveConfig("./config.json", function(err) {
+                            saveData("./config.json", function(err) {
                                 if(err) {
-                                    console.log(prettyDate() + "[ERROR] Could not save new config for " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[ERROR] Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "An unknown error occurred.");
                                 } else {
                                     bot.sendMessage(msg.channel, info);
@@ -1069,12 +1221,12 @@ bot.on("message", function (msg, user) {
                                 configs.servers[svr.id].newgreeting.value = suffix;
                                 info = "will now include: `" + suffix + "`";
                             }
-                            saveConfig("./config.json", function(err) {
+                            saveData("./config.json", function(err) {
                                 if(err) {
-                                    console.log(prettyDate() + "[ERROR] Could not save new config for " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[ERROR] Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "An unknown error occurred.");
                                 } else {
-                                    console.log(prettyDate() + "[INFO] New greeting in " + svr.name + ": " + suffix);
+                                    console.log(prettyDate(new Date()) + "[INFO] New greeting in " + svr.name + ": " + suffix);
                                     bot.sendMessage(msg.channel, "The greeting message for new members " + info);
                                 }
                             });
@@ -1083,42 +1235,46 @@ bot.on("message", function (msg, user) {
                         case "rss":
                             var info = "";
                             if(suffix.toLowerCase()=="y" || suffix.toLowerCase()=="n") {
+                                var prev = configs.servers[svr.id].rss.value[0] ? "y" : "n";
+                                var yn = suffix.toLowerCase()=="y" ? "on" : "off";
+                                if(suffix.toLowerCase()==prev) {
+                                    info = "Command `rss` is already " + yn;
+                                    bot.sendMessage(msg.channel, info);
+                                    return;
+                                }
                                 info = "Command `rss` has been turned ";
-                                var yn = "";
                                 if(suffix.toLowerCase()=="y") {
                                     configs.servers[svr.id].rss.value[0] = true;
-                                    yn = "on";
                                 } else if(suffix.toLowerCase()=="n") {
                                     configs.servers[svr.id].rss.value[0] = false;
-                                    yn = "off";
                                 }
                                 info += yn;
-                                console.log(prettyDate() + "[INFO] Command " + n + " turned " + yn + " in " + svr.name);
+                                console.log(prettyDate(new Date()) + "[INFO] Command " + n + " turned " + yn + " in " + svr.name);
                             } else if(suffix.indexOf(" ")>-1) {
                                 var url = suffix.substring(0, suffix.indexOf(" "));
                                 var nm = suffix.substring(suffix.indexOf(" ")+1);
                                 if(nm.indexOf(" ")>-1) {
-                                    console.log(prettyDate() + "[WARN] Invalid feed name provided in admin console for " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[WARN] Invalid feed name provided in admin console for " + svr.name);
                                     info += "Invalid feed name.";
                                 } else {
                                     configs.servers[svr.id].rss.value[1][configs.servers[svr.id].rss.value[1].length] = url;
                                     configs.servers[svr.id].rss.value[2][configs.servers[svr.id].rss.value[2].length] = nm;
-                                    console.log(prettyDate() + "[INFO] Feed " + nm + " added in " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[INFO] Feed " + nm + " added in " + svr.name);
                                     info += "Feed " + nm + " added.";
                                 }
                             } else {
                                 if(configs.servers[svr.id].rss.value[2].indexOf(suffix)>-1) {
                                     configs.servers[svr.id].rss.value[1].splice(configs.servers[svr.id].rss.value[2].indexOf(suffix), 1);
                                     configs.servers[svr.id].rss.value[2].splice(configs.servers[svr.id].rss.value[2].indexOf(suffix), 1);
-                                    console.log(prettyDate() + "[INFO] Feed " + suffix + " removed in " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[INFO] Feed " + suffix + " removed in " + svr.name);
                                     info += "Removed feed " + suffix;
                                 } else {
                                     info += "No matching feed found.";
                                 }
                             }
-                            saveConfig("./config.json", function(err) {
+                            saveData("./config.json", function(err) {
                                 if(err) {
-                                    console.log(prettyDate() + "[ERROR] Could not save new config for " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[ERROR] Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "There was an error saving your changes.");
                                 } else {
                                     bot.sendMessage(msg.channel, info);
@@ -1128,14 +1284,14 @@ bot.on("message", function (msg, user) {
                         // Clean past messages
                         case "clean":
                             if(suffix.indexOf(" ")==-1) {
-                                console.log(prettyDate() + "[WARN] " + msg.author.username + " did not provide a parameter for option " + n);
+                                console.log(prettyDate(new Date()) + "[WARN] " + msg.author.username + " did not provide a parameter for option " + n);
                                 bot.sendMessage(msg.channel, "Missing parameter. Make sure to include the number of messages to delete *and* the channel name.");
                                 return;
                             }
                             var ch = svr.channels.get("name", suffix.substring(0, suffix.indexOf(" ")));
                             var count = suffix.substring(suffix.indexOf(" ")+1);
                             if(isNaN(count) || !ch) {
-                                console.log(prettyDate() + "[WARN] " + msg.author.username + " provided incorrect parameter(s) for option " + count);
+                                console.log(prettyDate(new Date()) + "[WARN] " + msg.author.username + " provided incorrect parameter(s) for option " + count);
                                 bot.sendMessage(msg.channel, "You've made a terrible mistake! Something's wrong with your command...");
                                 return;
                             }
@@ -1145,13 +1301,13 @@ bot.on("message", function (msg, user) {
                         case "leave":
                             bot.leaveServer(svr, function(error) {
                                 if(error) {
-                                    console.log(prettyDate() + "[ERROR] Failed to leave server " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[ERROR] Failed to leave server " + svr.name);
                                     bot.sendMessage(msg.channel, "Failed to leave server.");
                                 } else {
                                     delete configs.servers[svr.id];
                                     delete messages[svr.id];
                                     delete cleverOn[svr.id];
-                                    console.log(prettyDate() + "[INFO] Left server " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[INFO] Left server " + svr.name);
                                     bot.sendMessage(msg.channel, bot.user.username + " has left " + svr.name);
                                 }
                             });
@@ -1162,7 +1318,7 @@ bot.on("message", function (msg, user) {
                                 if(trivia[svr.channels[i].id]) {
                                     bot.sendMessage(svr.channels[i], "Sorry to interrupt your game, but an admin has closed this trivia session.");
                                     commands["trivia"].process(bot, {"channel": svr.channels[i]}, "end");
-                                    console.log(prettyDate() + "[INFO] Closed trivia game in " + svr.channels[i].name + ", " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[INFO] Closed trivia game in " + svr.channels[i].name + ", " + svr.name);
                                     delete trivia[svr.channels[i].id];
                                     bot.sendMessage(msg.channel, "Closed a trivia game in " + svr.channels[i].name);
                                 }
@@ -1170,7 +1326,7 @@ bot.on("message", function (msg, user) {
                                 if(act) {
                                     bot.sendMessage(svr.channels[i], "The ongoing poll in this channel has been closed by an admin.");
                                     bot.sendMessage(svr.channels[i], pollResults(act, "The results are in", "and the winner is"));
-                                    console.log(prettyDate() + "[INFO] Closed active poll in " + svr.channels[i].name + ", " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[INFO] Closed active poll in " + svr.channels[i].name + ", " + svr.name);
                                     delete polls[act];
                                     bot.sendMessage(msg.channel, "Closed a poll in " + svr.channels[i].name);
                                 }
@@ -1180,18 +1336,18 @@ bot.on("message", function (msg, user) {
                         case "extension":
                             if(configs.servers[svr.id].extensions[suffix]) {
                                 delete configs.servers[svr.id].extensions[suffix];
-                                console.log(prettyDate() + "[INFO] Deleted extension " + suffix + " from " + svr.name);
+                                console.log(prettyDate(new Date()) + "[INFO] Deleted extension " + suffix + " from " + svr.name);
                                 var info = "Deleted extension " + suffix + " from this server.\nUpdated extension list:";
                                 for(var ext in configs.servers[svr.id].extensions) {
                                     info += "\n\t" + ext + ", " + configs.servers[svr.id].extensions[ext].type;
                                 }
                             } else {
-                                console.log(prettyDate() + "[WARN] Extension " + suffix + " not found in " + svr.name);
+                                console.log(prettyDate(new Date()) + "[WARN] Extension " + suffix + " not found in " + svr.name);
                                 bot.sendMessage(msg.channel, "Extension " + suffix + " isn't on this server.");
                             }
-                            saveConfig("./config.json", function(err) {
+                            saveData("./config.json", function(err) {
                                 if(err) {
-                                    console.log(prettyDate() + "[ERROR] Could not save new config for " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[ERROR] Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "There was an error saving your changes.");
                                 } else {
                                     bot.sendMessage(msg.channel, info);
@@ -1257,25 +1413,30 @@ bot.on("message", function (msg, user) {
                             break;
                         // Commands settings (other than ones listed prior)
                         default:
-                            var info = "Command `" + n + "` has been turned ";
-                            var yn = "";
+                            var prev = configs.servers[svr.id].rss.value[0] ? "y" : "n";
+                            var yn = suffix.toLowerCase()=="y" ? "on" : "off";
+                            var info = "";
+                            if(suffix.toLowerCase()==prev) {
+                                info = "Command `" + n + "` is already " + yn;
+                                bot.sendMessage(msg.channel, info);
+                                return;
+                            }
+                            info = "Command `" + n + "` has been turned ";
                             if(suffix.toLowerCase()=="y") {
                                 configs.servers[svr.id][n].value = true;
-                                yn = "on";
                                 info += yn;
                             } else if(suffix.toLowerCase()=="n") {
                                 configs.servers[svr.id][n].value = false;
-                                yn = "off";
                                 info += yn;
                             } else {
-                                console.log(prettyDate() + "[WARN] Invalid parameter provided for admin console in " + svr.name);
+                                console.log(prettyDate(new Date()) + "[WARN] Invalid parameter provided for admin console in " + svr.name);
                                 bot.sendMessage(msg.channel, "Invalid parameter, must be `y` or `n`.");
                                 return;
                             }
-                            console.log(prettyDate() + "[INFO] Command " + n + " turned " + yn + " in " + svr.name);
-                            saveConfig("./config.json", function(err) {
+                            console.log(prettyDate(new Date()) + "[INFO] Command " + n + " turned " + yn + " in " + svr.name);
+                            saveData("./config.json", function(err) {
                                 if(err) {
-                                    console.log(prettyDate() + "[ERROR] Could not save new config for " + svr.name);
+                                    console.log(prettyDate(new Date()) + "[ERROR] Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "There was an error saving your changes.");
                                 } else {
                                     bot.sendMessage(msg.channel, info);
@@ -1290,21 +1451,21 @@ bot.on("message", function (msg, user) {
             // Add information to user profile
             if(msg.content.indexOf("profile ")==0) {
                 if(msg.content.indexOf(",")==-1) {
-                    console.log(prettyDate() + "[WARN] User " + msg.author.username + " did not specify parameters for profile data");
+                    console.log(prettyDate(new Date()) + "[WARN] User " + msg.author.username + " did not specify parameters for profile data");
                     bot.sendMessage(msg.channel, "Please include the name of the value as well as the value itself, separated by a comma.");
                     return;
                 }
                 var key = msg.content.substring(8,msg.content.indexOf(","));
                 var value = msg.content.substring(msg.content.indexOf(",")+1);
                 if(["id", "status", "avatar"].indexOf(key.toLowerCase())>-1) {
-                    console.log(prettyDate() + "[WARN] User " + msg.author.username + " tried to assign default profile value");
+                    console.log(prettyDate(new Date()) + "[WARN] User " + msg.author.username + " tried to assign default profile value");
                     bot.sendMessage(msg.channel, "You can't change the value for " + key);
                     return;
                 }
                 var info = "";
                 if(value==".") {
                     if(!profileData[msg.author.id]) {
-                        console.log(prettyDate() + "[WARN] " + msg.author.username + " tried to delete a nonexistent profile value");
+                        console.log(prettyDate(new Date()) + "[WARN] " + msg.author.username + " tried to delete a nonexistent profile value");
                         bot.sendMessage(msg.channel, "I didn't have anything for " + key + " in the first place.");
                         return;
                     }
@@ -1317,12 +1478,12 @@ bot.on("message", function (msg, user) {
                     info = "Alright, got it! PM me `" + key + ",.` to delete that.";
                     profileData[msg.author.id][key] = value;
                 }
-                saveConfig("./data.json", function(err) {
+                saveData("./profiles.json", function(err) {
                     if(err) {
-                        console.log(prettyDate() + "[ERROR] Failed to save profile data for " + msg.author.username);
+                        console.log(prettyDate(new Date()) + "[ERROR] Failed to save profile data for " + msg.author.username);
                         bot.sendMessage(msg.channel, "Uh-oh, something went wrong. It wasn't you though.");
                     } else {
-                        console.log(prettyDate() + "[INFO] Saved " + key + " for " + msg.author.username);
+                        console.log(prettyDate(new Date()) + "[INFO] Saved " + key + " for " + msg.author.username);
                         bot.sendMessage(msg.channel, info);
                     }
                 });
@@ -1335,10 +1496,10 @@ bot.on("message", function (msg, user) {
                     bot.startTyping(msg.channel);
                     bot.joinServer(msg.content, function(error, server) {
                         if(error) {
-                            console.log(prettyDate() + "[WARN] Failed to join new server, most likely user error");
+                            console.log(prettyDate(new Date()) + "[WARN] Failed to join new server, most likely user error");
                             bot.sendMessage(msg.channel, "Failed to join server. Please check your invite URL.");
                         } else {
-                            console.log(prettyDate() + "Joined server " + server.name);
+                            console.log(prettyDate(new Date()) + "[INFO] Joined server " + server.name);
                             defaultConfig(server);
                             messages[server.id] = 0;
                             cleverOn[server.id] = 0;
@@ -1352,7 +1513,7 @@ bot.on("message", function (msg, user) {
                         bot.stopTyping(msg.channel);
                     });
                 } catch(err) {
-                    console.log(prettyDate() + "[ERROR] Failed to join new server");
+                    console.log(prettyDate(new Date()) + "[ERROR] Failed to join new server");
                     bot.sendMessage(msg.channel, "Failed to join server. I might be terminally ill...");
                 }
             }
@@ -1369,31 +1530,31 @@ bot.on("message", function (msg, user) {
 
                 // Clear out all the poll stuff
                 delete polls[msg.author.id];
-                console.log(prettyDate() + "[INFO] Poll ended in " + ch.name + ", " + ch.server.name);
+                console.log(prettyDate(new Date()) + "[INFO] Poll ended in " + ch.name + ", " + ch.server.name);
                 return;
             }
             // Starts a poll in a given channel via private message
             if(msg.author.id != bot.user.id && msg.content.toLowerCase().indexOf("poll")==0) {
                 var svr = bot.servers.get("name", msg.content.substring(msg.content.indexOf(" ")+1, msg.content.lastIndexOf(" ")));
                 if(!svr) {
-                    console.log(prettyDate() + "[WARN] Invalid server provided by " + msg.author.username + " for new poll");
+                    console.log(prettyDate(new Date()) + "[WARN] Invalid server provided by " + msg.author.username + " for new poll");
                     bot.sendMessage(msg.channel, "That server doesn't exist or I'm not on it.");
-                } else {
+                } else if(configs.servers[svr.id].blocked.value.indexOf(msg.author.id)==-1) {
                     var ch = svr.channels.get("name", msg.content.substring(msg.content.lastIndexOf(" ")+1));
                     if(!ch) {
-                        console.log(prettyDate() + "[WARN] Invalid channel provided by " + msg.author.username + " for new poll");
+                        console.log(prettyDate(new Date()) + "[WARN] Invalid channel provided by " + msg.author.username + " for new poll");
                         bot.sendMessage(msg.channel, "Invalid channel.");
                     } else if(botOn[svr.id][ch.id]) {
                         if(configs.servers[svr.id].poll.value) {
                             if(polls[msg.author.id]) {
-                                console.log(prettyDate() + "[WARN] " + msg.author.username + " has already started a poll");
+                                console.log(prettyDate(new Date()) + "[WARN] " + msg.author.username + " has already started a poll");
                                 bot.sendMessage(msg.channel, "You've already started a poll. Close it before starting a new one.");
                             } else if(!activePolls(ch.id)) {
                                 polls[msg.author.id] = {open: false, channel: ch.id, title: "", options: [], responderIDs: [], responses: []};
-                                console.log(prettyDate() + "[INFO] Poll started by " + msg.author.username + " in " + ch.name + ", " + ch.server.name);
+                                console.log(prettyDate(new Date()) + "[INFO] Poll started by " + msg.author.username + " in " + ch.name + ", " + ch.server.name);
                                 bot.sendMessage(msg.channel, "Enter the poll title or question:");
                             } else {
-                                console.log(prettyDate() + "[WARN] Poll already active in " + ch.name + ", " + ch.server.name);
+                                console.log(prettyDate(new Date()) + "[WARN] Poll already active in " + ch.name + ", " + ch.server.name);
                                 bot.sendMessage(msg.channel, "There's already a poll going on in that channel. Try again later.");
                             }
                         }
@@ -1431,17 +1592,58 @@ bot.on("message", function (msg, user) {
                 bot.sendMessage(ch, info);
                 return;
             }
+            
+            // Mentions command, for list of mentions and toggle
+            // TODO: mentions PM command, include mention message timestamps, rework mention stat clearing
         }
 
         // Stuff that only applies to public messages
         var extensionApplied = false;
-        if(!msg.channel.isPrivate) {
+        if(!msg.channel.isPrivate && msg.author.id!=bot.user.id) {
             // Count new message
             messages[msg.channel.server.id]++;
+            stats[msg.channel.server.id].members[msg.author.id].messages++;
+            saveData("./stats.json", function(err) {
+                if(err) {
+                    console.log(prettyDate(new Date()) + "[ERROR] Could not save updated stats");
+                }
+            });
+            
+            // Check if message includes a tag or attempted tag
+            if(msg.content.indexOf(bot.user.mention())==-1 && msg.content.indexOf("<@")>-1 && msg.content.indexOf(">")>(msg.content.indexOf("<@")+15)) {
+                var usrid = msg.content.substring(msg.content.indexOf("<@")+2);
+                usrid = usrid.substring(0, usrnm.indexOf(">"));
+                var usr = msg.channel.server.members.get("id", usrid);
+                if(usr) {
+                    var mentions = stats[msg.channel.server.id].members[msg.author.id].mentions;
+                    if(mentions.timestamp==0) {
+                        mentions.timestamp = new Date().getTime();
+                    }
+                    mentions.stream[mentions.stream.length] = msg.content;
+                    if(mentions.pm) {
+                        bot.sendMessage(usr, "You were mentioned in a message on `" + msg.channel.server.name + "`:\n\n" + msg.content);
+                    }
+                }
+            } else if(msg.content.indexOf("@")>-1 && msg.content.substring(msg.content.indexOf("@")+1)) {
+                var usrnm = msg.content.substring(msg.content.indexOf("@")+1);
+                var usr = msg.channel.server.members.get("username", usrnm);
+                while(!usr && usrnm.length>0) {
+                    usrnm = usrnm.substring(0, usrnm.lastIndexOf(" "));
+                    usr = msg.channel.server.members.get("username", usrnm);
+                }
+                if(usr) {
+                    var mentions = stats[msg.channel.server.id].members[msg.author.id].mentions;
+                    if(mentions.timestamp==0) {
+                        mentions.timestamp = new Date().getTime();
+                    }
+                    mentions.stream[mentions.stream.length] = msg.content;
+                    bot.sendMessage(usr, "You were mentioned in a message on `" + msg.channel.server.name + "`:\n\n" + msg.content);
+                }
+            }
             
             // If start statement is issued, say hello and begin listening
             if(msg.content.indexOf(bot.user.mention()) == 0 && msg.content.indexOf("start") > -1 && configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1 && !botOn[msg.channel.server.id][msg.channel.id]) {
-                console.log(prettyDate() + "[INFO] Bot has been started by an admin in " + msg.channel.server.name);
+                console.log(prettyDate(new Date()) + "[INFO] Bot has been started by an admin in " + msg.channel.server.name);
                 botOn[msg.channel.server.id][msg.channel.id] = true;
                 bot.sendMessage(msg.channel, "Hello!");
                 return;
@@ -1464,17 +1666,17 @@ bot.on("message", function (msg, user) {
                         }, 45000);
                     // Add a message to the user's spam list if it is similar to the last one
                     } else if(levenshtein.get(spams[msg.channel.server.id][msg.author.id][spams[msg.channel.server.id][msg.author.id].length-1], msg.content)<3) {
-                        console.log(prettyDate() + "[INFO] Adding message from " + msg.author.username + " in " + msg.channel.server.name + " to their spam list");
+                        console.log(prettyDate(new Date()) + "[INFO] Adding message from " + msg.author.username + " in " + msg.channel.server.name + " to their spam list");
                         spams[msg.channel.server.id][msg.author.id][spams[msg.channel.server.id][msg.author.id].length] = msg.content;
                         
                         // First-time spam warning 
                         if(spams[msg.channel.server.id][msg.author.id].length == 5) {
-                            console.log(prettyDate() + "[INFO] Handling spam from " + msg.author.username);
+                            console.log(prettyDate(new Date()) + "[INFO] Handling spam from " + msg.author.username);
                             bot.sendMessage(msg.author, "Stop spamming. The chat mods have been notified about this.");
                             adminMsg(false, msg.channel.server, msg.author, " is spamming " + msg.channel.server.name);
                         // Second-time spam warning, bans user from using bot
                         } else if(spams[msg.channel.server.id][msg.author.id].length == 10) {
-                            console.log(prettyDate() + "[INFO] Blocking " + msg.author.username + " after second-time spam");
+                            console.log(prettyDate(new Date()) + "[INFO] Blocking " + msg.author.username + " after second-time spam");
                             kickUser(msg, "continues to spam " + msg.channel.server.name, "spamming");
                         }
                     }
@@ -1493,16 +1695,16 @@ bot.on("message", function (msg, user) {
                     } else {
                         var vt = msg.content.substring(msg.content.toLowerCase().indexOf("vote ")+5);
                         if(isNaN(vt)) {
-                            console.log(prettyDate() + "[WARN] User used incorrect voting syntax in " + msg.channel.name + ", " + msg.channel.server.name);
+                            console.log(prettyDate(new Date()) + "[WARN] User used incorrect voting syntax in " + msg.channel.name + ", " + msg.channel.server.name);
                             bot.sendMessage(msg.channel, msg.author + " Use the syntax `@" + bot.user.username + " vote <no. of choice>`");
                             return;
                         }
                         if(polls[act].responderIDs.indexOf(msg.author.id)==-1 && vt<polls[act].options.length && vt>=0) {
                             polls[act].responses[polls[act].responses.length] = vt;
                             polls[act].responderIDs[polls[act].responderIDs.length] = msg.author.id;
-                            console.log(prettyDate() + "[INFO] Vote cast for " + vt + " by " + msg.author.username + " in " + msg.channel.name + ", " + msg.channel.server.name);
+                            console.log(prettyDate(new Date()) + "[INFO] Vote cast for " + vt + " by " + msg.author.username + " in " + msg.channel.name + ", " + msg.channel.server.name);
                         } else {
-                            console.log(prettyDate() + "[WARN] Could not cast " + msg.author.username + "'s vote in " + msg.channel.name + ", " + msg.channel.server.name);
+                            console.log(prettyDate(new Date()) + "[WARN] Could not cast " + msg.author.username + "'s vote in " + msg.channel.name + ", " + msg.channel.server.name);
                             bot.sendMessage(msg.channel, msg.author + " I couldn't cast your vote.");
                         }
                     }
@@ -1521,7 +1723,7 @@ bot.on("message", function (msg, user) {
                     }
                     
                     if((extension.type.toLowerCase()=="keyword" && contains(extension.key, msg.content, extension.case)) || (extension.type.toLowerCase()=="command" && msg.content.indexOf(bot.user.mention() + " " + extension.key)==0)) {
-                        console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as an extension " + configs.servers[msg.channel.server.id].extensions[ext].type);
+                        console.log(prettyDate(new Date()) + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as an extension " + configs.servers[msg.channel.server.id].extensions[ext].type);
                         bot.startTyping(msg.channel);
                         extensionApplied = true;
                         
@@ -1550,14 +1752,14 @@ bot.on("message", function (msg, user) {
                                         wait(count);
                                     }, 100);
                                 } else if(count>30) {
-                                    console.log(prettyDate() + "[WARN] Extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + " produced no output");
+                                    console.log(prettyDate(new Date()) + "[WARN] Extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + " produced no output");
                                 } else {
                                     bot.sendMessage(msg.channel, params.send);
                                 }
                             };
                             wait(0);
                         } catch(runError) {
-                            console.log(prettyDate() + "[ERROR] Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + ": " + runError);
+                            console.log(prettyDate(new Date()) + "[ERROR] Failed to run extension " + configs.servers[msg.channel.server.id].extensions[ext].type + " in " + msg.channel.server.name + ": " + runError);
                         }
                         bot.stopTyping(msg.channel);
                         break;
@@ -1583,13 +1785,13 @@ bot.on("message", function (msg, user) {
                 
                 // Make sure query is not empty
                 if(apps.length==0) {
-                    console.log(prettyDate() + "[WARN] User did not provide an app to link in " + msg.channel.server.name);
+                    console.log(prettyDate(new Date()) + "[WARN] User did not provide an app to link in " + msg.channel.server.name);
                     bot.sendMessage(msg.channel, msg.author + " You need to give me an app to link!");
                     return;
                 }
                 
                 // Fetch app links
-                console.log(prettyDate() + "[INFO] " + msg.author.username + " requested the following app(s) in " + msg.channel.server.name + ": " + apps);
+                console.log(prettyDate(new Date()) + "[INFO] " + msg.author.username + " requested the following app(s) in " + msg.channel.server.name + ": " + apps);
                 bot.startTyping(msg.channel);
                 for(var i=0; i<apps.length; i++) {
                     var basePath = "https://play.google.com/store/search?&c=apps&q=" + apps[i] + "&hl=en";
@@ -1608,7 +1810,7 @@ bot.on("message", function (msg, user) {
                                 }
                                 send += " and rated " + data.items[0].rating + " stars: " + data.items[0].url + "\n";
                             } else {
-                                console.log(prettyDate() + "[WARN] App " + apps[i] + " not found to link in " + msg.channel.server.name);
+                                console.log(prettyDate(new Date()) + "[WARN] App " + apps[i] + " not found to link in " + msg.channel.server.name);
                                 send = msg.author + " Sorry, no such app exists.\n";
                             }
                             bot.stopTyping(msg.channel);
@@ -1645,10 +1847,10 @@ bot.on("message", function (msg, user) {
                 }
                 bot.startTyping(msg.channel);
                 if(filter.indexOf(suffix)>-1 && configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].nsfwfilter.value && configs.servers[msg.channel.server.id].servermod.value && cmdTxt!="reddit") {
-                    console.log(prettyDate() + "[INFO] Handling filtered query \"" + msg.content + "\" from " + msg.author.username + " in " +  msg.channel.server.name);
+                    console.log(prettyDate(new Date()) + "[INFO] Handling filtered query \"" + msg.content + "\" from " + msg.author.username + " in " +  msg.channel.server.name);
                     kickUser(msg, "is abusing the bot", "attempting to fetch NSFW content");
                 } else if(botOn[msg.channel.server.id][msg.channel.id]) {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as a command");
+                    console.log(prettyDate(new Date()) + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as a command");
                     cmd.process(bot, msg, suffix);
                 }
                 bot.stopTyping(msg.channel);
@@ -1658,9 +1860,9 @@ bot.on("message", function (msg, user) {
                     if(!configs.servers[msg.channel.server.id].chatterbot.value || !botOn[msg.channel.server.id][msg.channel.id]) {
                         return;
                     }
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as chatterbot prompt"); 
+                    console.log(prettyDate(new Date()) + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as chatterbot prompt"); 
                 } else {
-                    console.log(prettyDate() + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " as chatterbot prompt"); 
+                    console.log(prettyDate(new Date()) + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " as chatterbot prompt"); 
                 }
                 bot.startTyping(msg.channel);
                 
@@ -1723,15 +1925,28 @@ bot.on("message", function (msg, user) {
                 return;
             }
             if(msg.author != bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction.value && botOn[msg.channel.server.id][msg.channel.id]) {
-                console.log(prettyDate() + "[INFO] Tagged by " + msg.author.username + " in " + msg.channel.server.name);
+                console.log(prettyDate(new Date()) + "[INFO] Tagged by " + msg.author.username + " in " + msg.channel.server.name);
                 bot.sendMessage(msg.channel,msg.author + ", you called?");
             }
         }
     } catch(mainError) {
         bot.stopTyping(msg.channel);
-        console.log(prettyDate() + "[ERROR] Failed to process new message");
+        console.log(prettyDate(new Date()) + "[ERROR] Failed to process new message");
         console.log(mainError);
     }
+});
+
+// Add server if joined outisde of bot
+bot.on("serverCreated", function(svr) {
+    console.log(prettyDate(new Date()) + "[INFO] New server " + svr.name);
+    defaultConfig(svr);
+    messages[svr.id] = 0;
+    cleverOn[svr.id] = 0;
+    botOn[svr.id] = {};
+    for(var i=0; i<svr.channels; i++) {
+        botOn[svr.id][svr.channels[i].id] = true;
+    }
+    adminMsg(false, svr, configs.maintainer ? configs.maintainer : {username: "I"}, configs.maintainer ? (configs.maintainer + " has added me to ") : " have added myself to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out https://git.io/v2e1w to learn more.");
 });
 
 // Leave server if deleted
@@ -1739,24 +1954,38 @@ bot.on("serverDeleted", function(svr) {
     delete configs.servers[svr.id];
     delete messages[svr.id];
     delete cleverOn[svr.id];
-    console.log(prettyDate() + "[INFO] Server " + svr.name + " removed, left server");
+    console.log(prettyDate(new Date()) + "[INFO] Server " + svr.name + " removed, left server");
 });
 
 // New server member handling
 bot.on("serverNewMember", function(svr, usr) {
     // Check if this has been enabled in admin console and the bot is listening
     if(configs.servers[svr.id].servermod.value && botOn[svr.id][svr.defaultChannel.id]) {
-        console.log(prettyDate() + "[INFO] " + usr.username + " has joined " + svr.name);
+        console.log(prettyDate(new Date()) + "[INFO] " + usr.username + " has joined " + svr.name);
         bot.sendMessage(svr.defaultChannel, greetings[getRandomInt(0, greetings.length-1)].replace("++", usr));
         var info = "Welcome to the " + svr.name + " Discord chat! " + configs.servers[svr.id].newgreeting.value + "\n\nI'm " + bot.user.username + " by the way. You can interact with me in any of the channels by tagging me with `@" + bot.user.username + "` and then stating any one of the following commands:" + getHelp(svr);
         bot.sendMessage(usr, info);
     }
+    stats[svr.id].members[usr.id] = {
+        messages: 0,
+        seen: new Date().getTime(),
+        mentions: {
+            timestamp: 0,
+            pm: false,
+            stream: [],
+        }
+    };
+    saveData("./stats.json", function(err) {
+        if(err) {
+            console.log(prettyDate(new Date()) + "[ERROR] Could not save updated stats");
+        }
+    });
 });
 
 // Message on user banned
 bot.on("userBanned", function(usr, svr) {
     if(configs.servers[svr.id].servermod.value && botOn[svr.id][svr.defaultChannel.id]) {
-        console.log(prettyDate() + "[INFO] User " + usr.username + " has been banned from " + svr.name);
+        console.log(prettyDate(new Date()) + "[INFO] User " + usr.username + " has been banned from " + svr.name);
         bot.sendMessage(svr.defaultChannel, usr.username + " has been banned.");
     }
 });
@@ -1764,7 +1993,7 @@ bot.on("userBanned", function(usr, svr) {
 // Message on user unbanned
 bot.on("userUnbanned", function(usr, svr) {
     if(configs.servers[svr.id].servermod.value && botOn[svr.id][svr.defaultChannel.id]) {
-        console.log(prettyDate() + "[INFO] User " + usr.username + " has been unbanned from " + svr.name);
+        console.log(prettyDate(new Date()) + "[INFO] User " + usr.username + " has been unbanned from " + svr.name);
         bot.sendMessage(svr.defaultChannel, usr.username + " is no longer banned.");
     }
 });
@@ -1772,7 +2001,7 @@ bot.on("userUnbanned", function(usr, svr) {
 // Attempt authentication if disconnected
 bot.on("disconnected", function() {
     disconnects++;
-    console.log(prettyDate() + "[ERROR] Disconnected from Discord, will try again in 5s");
+    console.log(prettyDate(new Date()) + "[ERROR] Disconnected from Discord, will try again in 5s");
     setTimeout(function() {
         bot.login(AuthDetails.email, AuthDetails.password);
     }, 5000);
@@ -1797,7 +2026,7 @@ function triviaQ(chid) {
     getLine("./trivia/trivia" + n + ".txt", (r * 4)-1, function(err, line) {
         trivia[chid].answer = line.substring(line.indexOf(":")+2).replace('#', '');
     });
-    console.log(prettyDate() + "[INFO] New trivia question in " + bot.channels.get("id", chid).name);
+    console.log(prettyDate(new Date()) + "[INFO] New trivia question in " + bot.channels.get("id", chid).name);
     return info;
 }
 
@@ -1885,7 +2114,7 @@ function maxIndex(arr) {
     return maxIndex;
 }
 
-// Clear message counter
+// Tally number of messages every 24 hours
 function clearMessageCounter() {
     for(var svrid in configs.servers) {
         messages[svrid] = 0;
@@ -1893,6 +2122,46 @@ function clearMessageCounter() {
     setTimeout(function() {
         clearMessageCounter();
     }, 86400000);
+}
+
+// Maintain stats file freshness
+function clearStatCounter() {
+    // Clear member activity and game popularity info if 7 days old
+    if(dayDiff(new Date(stats.timestamp), new Date())>=7) {
+        for(var svrid in stats) {
+            if(svrid=="timestamp") {
+                continue;
+            }
+            for(var member in stats[svrid].members) {
+                stats[svrid].members[member].messages = 0;
+            }
+            for(var game in stats[svrid].games) {
+                stats[svrid].games[game] = 0;
+            }
+        }
+    } else {
+        for(var i=0; i<bot.servers.length; i++) {
+            for(var j=0; j<bot.servers[i].members.length; j++) {
+                // If member is playing game, add 0.1 (equal to five minutes) to game tally
+                if(bot.servers[i].members[j].game) {
+                    stats[bot.servers[i].id].games[bot.servers[i].members[j].game.name] += 0.1;
+                }
+                // If member's mention data is 7 days old, clear it
+                if(stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.timestamp!=0 && dayDiff(new Date(stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.timestamp), new Date())>=7) {
+                    stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.timestamp = 0;
+                    stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.stream = [];
+                }
+            }
+        }
+    }
+    saveData("./stats.json", function(err) {
+        if(err) {
+            console.log(prettyDate(new Date()) + "[ERROR] Could not save updated stats");
+        }
+    });
+    setTimeout(function() {
+        clearStatCounter();
+    }, 300000);
 }
 
 // Converts seconds to a nicely formatted string in years, days, hours, minutes, seconds
@@ -1952,6 +2221,10 @@ var defaultConfigFile = {
         value: true,
         option: "<enabled? y/n>"
     },
+    stats: {
+        value: true,
+        option: "<enabled? y/n>"
+    },
     chatterbot: {
         value: true,
         option: "<enabled? y/n>"
@@ -1960,11 +2233,11 @@ var defaultConfigFile = {
         value: true,
         option: "<enabled? y/n>"
     },
-    convert: {
+    say: {
         value: true,
-        option: "<allow? y/n>"
+        option: "<enabled? y/n>"
     },
-    ping: {
+    convert: {
         value: true,
         option: "<allow? y/n>"
     },
@@ -2035,27 +2308,36 @@ var defaultConfigFile = {
 function defaultConfig(svr) {
     if(!configs.servers[svr.id]) {
         var adminList = [svr.owner.id];
-        try {
-            for(var i=0; i<svr.members.length; i++) {
-                if(svr.rolesOfUser(svr.members[i])) {
-                    for(var j=0; j<svr.rolesOfUser(svr.members[i]).length; j++) {
-                        if(svr.rolesOfUser(svr.members[i])[j].hasPermission("banMembers") && adminList.indexOf(svr.members[i].id)==-1 && svr.members[i].id!=bot.user.id) {
-                            adminList[adminList.length] = svr.members[i].id;
-                        }
+        for(var i=0; i<svr.members.length; i++) {
+            if(svr.rolesOfUser(svr.members[i])) {
+                for(var j=0; j<svr.rolesOfUser(svr.members[i]).length; j++) {
+                    if(svr.rolesOfUser(svr.members[i])[j].hasPermission("banMembers") && adminList.indexOf(svr.members[i].id)==-1 && svr.members[i].id!=bot.user.id) {
+                        adminList[adminList.length] = svr.members[i].id;
                     }
                 }
             }
-        } catch(err) {
-            console.log(prettyDate() + "[ERROR] Failed to auto-add admins in " + svr.name + ", using only the owner");
-            console.log(err);
+            stats[svr.id].members[svr.members[i].id] = {
+                messages: 0,
+                seen: new Date().getTime(),
+                mentions: {
+                    timestamp: 0,
+                    pm: false,
+                    stream: [],
+                }
+            };
         }
+        saveData("./stats.json", function(err) {
+            if(err) {
+                console.log(prettyDate(new Date()) + "[ERROR] Could not save updated stats");
+            }
+        });
         configs.servers[svr.id] = JSON.parse(JSON.stringify(defaultConfigFile)); 
         configs.servers[svr.id].admins.value = adminList;
-        saveConfig("./config.json", function(err) {
+        saveData("./config.json", function(err) {
             if(err) {
-                console.log(prettyDate() + "[ERROR] Failed to save default configs for server " + svr.name);
+                console.log(prettyDate(new Date()) + "[ERROR] Failed to save default configs for server " + svr.name);
             } else {
-                console.log(prettyDate() + "[INFO] Successfully saved default configs for " + svr.name);
+                console.log(prettyDate(new Date()) + "[INFO] Successfully saved default configs for " + svr.name);
             }
         });
     }
@@ -2073,21 +2355,29 @@ function checkConfig(svr) {
     }
     
     if(changed) {
-        saveConfig("./config.json", function(err) {
+        saveData("./config.json", function(err) {
             if(err) {
-                console.log(prettyDate() + "[ERROR] Failed to update configs for server " + svr.name);
+                console.log(prettyDate(new Date()) + "[ERROR] Failed to update configs for server " + svr.name);
             } else {
-                console.log(prettyDate() + "[INFO] Successfully saved updated configs for " + svr.name);
+                console.log(prettyDate(new Date()) + "[INFO] Successfully saved updated configs for " + svr.name);
             }
         });
     }
 }
 
 // Write an updated config.json file to disk
-function saveConfig(file, callback) {
-    var object = configs;
-    if(file=="./data.json") {
-        object = profileData;
+function saveData(file, callback) {
+    var object;
+    switch(file) {
+        case "./profiles.json": 
+            object = profileData;
+            break;
+        case "./stats.json":
+            object = stats;
+            break;
+        default:
+            object = configs;
+            break;
     }
     fs.writeFile(file, JSON.stringify(object, null, 4), function(err) {
         callback(err);
@@ -2148,7 +2438,7 @@ function kickUser(msg, desc1, desc2) {
     bot.kickMember(msg.author, msg.channel.server, function(err) {
         if(err) {
             configs.servers[msg.channel.server.id].blocked[configs.servers[msg.channel.server.id].blocked.value.length] = msg.author.id;
-            saveConfig("./config.json", function(error) {
+            saveData("./config.json", function(error) {
                 adminMsg(error, msg.channel.server, msg.author, " " + desc1 + " in " + msg.channel.server.name + ", so I blocked them from using me.");
                 bot.sendMessage(msg.author, "Stop " + desc2 + ". The chat mods have been notified about this, and you have been blocked from using me.");
             });
@@ -2166,11 +2456,11 @@ function giSearch(query, num, callback) {
 		try {
 			data = JSON.parse(body);
 		} catch (error) {
-			console.log(prettyDate() + "[ERROR] Could not connect to Google Images");
+			console.log(prettyDate(new Date()) + "[ERROR] Could not connect to Google Images");
 			return;
 		}
 		if(!data.items || data.items.length == 0 || query.indexOf("<#")>-1) {
-            console.log(prettyDate() + "[WARN] No image results for " + query);
+            console.log(prettyDate(new Date()) + "[WARN] No image results for " + query);
             callback(null);
 		} else {
             callback(data.items[0].link);
@@ -2228,13 +2518,13 @@ function getGIF(tags, func, rating) {
     
     request("http://api.giphy.com/v1/gifs/random?" + query, function(error, response, body) {
         if(error || response.statusCode !== 200) {
-            console.log(prettyDate() + "[ERROR] Could not connect to Giphy");
+            console.log(prettyDate(new Date()) + "[ERROR] Could not connect to Giphy");
         } else {
             try {
                 var responseObj = JSON.parse(body)
                 func(responseObj.data.id);
             } catch(err) {
-                console.log(prettyDate() + "[ERROR] Failed to retreive GIF " + tags);
+                console.log(prettyDate(new Date()) + "[ERROR] Failed to retreive GIF " + tags);
                 func(undefined);
             }
         }
@@ -2248,14 +2538,14 @@ function ytSearch(query, callback) {
     var q;
 	youtube.search(query, 1, function(error, result) {
         if(error) {
-            console.log(prettyDate() + "[ERROR] Could not connect to YouTube");
+            console.log(prettyDate(new Date()) + "[ERROR] Could not connect to YouTube");
             q =  "`¯\_(ツ)_/¯`";
         } else {
             if (!result || !result.items || result.items.length < 1) {
-                console.log(prettyDate() + "[WARN] No YouTube results for " + query);
+                console.log(prettyDate(new Date()) + "[WARN] No YouTube results for " + query);
                 q = "`¯\_(ツ)_/¯`";
             } else if(result.items[0].id.videoId=="http://www.youtube.com/watch?v=undefined") {
-                console.log(prettyDate() + "[WARN] No YouTube results for " + query);
+                console.log(prettyDate(new Date()) + "[WARN] No YouTube results for " + query);
                 q = "`¯\_(ツ)_/¯`";
             } else {
                 q = "http://www.youtube.com/watch?v=" + result.items[0].id.videoId;
@@ -2274,7 +2564,7 @@ function cleanMessages(open, ch, count, option) {
                     count--;
                     bot.deleteMessage(messages[i]);
                     if(count==0) {
-                        console.log(prettyDate() + "[INFO] Deleted messages in " + ch.name + ", " + ch.server.name);
+                        console.log(prettyDate(new Date()) + "[INFO] Deleted messages in " + ch.name + ", " + ch.server.name);
                         bot.sendMessage(open, "Deleted those messages in " + ch.name);
                         break;
                     }
@@ -2285,7 +2575,7 @@ function cleanMessages(open, ch, count, option) {
             }
         } else {
             console.log(error);
-            console.log(prettyDate() + "[ERROR] Failed to fetch old messages in " + ch.name + ", " + ch.server.name);
+            console.log(prettyDate(new Date()) + "[ERROR] Failed to fetch old messages in " + ch.name + ", " + ch.server.name);
             bot.sendMessage(open, "Something went wrong getting past messages from Discord :cry:");
         }
     });
@@ -2314,14 +2604,18 @@ function adminMsg(error, svr, author, info) {
             }
         }
     } else {
-        console.log(prettyDate() + "[ERROR] Failed to message bot admins of " + svr.name);
+        console.log(prettyDate(new Date()) + "[ERROR] Failed to message bot admins of " + svr.name);
     }
 }
 
 // Ouput a pretty date for logging
-function prettyDate() {
-    var date = new Date();
+function prettyDate(date) {
     return "[" + date.getUTCFullYear() + "-" + ("0" + (date.getUTCMonth() + 1)).slice(-2) + "-" + ("0" + date.getUTCDate()).slice(-2) + " " + ("0" + date.getUTCHours()).slice(-2) + ":" + ("0" + date.getUTCMinutes()).slice(-2) + ":" + ("0" + date.getUTCSeconds()).slice(-2) + " UTC] ";
+}
+
+// Number of days between two dates
+function dayDiff(first, second) {
+    return Math.round((second-first) / (1000*60*60*24));
 }
 
 // Generate help text
@@ -2362,12 +2656,12 @@ function getHelp(svr) {
 
 // Check for updates
 function checkVersion() {
-    unirest.post('http://awesome-botmakersinc.rhcloud.com/')
+    unirest.get('http://awesome-botmakersinc.rhcloud.com/')
     .header('Accept', 'application/json')
     .end(function(response) {
         try {
             if(!response.body || !response.body[0]) {
-                console.log(prettyDate() + "[ERROR] Failed to check for updates");
+                console.log(prettyDate(new Date()) + "[ERROR] Failed to check for updates");
                 return;
             }
             response.body = JSON.parse(response.body);
@@ -2395,7 +2689,7 @@ function checkVersion() {
                     }
                     info = outOfDate;
                 }
-                console.log(prettyDate() + "[INFO] Found " + info + " new bot updates");
+                console.log(prettyDate(new Date()) + "[INFO] Found " + info + " new bot updates");
                 var send = "There are " + info + " new updates available for " + bot.user.username;
                 for(var i=0; i<outOfDate; i++) {
                     send += "\n\t" + (response.body[i][0] + "             ").slice(0,15);
@@ -2405,30 +2699,35 @@ function checkVersion() {
                 }
                 send += "\nLearn more at https://git.io/vg5mc";
                 
+                console.log(send);
                 if(configs.maintainer && configs.maintainer!="") {
                     var usr = bot.users.get("id", configs.maintainer);
                     if(usr) {
-                        bot.sendMessage(usr, send);
+                        bot.sendMessage(usr, send + "\nReply with `update` in the next 30 minutes to apply changes and shut down");
+                        updateconsole = true;
+                        setTimeout(function() {
+                            updateconsole = false;
+                        }, 1800000);
+                        return;
                     }
                 }
-                console.log(send);
-                console.log(prettyDate() + "[WARN] Could not message bot maintainer about new updates");
+                console.log(prettyDate(new Date()) + "[WARN] Could not message bot maintainer about new updates");
             } else {
-                console.log(prettyDate() + "[INFO] " + bot.user.username + " is up-to-date");
+                console.log(prettyDate(new Date()) + "[INFO] " + bot.user.username + " is up-to-date");
             }
         } catch(error) {
-            console.log(prettyDate() + "[ERROR] Failed to check for updates");
+            console.log(prettyDate(new Date()) + "[ERROR] Failed to check for updates");
             console.log(error);
         }
     });
     
-    setTimeout(checkVersion, 3600000);
+    setTimeout(checkVersion, 86400000);
 }
 
 // Login to the bot's Discord account
 bot.login(AuthDetails.email, AuthDetails.password, function(err) {
     if(err) {
-        console.log(prettyDate() + "[FATAL] Could not connect to Discord");
+        console.log(prettyDate(new Date()) + "[FATAL] Could not connect to Discord");
         process.exit();
     }
 });

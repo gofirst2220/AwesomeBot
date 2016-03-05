@@ -40,10 +40,12 @@
     "weather-js": "*",
     "wolfram-node": "*",
     "google-search-scraper": "*",
-    "url-info-scraper": "*"
+    "url-info-scraper": "*",
+    "cross-spawn": "*",
+    "forever": "*"
   },
   "scripts": {
-    "start": "node start.js"
+    "start": "forever start.js"
   },
   "main": "start.js"
 }
