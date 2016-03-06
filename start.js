@@ -795,10 +795,19 @@ var commands = {
                         }
                         var joined = prettyDate(new Date(details.joinedAt));
                         info += "\n\tJoined: " + joined.substring(1, joined.length-2);
-                        if(usr.status!="online" && configs.servers[msg.channel.server.id].stats.value) {
-                            var seen = prettyDate(new Date(stats[msg.channel.server.id].members[msg.author.id].seen));
-                            info += "\n\tLast seen: " + seen.substring(1, seen.length-2);
+                    }
+                    if(usr.status!="online" && configs.servers[msg.channel.server.id].stats.value) {
+                        var seen = prettyDate(new Date(stats[msg.channel.server.id].members[msg.author.id].seen));
+                        info += "\n\tLast seen: " + seen.substring(1, seen.length-2);
+                    }
+                    var other = 0;
+                    for(var i=0; i<bot.servers.length; i++) {
+                        if(bot.servers[i].members.get("id", usr.id)) {
+                            other++;
                         }
+                    }
+                    if(other>1) {
+                        info += "\nHas " + other + " mutual servers with me";
                     }
                     bot.sendMessage(msg.channel, info);
                 });
