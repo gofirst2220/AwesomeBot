@@ -1,3 +1,5 @@
+**Note: You should not use this branch if you want a stable bot. v3.3 stable will be released soon; this branch exists only for testing and collaborative purposes.**
+
 AwesomeBot [![Build Status](https://travis-ci.org/anandroiduser/AwesomeBot.svg?branch=master)](https://travis-ci.org/anandroiduser/AwesomeBot)
 ==========
 
@@ -17,6 +19,7 @@ That's right! AwesomeBot is an all-in-one Discord bot packed with features, writ
  - Stock fetching
  - Google Play Store links
  - MSN Weather forecast
+ - Wolfram|Alpha data
  
 In addition, he has many built-in utility functions:
 
@@ -26,8 +29,9 @@ In addition, he has many built-in utility functions:
  - Server game list
  - Reminders via PM
  - Year countdown
+ - Stats for members, games, and commands
 
-And finally, AwesomeBot can conduct **in-chat polls** and offers a fun **live trivia game**. He is fully configurable via PM, and can be controlled independently between servers. New servers can be added simply by private messaging the bot, and admins are automatically detected.
+And finally, AwesomeBot can conduct **in-chat polls** and offers a fun **live trivia game**. He is fully configurable via private message, and can be controlled independently between servers. New servers can be added simply by PMing the bot an invite link, and admins are automatically detected.
 
 About
 -----
@@ -46,12 +50,24 @@ Setup
 1. Create a new Discord account for the bot
 2. Make sure you have at least one mutual server with the bot's account
 3. Clone this repository or download ZIP
-4. Fill `auth.json` with your credentials. The first two items are for the bot's Discord account. The Google API key is used for YouTube and Image Search queries, and can be found [here](https://console.developers.google.com/). Make sure to add the YouTube Data API to your account and create a [custom search engine](https://cse.google.com/cse/create/new) that is configured to emulated Google Image Search. The final three items are self-explanatory. You do not need a redirect URL for the Imgur API, and your Client ID can be anonymous.
-5. In `config.json`, provide your *personal* Discord ID for `maintainer` and the URL of your application if you are using cloud hosting or a static IP
-6. Get [NodeJS](https://nodejs.org/en/) and NPM if you need to
-7. Run `npm install` in the bot's directory to install the dependencies and then `node start.js` to get started!
+4. Get [NodeJS](https://nodejs.org/en/) and NPM if you need to
+5. Run `npm install` in the bot's directory to install the dependencies and then `node start.js` to get started!
 
-You can PM the bot `config <server name>` to access the admin console for the bot in any server where you are the admin.
+You'll be prompted for authentication and configuration details, but here's a quick overview:  
+ - **auth.json**:  
+    - `email`: Email address for the bot's Discord account  
+    - `password`: Password for the bot's Discord account  
+    - `google_api_key`: Used for YouTube and Image Search queries, and can be found [here](https://console.developers.google.com/). Make sure to add the YouTube Data API to your account.  
+    - `custom_search_id`: ID of an image-search Google CSE. Create a [custom search engine](https://cse.google.com/cse/create/new) that is configured to emulated Google Image Search  
+    - `giphy_api_key`: [API key from Giphy](http://api.giphy.com/submit) for GIF search
+    - `imgur_client_id`: Client ID from the Imgur API for uploading. You do not need to provide a redirect URL when you [register your application](https://imgur.com/signin?redirect=http://api.imgur.com/oauth2/addclient), and your Client ID can be anonymous
+    - `wolfram_app_id`: Sign up for a [Wolfram developer account](https://developer.wolframalpha.com/portal/apisignup.html), add your application, and find its ID
+ - **config.json**:
+    - `hosting`: Publicly available URL of bot's web interface (optional)
+    - `maintainer`: Your *personal* Discord ID to be notified of updates and to access the maintainer console where you can change the bot status, game, etc. (highly recommended)
+    - `game`: String of game that the bot will "play". If you fill in `maintainer`, you can change this live  
+
+You can PM the bot `config <server name>` to access the admin console for the bot in any server where you are the admin and just `config` to access the maintainer console.
 
 Extensions
 ----------
