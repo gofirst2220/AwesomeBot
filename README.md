@@ -94,7 +94,7 @@ Latest, version **3.3**:
 
  - Added last seen in user profiles
  - New `say` command, just for fun
- - Added `timer` extension type
+ - Added timer extension type
  - New auto-update system and forever support
  - Maintainer console to change bot game, status, etc.
  - Fixed external join server bug
