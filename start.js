@@ -1623,10 +1623,10 @@ bot.on("message", function (msg, user) {
                             console.log(prettyDate(new Date()) + "[ERROR] Failed to clear mentions for " + usr.username);
                         }
                     });
-                    bot.sendMessage(msg.channel, "*Remember, you can " + stats[svr.id].members[msg.author.id].mentions.pm ? "disable" : "enable" + " PMs for mentions with `pmmentions " + svr.name + "`");
                 } else {
                     bot.sendMessage(msg.channel, "You haven't been mentioned on " + svr.name + " in the last week. I don't know if that's a good or bad thing...");
                 }
+                bot.sendMessage(msg.channel, "*Remember, you can " + stats[svr.id].members[msg.author.id].mentions.pm ? "disable" : "enable" + " PMs for mentions with `pmmentions " + svr.name + "`");
                 return;
             } else if(msg.content.indexOf("pmmentions ")==0 && msg.content.length>11) {
                 var svr = bot.servers.get("name", msg.content.substring(11));
@@ -2689,7 +2689,7 @@ function dayDiff(first, second) {
 }
 
 // Generate help text
-function getHelp(svr) { // TODO: reformat help to add PM commands list
+function getHelp(svr) {
     var info = "";
     for(var cmd in commands) {
         if(commands[cmd]) {
@@ -2720,7 +2720,7 @@ function getHelp(svr) { // TODO: reformat help to add PM commands list
         }
     }
 
-    info += "\n\nFor example, you could do `@" + bot.user.username + " remindme 5 s Hello`. You can also PM me to start a poll (`poll <server> <channel>`) or just talk to me about anything, and you can get app links from the Google Play store by using `linkme <some app>` in the main chat.\n\nVersion " + version + " by @anandroiduser, https://git.io/v2e1w";
+    info += "\n\nFor example, you could do `@" + bot.user.username + " remindme 5 s Hello`. You can get app links from the Google Play store by using `linkme <some app>`.\n\nThe following commands are also available via PM:\n\tpoll <server> <channel>\n\tmentions <server>\n\tprofile <key>,<value>\n\tconfig <server>\n\nOn top of all this, you can talk to me about anything privately or in the main chat (by tagging me). Have fun! ;)\n\nVersion " + version + " by @anandroiduser, https://git.io/v2e1w";
     return info;
 }
 
