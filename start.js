@@ -1,7 +1,8 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.3"; // TODO: test all new stuff
+var version = "3.3";
+// TODO: test all new stuff
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -45,6 +46,7 @@ var trivia = {};
 var adminconsole = {};
 var admintime = {};
 var updateconsole = false;
+var maintainerconsole = false;
 
 // Misc. modules to make everything work
 const youtube_node = require("youtube-node");
@@ -66,6 +68,7 @@ const util = require("util");
 const vm = require("vm");
 const searcher = require("google-search-scraper");
 const urlInfo = require("url-info-scraper");
+const base64 = require('node-base64-image');
 
 // List of possible greetings for new server members
 var greetings = ["++ Welcome to our little corner of hell!", "++ has joined the server.", "++ You're gonna have a jolly good time here!", "++ is new here.", "++ is here, everybody!", "++ sends his/her regards.", "++, welcome to the server!", "++ is our next victim...", "Hello ++!", "Please welcome our newest member, ++"];
@@ -98,29 +101,25 @@ var commands = {
                 sortedMembers.push([member, stats[msg.channel.server.id].members[member].messages]);
             }
             sortedMembers.sort(function(a, b) {
-                var aUsr = msg.channel.server.members.get("id", a[0]);
-                var aTime = dayDiff(new Date(aUsr.joinedAt), new Date());
-                var aScore = a[1] / aTime;
-                var bUsr = msg.channel.server.members.get("id", b[0]);
-                var bTime = dayDiff(new Date(bUsr.joinedAt), new Date());
-                var bScore = b[1] / bTime;
-                return aScore - bScore;
+                return a[1] - b[1];
             });
             var sortedGames = [];
             for(var game in stats[msg.channel.server.id].games) {
-                sortedMembers.push([game, stats[msg.channel.server.id].games[game]]);
+                sortedGames.push([game, stats[msg.channel.server.id].games[game]]);
             }
             sortedGames.sort(function(a, b) {
                 return a[1] - b[1];
             });
             
             var info = "**" + msg.channel.server.name + " (this week)**\nMost active members:";
-            for(var i=sortedMembers.length-1; i=>sortedMembers.length-5; i--) {
+            for(var i=sortedMembers.length-1; i>sortedMembers.length-6; i--) {
                 if(i<0) {
                     break;
                 }
                 var usr = msg.channel.server.members.get("id", sortedMembers[i][0]);
-                info += "\n\t" + usr.username + ": " + sortedMembers[i][1] + " messages";
+                if(usr && sortedMembers[i][1]>0) {
+                    info += "\n\t" + usr.username + ": " + sortedMembers[i][1] + " messages";
+                }
             }
             info += "\nMost-played games:";
             for(var i=sortedGames.length-1; i=>sortedGames.length-5; i--) {
@@ -458,9 +457,11 @@ var commands = {
         }
     },
     // Gets info about a given character or emoji
-    "char": { // TODO: char command for emoji/character lookup
+    // TODO: char command for emoji/character lookup
+    "char": {
         usage: "<one emoji/character>",
         process: function(bot, msg, suffix) {
+            console.log(suffix.charCodeAt(0));
             bot.sendMessage(msg.channel, "Not implemented yet.");
         }
     },
@@ -766,7 +767,7 @@ var commands = {
                         }
                         var joined = prettyDate(new Date(details.joinedAt));
                         info += "\n\tJoined: " + joined.substring(1, joined.length-2);
-                        if(msg.author.status!="online" && configs.servers[msg.channel.server.id].stats.value) {
+                        if(usr.status!="online" && configs.servers[msg.channel.server.id].stats.value) {
                             var seen = prettyDate(new Date(stats[msg.channel.server.id].members[msg.author.id].seen));
                             info += "\n\tLast seen: " + seen.substring(1, seen.length-2);
                         }
@@ -823,30 +824,43 @@ function rssfeed(bot, msg, url, count, full) {
 // Initializes bot and outputs to console
 var bot = new Discord.Client();
 bot.on("ready", function() {
-    checkVersion();
+    //checkVersion();
+    // TODO: re-enable checkVersion (after testing)
     
     // Make sure servers are properly configured and set variables
     for(var i=0; i<bot.servers.length; i++) {
         bot.startTyping(bot.servers[i].defaultChannel);
-        if(!configs.servers[bot.servers[i].id]) {
-            defaultConfig(bot.servers[i]);
+        // Populate stats file
+        if(!stats[bot.servers[i].id]) {
+            stats[bot.servers[i].id] = {members: {}, games: {}};
         }
-        for(var j=0; j<bot.servers[i].members; j++) {
+        for(var j=0; j<bot.servers[i].members.length; j++) {
             if(!stats[bot.servers[i].id].members[bot.servers[i].members[j].id]) {
                 stats[bot.servers[i].id].members[bot.servers[i].members[j].id] = {
                     messages: 0,
                     seen: new Date().getTime(),
-                    mentions: []
+                    mentions: {
+                        pm: false,
+                        stream: []
+                    }
                 };
             }
         }
+        // Configure new servers
+        if(!configs.servers[bot.servers[i].id]) {
+            defaultConfig(bot.servers[i]);
+        }
+        // Make sure config.json is up-to-date
         checkConfig(bot.servers[i]);
+        // Set runtime values
         cleverOn[bot.servers[i].id] = true;
         spams[bot.servers[i].id] = {};
         botOn[bot.servers[i].id] = {};
+        // Turn on bot
         for(var j=0; j<bot.servers[i].channels.length; j++) {
             botOn[bot.servers[i].id][bot.servers[i].channels[j].id] = true;
         }
+        // Send hello message
         //bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
         bot.stopTyping(bot.servers[i].defaultChannel);
     }
@@ -908,9 +922,10 @@ bot.on("ready", function() {
 });
 
 bot.on("message", function (msg, user) {
-    try {
+    /*try {*/
+    // TODO: re-enable massive try/catch
         // Stuff that only applies to PMs
-        if(msg.channel.isPrivate) {
+        if(msg.channel.isPrivate && msg.author.id!=bot.user.id) {
             // Update command from maintainer
             if(updateconsole && msg.author.id==configs.maintainer && msg.content=="update") {
                 console.log(prettyDate(new Date()) + "[INFO] Updating " + bot.user.username + ":");
@@ -952,25 +967,98 @@ bot.on("message", function (msg, user) {
                 bot.sendMessage(msg.channel, "Something went wrong, could not update.");
             }
             
-            // Change bot playing game
-            // TODO: maintainer console with game option included
-            if(msg.author.id==configs.maintainer && msg.content.indexOf("game ")==0 && msg.content.length>5) {
-                var game = msg.content.substring(msg.content.indexOf(" ")+1);
-                bot.setStatus("online", game);
-                if(game==".") {
-                    game = "";
-                    bot.setStatus("online", null);
+            // Maintiner control panel for overall bot things
+            if(msg.author.id==configs.maintainer && msg.content.toLowerCase()==("config")) {
+                console.log(prettyDate(new Date()) + "[INFO] Maintainer console opened");
+                bot.sendMessage(msg.channel, "**Welcome to the " + bot.user.username + " maintainer console.** I am your owner. I will do what you say. Here are your options:\n\tquit\n\tgame <name of game or `.` to remove>\n\tusername <new name>\n\tavatar <URL of new profile pic>\n\tstatus <online or idle>\n\tstats *for commands*\nUse the syntax `<option> <parameter>` as always! :)");
+                maintainerconsole = true;
+                return;
+            } else if(msg.author.id==configs.maintainer && maintainerconsole) {
+                var n = "";
+                var suffix = "";
+                if(msg.content.indexOf(" ")>-1) {
+                    n = msg.content.substring(0, msg.content.indexOf(" ")).toLowerCase();
+                    suffix = msg.content.substring(msg.content.indexOf(" ")+1);
+                } else {
+                    n = msg.content.toLowerCase();
                 }
-                console.log(prettyDate(new Date()) + "[INFO] Set bot game to \"" + game + "\"");
-                configs.game = game;
-                saveData("./config.json", function(err) {
-                    if(err) {
-                        console.log(prettyDate(new Date()) + "[ERROR] Could not save new config");
-                        bot.sendMessage(msg.channel, "An unknown error occurred *saving* that change :crying_cat_face:");
-                    } else {
-                        bot.sendMessage(msg.channel, game=="" ? "Ok, removed game from status" : ("Ok, now I'm playing `" + game + "`"));
-                    }
-                });
+                if(!n || ["quit", "game", "username", "avatar", "status", "stats"].indexOf(n)==-1) {
+                    console.log(prettyDate(new Date()) + "[WARN] Maintainer provided invalid option in console");
+                    bot.sendMessage(msg.channel, "Invalid option, please see list above.");
+                    return;
+                } else if((!suffix && ["game", "username", "avatar", "status"].indexOf(msg.content)>-1) || (n=="status" && ["online", "idle"].indexOf(suffix)==-1)) {
+                    console.log(prettyDate(new Date()) + "[WARN] Maintainer provided invalid parameters in console");
+                    bot.sendMessage(msg.channel, "Missing or incorrect parameter");
+                    return;
+                }
+                
+                switch(n) {
+                    case "quit":
+                        console.log(prettyDate(new Date()) + "[INFO] Closed maintainer console");
+                        bot.sendMessage(msg.channel, "Goodbye, master.");
+                        break;
+                    case "game":
+                        bot.setStatus("online", suffix);
+                        if(suffix==".") {
+                            suffix = "";
+                            bot.setStatus("online", null);
+                        }
+                        console.log(prettyDate(new Date()) + "[INFO] Set bot game to \"" + suffix + "\"");
+                        configs.game = suffix;
+                        saveData("./config.json", function(err) {
+                            if(err) {
+                                console.log(prettyDate(new Date()) + "[ERROR] Could not save new config");
+                                bot.sendMessage(msg.channel, "An unknown error occurred *saving* that change :crying_cat_face:");
+                            } else {
+                                bot.sendMessage(msg.channel, suffix=="" ? "Ok, removed game from status" : ("Ok, now I'm playing `" + suffix + "`"));
+                            }
+                        });
+                        break;
+                    case "username":
+                        bot.sendMessage(msg.channel, "Due to an issue with Discord.JS, changing the bot username is not supported at this time. Hopefully this can be re-enabled in a future update.");
+                        /*bot.setUsername(suffix, function(err) {
+                            if(err) {
+                                console.log(prettyDate(new Date()) + "[ERROR] Failed to change username to " + suffix);
+                                bot.sendMessage(msg.channel, "Uh-oh, something went wrong :o");
+                            } else {
+                                console.log(prettyDate(new Date()) + "[INFO] Changed bot username to " + suffix);
+                                bot.sendMessage(msg.channel, "Done!");
+                            }
+                        });*/
+                        break;
+                    case "avatar":
+                        bot.sendMessage(msg.channel, "Due to an issue with Discord.JS, changing the bot avatar is not supported at this time. Hopefully this can be re-enabled in a future update.");
+                        /*base64.base64encoder(suffix, {string: true}, function(error, image) {
+                            if(error) {
+                                console.log(prettyDate(new Date()) + "[WARN] Could not parse maintainer's avatar image");
+                                bot.sendMessage(msg.channel, "That doesn't seem to be an image...");
+                            }
+                            bot.updateDetails({avatar: image}, function(err) {
+                                if(err) {
+                                    console.log(prettyDate(new Date()) + "[ERROR] Failed to change avatar to " + suffix);
+                                    bot.sendMessage(msg.channel, "My face!!!!!!111 :(");
+                                } else {
+                                    console.log(prettyDate(new Date()) + "[INFO] Changed bot avatar to " + suffix);
+                                    bot.sendMessage(msg.channel, "I like this one :D");
+                                }
+                            });
+                        });*/
+                        break;
+                    case "status":
+                        bot.setStatus(suffix, function(err) {
+                            if(err) {
+                                console.log(prettyDate(new Date()) + "[ERROR] Failed to change status to " + suffix);
+                                bot.sendMessage(msg.channel, "Discord is being weird, try again later");
+                            } else {
+                                console.log(prettyDate(new Date()) + "[INFO] Changed bot status to " + suffix);
+                                bot.sendMessage(msg.channel, "Ok, I am now `" + suffix + "`");
+                            }
+                        });
+                        break;
+                    case "stats":
+                        bot.sendMessage(msg.channel, "Not implemented yet");
+                        break;
+                }
                 return;
             }
             
@@ -1041,7 +1129,8 @@ bot.on("message", function (msg, user) {
                             var validity;
                             if(!extension.name || !extension.type || !extension.key || !extension.process) {
                                 validity = "missing parameter(s)";
-                            } else if(["keyword", "command"].indexOf(extension.type.toLowerCase())==-1) { // TODO: add timer extension type
+                            } else if(["keyword", "command"].indexOf(extension.type.toLowerCase())==-1) {
+                            // TODO: add timer extension type
                                 validity = "invalid type";
                             } else if(extension.type=="command" && extension.key.indexOf(" ")>-1) {
                                 validity = "command has spaces";
@@ -1541,7 +1630,7 @@ bot.on("message", function (msg, user) {
             // Starts a poll in a given channel via private message
             if(msg.author.id != bot.user.id && msg.content.toLowerCase().indexOf("poll")==0) {
                 var svr = bot.servers.get("name", msg.content.substring(msg.content.indexOf(" ")+1, msg.content.lastIndexOf(" ")));
-                if(!svr) {
+                if(!svr || !svr.members.get("id", msg.author.id)) {
                     console.log(prettyDate(new Date()) + "[WARN] Invalid server provided by " + msg.author.username + " for new poll");
                     bot.sendMessage(msg.channel, "That server doesn't exist or I'm not on it.");
                 } else if(configs.servers[svr.id].blocked.value.indexOf(msg.author.id)==-1) {
@@ -1605,28 +1694,26 @@ bot.on("message", function (msg, user) {
                     console.log(prettyDate(new Date()) + "[WARN] Invalid server provided for " + msg.author.username + "'s mentions");
                     bot.sendMessage(msg.channel, "I'm not on that server. You can reply with an invite link to add me!");
                     return;
-                } else if(!svr.members.has("id", msg.author.id)) {
+                } else if(!svr.members.get("id", msg.author.id)) {
                     console.log(prettyDate(new Date()) + "[WARN] " + msg.author.username + " is not on " + svr.name + ", so mentions cannot be retreived");
                     bot.sendMessage(msg.channel, "*You're* not on " + svr.name + ". Obviously no one has mentioned you there!");
                     return;
                 }
                 
+                var info = "";
                 if(stats[svr.id].members[msg.author.id].mentions.stream.length>0) {
-                    bot.sendMessage(msg.channel, "**Mentions on " + svr.name + " in the last week**");
+                    info = "**Mentions on " + svr.name + " in the last week**";
                     for(var i=0; i<stats[svr.id].members[msg.author.id].mentions.stream.length; i++) {
                         var time = prettyDate(new Date(stats[svr.id].members[msg.author.id].mentions.stream[i].timestamp))
-                        bot.sendMessage(msg.channel, "__" + stats[svr.id].members[msg.author.id].mentions.stream[i].author + " at " + time.substring(1, time.length-2) + ":__\n" + stats[svr.id].members[msg.author.id].mentions.stream[i].message);
+                        info += "\n__" + stats[svr.id].members[msg.author.id].mentions.stream[i].author + " at " + time.substring(1, time.length-2) + ":__\n" + stats[svr.id].members[msg.author.id].mentions.stream[i].message;
                     }
+                    info += "\n\n";
                     stats[svr.id].members[msg.author.id].mentions.stream = [];
-                    saveData("./stats.json", function(err) {
-                        if(err) {
-                            console.log(prettyDate(new Date()) + "[ERROR] Failed to clear mentions for " + usr.username);
-                        }
-                    });
                 } else {
-                    bot.sendMessage(msg.channel, "You haven't been mentioned on " + svr.name + " in the last week. I don't know if that's a good or bad thing...");
+                    info = "You haven't been mentioned on " + svr.name + " in the last week. I don't know if that's a good or bad thing...\n";
                 }
-                bot.sendMessage(msg.channel, "*Remember, you can " + stats[svr.id].members[msg.author.id].mentions.pm ? "disable" : "enable" + " PMs for mentions with `pmmentions " + svr.name + "`");
+                info += "*Remember, you can " + (stats[svr.id].members[msg.author.id].mentions.pm ? "disable" : "enable") + " PMs for mentions with `pmmentions " + svr.name + "`*";
+                bot.sendMessage(msg.channel, info);
                 return;
             } else if(msg.content.indexOf("pmmentions ")==0 && msg.content.length>11) {
                 var svr = bot.servers.get("name", msg.content.substring(11));
@@ -1634,7 +1721,7 @@ bot.on("message", function (msg, user) {
                     console.log(prettyDate(new Date()) + "[WARN] Invalid server provided for " + msg.author.username + "'s PM mentions");
                     bot.sendMessage(msg.channel, "I'm not on that server. You can reply with an invite link to add me!");
                     return;
-                } else if(!svr.members.has("id", msg.author.id)) {
+                } else if(!svr.members.get("id", msg.author.id)) {
                     console.log(prettyDate(new Date()) + "[WARN] " + msg.author.username + " is not on " + svr.name + ", so mentions cannot be retreived");
                     bot.sendMessage(msg.channel, "*You're* not on " + svr.name + ". Obviously no one can mention you there!");
                     return;
@@ -1647,11 +1734,6 @@ bot.on("message", function (msg, user) {
                     bot.sendMessage(msg.channel, "Turned off PMs for mentions in " + svr.name + ". Enable them again by replying with `pmmentions " + svr.name + "`");
                 }
                 console.log(prettyDate(new Date()) + "[INFO] Turned " + stats[svr.id].members[msg.author.id].mentions.pm ? "on" : "off" + " mention PMs for "+ msg.author.username + " in " + svr.name);
-                saveData("./stats.json", function(err) {
-                    if(err) {
-                        console.log(prettyDate(new Date()) + "[ERROR] Failed to save PM mentions setting for " + usr.username);
-                    }
-                });
                 return;
             }
         }
@@ -1662,32 +1744,27 @@ bot.on("message", function (msg, user) {
             // Count new message
             messages[msg.channel.server.id]++;
             stats[msg.channel.server.id].members[msg.author.id].messages++;
-            saveData("./stats.json", function(err) {
-                if(err) {
-                    console.log(prettyDate(new Date()) + "[ERROR] Could not save updated stats");
-                }
-            });
             
             // Check if message includes a tag or attempted tag
-            var content = msg.content;
-            while(content.indexOf("@")>-1 && content.substring(content.indexOf("@")+1)) {
+            var tagstring = msg.content.slice(0);
+            while(tagstring.length>0 && tagstring.indexOf("@")>-1 && tagstring.substring(tagstring.indexOf("@")+1)) {
                 var usr;
-                if(content.indexOf(bot.user.mention())==-1 && content.indexOf(">")>(content.indexOf("<@")+15)) {
-                    var usrid = content.substring(content.indexOf("<@")+2);
-                    usrid = usrid.substring(0, usrnm.indexOf(">"));
-                    content = content.indexOf("<@") + usrnm.indexOf(">") + 3;
+                if(tagstring.indexOf(bot.user.mention())==-1 && tagstring.indexOf(">")>(tagstring.indexOf("<@")+15)) {
+                    var usrid = tagstring.substring(tagstring.indexOf("<@")+2);
+                    usrid = usrid.substring(0, usrid.indexOf(">"));
+                    tagstring = tagstring.indexOf("<@") + usrid.indexOf(">") + 3;
                     usr = msg.channel.server.members.get("id", usrid);
                 } else {
-                    var usrnm = content.substring(content.indexOf("@")+1);
+                    var usrnm = tagstring.substring(tagstring.indexOf("@")+1);
                     usr = msg.channel.server.members.get("username", usrnm);
                     while(!usr && usrnm.length>0) {
                         usrnm = usrnm.substring(0, usrnm.lastIndexOf(" "));
                         usr = msg.channel.server.members.get("username", usrnm);
                     }
-                    content = content.indexOf("@") + usrnm.length + 1;
+                    tagstring = tagstring.indexOf("@") + usrnm.length + 1;
                 }
                 if(usr) {
-                    console.log(prettyDate() + "[INFO] " + msg.author.username + " mentioned " + usr.username + " in " + msg.channel.server.name);
+                    console.log(prettyDate(new Date()) + "[INFO] " + msg.author.username + " mentioned " + usr.username + " in " + msg.channel.server.name);
                     var mentions = stats[msg.channel.server.id].members[msg.author.id].mentions;
                     mentions.stream[mentions.stream.length] = {
                         timestamp: new Date().getTime(),
@@ -1697,11 +1774,6 @@ bot.on("message", function (msg, user) {
                     if(mentions.pm) {
                         bot.sendMessage(usr, "__You were mentioned in a message on **" + msg.channel.server.name + "**:__\n" + msg.content);
                     }
-                    saveData("./stats.json", function(err) {
-                        if(err) {
-                            console.log(prettyDate(new Date()) + "[ERROR] Could not save mention for " + usr.username);
-                        }
-                    });
                 }
             }
             
@@ -1993,11 +2065,11 @@ bot.on("message", function (msg, user) {
                 bot.sendMessage(msg.channel,msg.author + ", you called?");
             }
         }
-    } catch(mainError) {
+    /*} catch(mainError) {
         bot.stopTyping(msg.channel);
-        console.log(prettyDate(new Date()) + "[ERROR] Failed to process new message");
+        console.log(prettyDate(new Date()) + "[ERROR] Failed to process new message in " + msg.channel.server.name);
         console.log(mainError);
-    }
+    }*/
 });
 
 // Add server if joined outisde of bot
@@ -2034,16 +2106,10 @@ bot.on("serverNewMember", function(svr, usr) {
         messages: 0,
         seen: new Date().getTime(),
         mentions: {
-            timestamp: 0,
             pm: false,
-            stream: [],
+            stream: []
         }
     };
-    saveData("./stats.json", function(err) {
-        if(err) {
-            console.log(prettyDate(new Date()) + "[ERROR] Could not save updated stats");
-        }
-    });
 });
 
 // Message on user banned
@@ -2062,6 +2128,20 @@ bot.on("userUnbanned", function(usr, svr) {
     }
 });
 
+// Update lastSeen status on presence change
+bot.on("presence", function(oldusr, newusr) {
+    for(var i=0; i<bot.servers.length; i++) {
+        if(bot.servers[i].members.get("id", newusr.id)) {
+            if(oldusr.status=="online" && newusr.status!="online") {
+                stats[bot.servers[i].id].members[newusr.id].seen = new Date().getTime();
+            }
+            if(oldusr.username!=newusr.username && configs[bot.servers[i].id].servermod.value) {
+                bot.sendMessage(bot.servers[i].defaultChannel, "**@" + oldusr.username + "** is now **@" + newusr.username + "**");
+            }
+        }
+    }
+});
+
 // Attempt authentication if disconnected
 bot.on("disconnected", function() {
     disconnects++;
@@ -2069,7 +2149,7 @@ bot.on("disconnected", function() {
     setTimeout(function() {
         bot.login(AuthDetails.email, AuthDetails.password);
     }, 5000);
-})
+});
 
 // Returns a new trivia question from external questions/answers list
 function triviaQ(chid) {
@@ -2208,10 +2288,13 @@ function clearStatCounter() {
             for(var j=0; j<bot.servers[i].members.length; j++) {
                 // If member is playing game, add 0.1 (equal to five minutes) to game tally
                 if(bot.servers[i].members[j].game) {
+                    if(!stats[bot.servers[i].id].games[bot.servers[i].members[j].game.name]) {
+                        stats[bot.servers[i].id].games[bot.servers[i].members[j].game.name] = 0;
+                    }
                     stats[bot.servers[i].id].games[bot.servers[i].members[j].game.name] += 0.1;
                 }
                 // If member's mention data is 7 days old, clear it
-                if(stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.stream.length>0) {
+                if(stats[bot.servers[i].id].members[bot.servers[i].members[j].id].mentions.stream.length>0) {
                     if(dayDiff(new Date(stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.stream[0].timestamp), new Date())>=7) {
                         stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.timestamp = 0;
                         stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.stream = [];
@@ -2390,9 +2473,8 @@ function defaultConfig(svr) {
                 messages: 0,
                 seen: new Date().getTime(),
                 mentions: {
-                    timestamp: 0,
                     pm: false,
-                    stream: [],
+                    stream: []
                 }
             };
         }
@@ -2445,7 +2527,7 @@ function saveData(file, callback) {
         case "./stats.json":
             object = stats;
             break;
-        default:
+        case "./config.json":
             object = configs;
             break;
     }

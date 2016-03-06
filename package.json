@@ -42,7 +42,8 @@
     "google-search-scraper": "*",
     "url-info-scraper": "*",
     "cross-spawn": "*",
-    "forever": "*"
+    "forever": "*",
+    "node-base64-image": "*"
   },
   "scripts": {
     "start": "forever start.js"
