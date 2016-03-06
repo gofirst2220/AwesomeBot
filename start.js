@@ -9,6 +9,7 @@ var disconnects = 0;
 var profileData = require("./profiles.json");
 var stats = require("./stats.json");
 var filter = require("./filter.json");
+var readyToGo = false;
 
 // Hijack console to display in web interface
 var log = [];
@@ -65,6 +66,7 @@ const wolfram = require("wolfram-node").init(AuthDetails.wolfram_app_id);
 const cheerio = require("cheerio");
 const util = require("util");
 const vm = require("vm");
+const readline = require("readline");
 const searcher = require("google-search-scraper");
 const urlInfo = require("url-info-scraper");
 const base64 = require("node-base64-image");
@@ -109,10 +111,23 @@ var commands = {
             sortedGames.sort(function(a, b) {
                 return a[1] - b[1];
             });
+            var sortedCommands = [];
+            var commandSum = 0;
+            for(var cmd in stats[msg.channel.server.id].commands) {
+                commandSum += stats[msg.channel.server.id].commands[cmd];
+                sortedCommands.push([cmd, stats[msg.channel.server.id].commands[cmd]]);
+            }
+            sortedCommands.sort(function(a, b) {
+                return a[1] - b[1];
+            });
             
             var info = "**" + msg.channel.server.name + " (this week)**\nMost active members:";
             for(var i=sortedMembers.length-1; i>sortedMembers.length-6; i--) {
                 if(i<0) {
+                    break;
+                }
+                if(i==sortedMembers.length-1 && sortedMembers[i][1]==0) {
+                    info += "\n\t*Crickets*";
                     break;
                 }
                 var usr = msg.channel.server.members.get("id", sortedMembers[i][0]);
@@ -121,13 +136,32 @@ var commands = {
                 }
             }
             info += "\nMost-played games:";
-            for(var i=sortedGames.length-1; i=>sortedGames.length-5; i--) {
+            for(var i=sortedGames.length-1; i>sortedGames.length-6; i--) {
                 if(i<0) {
+                    break;
+                }
+                if(i==sortedGames.length-1 && sortedGames[i][1]==0) {
+                    info += "\n\t*Maybe this isn't a gaming server...*";
                     break;
                 }
                 info += "\n\t" + sortedGames[i][0] + ": " + secondsToString(sortedGames[i][1] * 3000);
             }
+            info += "\nCommand usage:";
+            for(var i=sortedCommands.length-1; i>-1; i--) {
+                if(sortedCommands[i][1]>0) {
+                    var p = Math.floor(100 * sortedCommands[i][1] / commandSum);
+                    info += "\n\t" + ("  " + p).substring(p.toString().length-1) + "% " + sortedCommands[i][0] + ": " + sortedCommands[i][1] + " uses";
+                }
+            }
+            if(sortedCommands.length<1) {
+                info += "\n\tI'm completely useless here *cries*";
+            }
             bot.sendMessage(msg.channel, info);
+            
+            if(suffix.toLowerCase()=="clear" && configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1) {
+                clearServerStats(msg.channel.server.id);
+                console.log(prettyDate(new Date()) + "[INFO] Cleared stats for " + msg.channel.server.name + " at admin's request");
+            }
         }
     },
     // Searches Google for a given query
@@ -485,6 +519,10 @@ var commands = {
                         trivia[msg.channel.id] = {answer: "", attempts: 0, score: 0, possible: 0};
                         bot.sendMessage(msg.channel, "Welcome to **AwesomeTrivia**! Here's your first question: " + triviaQ(msg.channel.id) + "\nAnswer by tagging me like this: `@" + bot.user.username + " trivia <no. of choice>` or skip by doing this: `@" + bot.user.username + " trivia next`\nGood Luck!");
                         trivia[msg.channel.id].possible++;
+                        if(!stats[msg.channel.server.id].commands.trivia) {
+                            stats[msg.channel.server.id].commands.trivia = 0;
+                        }
+                        stats[msg.channel.server.id].commands.trivia++;
                     } else {
                         console.log(prettyDate(new Date()) + "[WARN] Ongoing trivia game in channel " + msg.channel.name + ", " + msg.channel.server.name);
                         bot.sendMessage(msg.channel, "There's a trivia game already in progress on this server, in " + msg.channel.name);
@@ -821,7 +859,8 @@ bot.on("ready", function() {
         bot.startTyping(bot.servers[i].defaultChannel);
         // Populate stats file
         if(!stats[bot.servers[i].id]) {
-            stats[bot.servers[i].id] = {members: {}, games: {}};
+            stats[bot.servers[i].id] = {members: {}, games: {}, commands: {}};
+            console.log(prettyDate(new Date()) + "[INFO] Created stats for " + bot.servers[i].name);
         }
         for(var j=0; j<bot.servers[i].members.length; j++) {
             if(!stats[bot.servers[i].id].members[bot.servers[i].members[j].id]) {
@@ -947,7 +986,7 @@ bot.on("message", function (msg, user) {
                             console.log(prettyDate(new Date()) + "[INFO] Successfully updated");
                             bot.sendMessage(msg.channel, "Done! Shutting down...", function() {
                                 bot.logout(function() {
-                                    process.exit();
+                                    process.exit(1);
                                 });
                             });
                         });
@@ -960,7 +999,7 @@ bot.on("message", function (msg, user) {
             // Maintiner control panel for overall bot things
             if(msg.author.id==configs.maintainer && msg.content.toLowerCase()==("config")) {
                 console.log(prettyDate(new Date()) + "[INFO] Maintainer console opened");
-                bot.sendMessage(msg.channel, "**Welcome to the " + bot.user.username + " maintainer console.** I am your owner. I will do what you say. Here are your options:\n\tquit\n\tgame <name of game or `.` to remove>\n\tusername <new name>\n\tavatar <URL of new profile pic>\n\tstatus <online or idle>\n\tstats *for commands*\nUse the syntax `<option> <parameter>` as always! :)");
+                bot.sendMessage(msg.channel, "**Welcome to the " + bot.user.username + " maintainer console.** I am your owner. I will do what you say. Here are your options:\n\tquit\n\tgame <name of game or `.` to remove>\n\tusername <new name>\n\tavatar <URL of new profile pic>\n\tstatus <online or idle>\nUse the syntax `<option> <parameter>` as always! :)");
                 maintainerconsole = true;
                 return;
             } else if(msg.author.id==configs.maintainer && maintainerconsole) {
@@ -972,7 +1011,7 @@ bot.on("message", function (msg, user) {
                 } else {
                     n = msg.content.toLowerCase();
                 }
-                if(!n || ["quit", "game", "username", "avatar", "status", "stats"].indexOf(n)==-1) {
+                if(!n || ["quit", "game", "username", "avatar", "status"].indexOf(n)==-1) {
                     console.log(prettyDate(new Date()) + "[WARN] Maintainer provided invalid option in console");
                     bot.sendMessage(msg.channel, "Invalid option, please see list above.");
                     return;
@@ -986,6 +1025,7 @@ bot.on("message", function (msg, user) {
                     case "quit":
                         console.log(prettyDate(new Date()) + "[INFO] Closed maintainer console");
                         bot.sendMessage(msg.channel, "Goodbye, master.");
+                        maintainerconsole = false;
                         break;
                     case "game":
                         bot.setStatus("online", suffix);
@@ -1044,10 +1084,6 @@ bot.on("message", function (msg, user) {
                                 bot.sendMessage(msg.channel, "Ok, I am now `" + suffix + "`");
                             }
                         });
-                        break;
-                    case "stats":
-                        bot.sendMessage(msg.channel, "Not implemented yet");
-                        // TODO: command usage stats
                         break;
                 }
                 return;
@@ -1646,6 +1682,10 @@ bot.on("message", function (msg, user) {
                                 bot.sendMessage(msg.channel, "You've already started a poll. Close it before starting a new one.");
                             } else if(!activePolls(ch.id)) {
                                 polls[msg.author.id] = {open: false, channel: ch.id, title: "", options: [], responderIDs: [], responses: []};
+                                if(!stats[svr.id].commands.poll) {
+                                    stats[svr.id].commands.poll = 0;
+                                }
+                                stats[svr.id].commands.poll++;
                                 console.log(prettyDate(new Date()) + "[INFO] Poll started by " + msg.author.username + " in " + ch.name + ", " + ch.server.name);
                                 bot.sendMessage(msg.channel, "Enter the poll title or question:");
                             } else {
@@ -1864,6 +1904,13 @@ bot.on("message", function (msg, user) {
                         bot.startTyping(msg.channel);
                         extensionApplied = true;
                         
+                        if(extension.type=="command") {
+                            if(!stats[msg.channel.server.id].commands[ext]) {
+                                stats[msg.channel.server.id].commands[ext] = 0;
+                            }
+                            stats[msg.channel.server.id].commands[ext]++;
+                        }
+                        
                         var params = {
                             unirest: unirest,
                             imgur: imgur,
@@ -1906,6 +1953,11 @@ bot.on("message", function (msg, user) {
 
             // Google Play Store links bot
             if(msg.author.id!=bot.user.id && msg.content.toLowerCase().indexOf("linkme ")>-1 && configs.servers[msg.channel.server.id].linkme.value) {
+                if(!stats[msg.channel.server.id].commands.linkme) {
+                    stats[msg.channel.server.id].commands.linkme = 0;
+                }
+                stats[msg.channel.server.id].commands.linkme++;
+                
                 var app = msg.content.substring(msg.content.indexOf("linkme"));
                 app = app.substring(app.indexOf(" ")+1);
                 var apps = [];
@@ -1988,6 +2040,12 @@ bot.on("message", function (msg, user) {
                     kickUser(msg, "is abusing the bot", "attempting to fetch NSFW content");
                 } else if(botOn[msg.channel.server.id][msg.channel.id]) {
                     console.log(prettyDate(new Date()) + "[INFO] Treating \"" + msg.content + "\" from " + msg.author.username + " in " + msg.channel.server.name + " as a command");
+                    if(["quiet", "ping", "help", "stats", "trivia"].indexOf(cmdTxt)==-1) {
+                        if(!stats[msg.channel.server.id].commands[cmdTxt]) {
+                            stats[msg.channel.server.id].commands[cmdTxt] = 0;
+                        }
+                        stats[msg.channel.server.id].commands[cmdTxt]++;
+                    }
                     cmd.process(bot, msg, suffix);
                 }
                 bot.stopTyping(msg.channel);
@@ -2145,11 +2203,13 @@ bot.on("presence", function(oldusr, newusr) {
 
 // Attempt authentication if disconnected
 bot.on("disconnected", function() {
-    disconnects++;
-    console.log(prettyDate(new Date()) + "[ERROR] Disconnected from Discord, will try again in 5s");
-    setTimeout(function() {
-        bot.login(AuthDetails.email, AuthDetails.password);
-    }, 5000);
+    if(readyToGo) {
+        disconnects++;
+        console.log(prettyDate(new Date()) + "[ERROR] Disconnected from Discord, will try again in 5s");
+        setTimeout(function() {
+            bot.login(AuthDetails.email, AuthDetails.password);
+        }, 5000);
+    }
 });
 
 // Returns a new trivia question from external questions/answers list
@@ -2278,12 +2338,7 @@ function clearStatCounter() {
             if(svrid=="timestamp") {
                 continue;
             }
-            for(var member in stats[svrid].members) {
-                stats[svrid].members[member].messages = 0;
-            }
-            for(var game in stats[svrid].games) {
-                stats[svrid].games[game] = 0;
-            }
+            clearServerStats(svrid);
         }
     } else {
         for(var i=0; i<bot.servers.length; i++) {
@@ -2313,6 +2368,19 @@ function clearStatCounter() {
     setTimeout(function() {
         clearStatCounter();
     }, 300000);
+}
+
+// Clear stats.json for a server
+function clearServerStats(svrid) {
+    for(var member in stats[svrid].members) {
+        stats[svrid].members[member].messages = 0;
+    }
+    for(var game in stats[svrid].games) {
+        stats[svrid].games[game] = 0;
+    }
+    for(var cmd in stats[svrid].commands) {
+        stats[svrid].commands[cmd] = 0;
+    }
 }
 
 // Start timer extensions on all servers
@@ -2590,6 +2658,9 @@ function saveData(file, callback) {
             break;
         case "./config.json":
             object = configs;
+            break;
+        case "./auth.json":
+            object = AuthDetails;
             break;
     }
     fs.writeFile(file, JSON.stringify(object, null, 4), function(err) {
@@ -2937,10 +3008,105 @@ function checkVersion() {
     setTimeout(checkVersion, 86400000);
 }
 
-// Login to the bot's Discord account
-bot.login(AuthDetails.email, AuthDetails.password, function(err) {
-    if(err) {
-        console.log(prettyDate(new Date()) + "[FATAL] Could not connect to Discord");
-        process.exit();
-    }
+// Command-line setup for empty fields
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
+function setup(i) {
+    if(i<Object.keys(AuthDetails).length) {
+        var key = Object.keys(AuthDetails)[i];
+        if(!AuthDetails[key]) {
+            rl.question("Enter " + key + ": ", function(input) {
+                AuthDetails[key] = input;
+                saveData("./auth.json", function(err) {
+                    if(err) {
+                        console.log(prettyDate(new Date()) + "[FATAL] Error saving authentication details");
+                        process.exit(1);
+                    }
+                    setup(i+1);
+                });
+            });
+        } else {
+            setup(i+1);
+        }
+    } else {
+        switch(i) {
+            case Object.keys(AuthDetails).length:
+                if(!configs.maintainer && !configs.setup) {
+                    rl.question("Enter your personal Discord ID or \".\" to skip: ", function(input) {
+                        if(input==".") {
+                            setup(i+1);
+                        } else {
+                            configs.maintainer = input;
+                            saveData("./config.json", function(err) {
+                                if(err) {
+                                    console.log(prettyDate(new Date()) + "[ERROR] Error saving configuration");
+                                }
+                                readyToGo = true;
+                                setup(i+3);
+                            });
+                        }
+                    });
+                } else {
+                    setup(i+3);
+                }
+                break;
+            case Object.keys(AuthDetails).length+1:
+                if(!configs.hosting && !configs.setup) {
+                    rl.question("Enter the web interface URL or \".\" to skip: ", function(input) {
+                        if(input==".") {
+                            setup(i+1);
+                        } else {
+                            configs.hosting = input;
+                            saveData("./config.json", function(err) {
+                                if(err) {
+                                    console.log(prettyDate(new Date()) + "[ERROR] Error saving configuration");
+                                }
+                                setup(i+1);
+                            });
+                        }
+                    });
+                } else {
+                    setup(i+2);
+                }
+                break;
+            case Object.keys(AuthDetails).length+2:
+                if(!configs.game && !configs.setup) {
+                    rl.question("Enter bot game or \".\" to skip: ", function(input) {
+                        if(input==".") {
+                            setup(i+1);
+                        } else {
+                            configs.maintainer = input;
+                            saveData("./config.json", function(err) {
+                                if(err) {
+                                    console.log(prettyDate(new Date()) + "[ERROR] Error saving configuration");
+                                }
+                                setup(i+1);
+                            });
+                        }
+                    });
+                } else {
+                    setup(i+1);
+                }
+                break;
+            default:
+                // Login to the bot's Discord account
+                bot.login(AuthDetails.email, AuthDetails.password, function(loginError) {
+                    if(loginError) {
+                        console.log(prettyDate(new Date()) + "[FATAL] Could not connect to Discord");
+                        process.exit(1);
+                    }
+                    readyToGo = true;
+                    configs.setup = true;
+                    saveData("./config.json", function(err) {
+                        if(err) {
+                            console.log(prettyDate(new Date()) + "[ERROR] Error saving configuration");
+                        }
+                    });
+                });
+                break;
+        }
+    }
+}
+setup(0);

@@ -96,18 +96,16 @@ Latest, version **3.3**:
  - New `say` command, just for fun
  - Added `timer` extension type
  - New auto-update system and forever support
- - Ability to change bot game live
+ - Maintainer console to change bot game, status, etc.
  - Fixed external join server bug
  - Option for PMs when mentioned
- - Command usage stats for maintainer
  - New stats system for members and games
+ - Per-server command usage info
  - Improved toggles in admin console
- - Fixed many, many bugs
+ - Command-line setup on first run 
+ - Fixed many, many bugs  
  
-Patch #1: Removed preceding space in usage strings  
-Patch #2: Updated version check URL  
- 
-Feel free to open an issue to report a bug or suggest a new feature!
+Open an issue to report a bug or suggest a new feature!
 
 Contribute
 ----------

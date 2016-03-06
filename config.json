@@ -1,6 +1,6 @@
 {
-    "hosting": "<web interface url>",
-    "maintainer": "<your personal discord id>",
-    "game": "<name of game to be shown playing>",
+    "hosting": "",
+    "maintainer": "",
+    "game": "",
     "servers": {}
 }
