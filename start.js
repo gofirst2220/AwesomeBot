@@ -1692,7 +1692,14 @@ bot.on("message", function (msg, user) {
                                 console.log(prettyDate(new Date()) + "[WARN] " + msg.author.username + " has already started a poll");
                                 bot.sendMessage(msg.channel, "You've already started a poll. Close it before starting a new one.");
                             } else if(!activePolls(ch.id)) {
-                                polls[msg.author.id] = {open: false, channel: ch.id, title: "", options: [], responderIDs: [], responses: []};
+                                polls[msg.author.id] = {
+                                    open: false,
+                                    timestamp: new Date().getTime(),
+                                    channel: ch.id, title: "",
+                                    options: [],
+                                    responderIDs: [],
+                                    responses: []
+                                };
                                 if(!stats[svr.id].commands.poll) {
                                     stats[svr.id].commands.poll = 0;
                                 }
@@ -2702,7 +2709,7 @@ function activePolls(chid) {
 // Generate results for poll
 function pollResults(usrid, intro, outro) {
     var responseCount = countOccurrences(polls[usrid].responses, polls[usrid].options);
-    var info = "**" + intro + " for the poll: " + polls[usrid].title + "**";
+    var info = "" + intro + " for the poll: **" + polls[usrid].title + "**";
     for(var i=0; i<polls[usrid].options.length; i++) {
         var c = responseCount[i];
         var d = true;
@@ -2724,6 +2731,7 @@ function pollResults(usrid, intro, outro) {
     } else {
         info += outro + ": " + polls[usrid].options[winner];
     }
+    info += "\n*Poll open for " + secondsToString((new Date().getTime() - polls[usrid].timestamp)/1000) + "*";
     
     return info;
 }
