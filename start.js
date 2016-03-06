@@ -955,6 +955,17 @@ bot.on("message", function (msg, user) {
     try {
         // Stuff that only applies to PMs
         if(msg.channel.isPrivate && msg.author.id!=bot.user.id) {
+            // Ensure that message is not from another AwesomeBot
+            if(msg.content.indexOf("You can interact with me in any of the channels by tagging me with")>-1) {
+                for(var i=0; i<bot.servers.length; i++) {
+                    if(bot.servers[i].members.get("id", msg.author.id)) {
+                        setTimeout(function() {
+                            configs.servers[bot.servers[i].id].blocked.value[configs.servers[bot.servers[i].id].blocked.value.length] = msg.author.id;
+                        }, 1000);
+                    }
+                }
+            }
+            
             // Update command from maintainer
             if(updateconsole && msg.author.id==configs.maintainer && msg.content=="update") {
                 console.log(prettyDate(new Date()) + "[INFO] Updating " + bot.user.username + ":");
