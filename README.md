@@ -119,6 +119,7 @@ Latest, version **3.3**:
  - Per-server command usage info
  - Improved toggles in admin console
  - Command-line setup on first run 
+ - Added poll timestamps
  - Fixed many, many bugs  
  
 Open an issue to report a bug or suggest a new feature!
