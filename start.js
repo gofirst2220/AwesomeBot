@@ -1,10 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.3";
-/*
-    TODO: timer extension type, maintainer console + command usage stats, character/emoji info, lots of testing
-*/
+var version = "3.3"; // TODO: test all new stuff
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -458,6 +455,13 @@ var commands = {
                     bot.sendMessage(msg.channel, "**" + data.location.name + " right now:**\n" + data.current.temperature + "°" + unit + " " + data.current.skytext + ", feels like " + data.current.feelslike + "°, " + data.current.winddisplay + " wind\n**Forecast for tomorrow:**\nHigh: " + data.forecast[1].high + "°, low: " + data.forecast[1].low + "° " + data.forecast[1].skytextday + " with " + data.forecast[1].precip + "% chance precip.");
                 }
             });
+        }
+    },
+    // Gets info about a given character or emoji
+    "char": { // TODO: char command for emoji/character lookup
+        usage: "<one emoji/character>",
+        process: function(bot, msg, suffix) {
+            bot.sendMessage(msg.channel, "Not implemented yet.");
         }
     },
     // Silences the bot until the start statement is issued
@@ -949,6 +953,7 @@ bot.on("message", function (msg, user) {
             }
             
             // Change bot playing game
+            // TODO: maintainer console with game option included
             if(msg.author.id==configs.maintainer && msg.content.indexOf("game ")==0 && msg.content.length>5) {
                 var game = msg.content.substring(msg.content.indexOf(" ")+1);
                 bot.setStatus("online", game);
@@ -1036,7 +1041,7 @@ bot.on("message", function (msg, user) {
                             var validity;
                             if(!extension.name || !extension.type || !extension.key || !extension.process) {
                                 validity = "missing parameter(s)";
-                            } else if(["keyword", "command"].indexOf(extension.type.toLowerCase())==-1) {
+                            } else if(["keyword", "command"].indexOf(extension.type.toLowerCase())==-1) { // TODO: add timer extension type
                                 validity = "invalid type";
                             } else if(extension.type=="command" && extension.key.indexOf(" ")>-1) {
                                 validity = "command has spaces";
@@ -1593,8 +1598,62 @@ bot.on("message", function (msg, user) {
                 return;
             }
             
-            // Mentions command, for list of mentions and toggle
-            // TODO: mentions PM command, include mention message timestamps, rework mention stat clearing
+            // Mentions command, for list of user mentions and toggle
+            if(msg.content.indexOf("mentions ")==0 && msg.content.length>9) {
+                var svr = bot.servers.get("name", msg.content.substring(9));
+                if(!svr) {
+                    console.log(prettyDate(new Date()) + "[WARN] Invalid server provided for " + msg.author.username + "'s mentions");
+                    bot.sendMessage(msg.channel, "I'm not on that server. You can reply with an invite link to add me!");
+                    return;
+                } else if(!svr.members.has("id", msg.author.id)) {
+                    console.log(prettyDate(new Date()) + "[WARN] " + msg.author.username + " is not on " + svr.name + ", so mentions cannot be retreived");
+                    bot.sendMessage(msg.channel, "*You're* not on " + svr.name + ". Obviously no one has mentioned you there!");
+                    return;
+                }
+                
+                if(stats[svr.id].members[msg.author.id].mentions.stream.length>0) {
+                    bot.sendMessage(msg.channel, "**Mentions on " + svr.name + " in the last week**");
+                    for(var i=0; i<stats[svr.id].members[msg.author.id].mentions.stream.length; i++) {
+                        var time = prettyDate(new Date(stats[svr.id].members[msg.author.id].mentions.stream[i].timestamp))
+                        bot.sendMessage(msg.channel, "__" + stats[svr.id].members[msg.author.id].mentions.stream[i].author + " at " + time.substring(1, time.length-2) + ":__\n" + stats[svr.id].members[msg.author.id].mentions.stream[i].message);
+                    }
+                    stats[svr.id].members[msg.author.id].mentions.stream = [];
+                    saveData("./stats.json", function(err) {
+                        if(err) {
+                            console.log(prettyDate(new Date()) + "[ERROR] Failed to clear mentions for " + usr.username);
+                        }
+                    });
+                    bot.sendMessage(msg.channel, "*Remember, you can " + stats[svr.id].members[msg.author.id].mentions.pm ? "disable" : "enable" + " PMs for mentions with `pmmentions " + svr.name + "`");
+                } else {
+                    bot.sendMessage(msg.channel, "You haven't been mentioned on " + svr.name + " in the last week. I don't know if that's a good or bad thing...");
+                }
+                return;
+            } else if(msg.content.indexOf("pmmentions ")==0 && msg.content.length>11) {
+                var svr = bot.servers.get("name", msg.content.substring(11));
+                if(!svr) {
+                    console.log(prettyDate(new Date()) + "[WARN] Invalid server provided for " + msg.author.username + "'s PM mentions");
+                    bot.sendMessage(msg.channel, "I'm not on that server. You can reply with an invite link to add me!");
+                    return;
+                } else if(!svr.members.has("id", msg.author.id)) {
+                    console.log(prettyDate(new Date()) + "[WARN] " + msg.author.username + " is not on " + svr.name + ", so mentions cannot be retreived");
+                    bot.sendMessage(msg.channel, "*You're* not on " + svr.name + ". Obviously no one can mention you there!");
+                    return;
+                }
+                
+                stats[svr.id].members[msg.author.id].mentions.pm = !stats[svr.id].members[msg.author.id].mentions.pm;
+                if(stats[svr.id].members[msg.author.id].mentions.pm) {
+                    bot.sendMessage(msg.channel, "You will now receive PM notifications from me when someone mentions you in " + svr.name + ". Turn them off by replying with `pmmentions " + svr.name + "`");
+                } else {
+                    bot.sendMessage(msg.channel, "Turned off PMs for mentions in " + svr.name + ". Enable them again by replying with `pmmentions " + svr.name + "`");
+                }
+                console.log(prettyDate(new Date()) + "[INFO] Turned " + stats[svr.id].members[msg.author.id].mentions.pm ? "on" : "off" + " mention PMs for "+ msg.author.username + " in " + svr.name);
+                saveData("./stats.json", function(err) {
+                    if(err) {
+                        console.log(prettyDate(new Date()) + "[ERROR] Failed to save PM mentions setting for " + usr.username);
+                    }
+                });
+                return;
+            }
         }
 
         // Stuff that only applies to public messages
@@ -1610,34 +1669,39 @@ bot.on("message", function (msg, user) {
             });
             
             // Check if message includes a tag or attempted tag
-            if(msg.content.indexOf(bot.user.mention())==-1 && msg.content.indexOf("<@")>-1 && msg.content.indexOf(">")>(msg.content.indexOf("<@")+15)) {
-                var usrid = msg.content.substring(msg.content.indexOf("<@")+2);
-                usrid = usrid.substring(0, usrnm.indexOf(">"));
-                var usr = msg.channel.server.members.get("id", usrid);
-                if(usr) {
-                    var mentions = stats[msg.channel.server.id].members[msg.author.id].mentions;
-                    if(mentions.timestamp==0) {
-                        mentions.timestamp = new Date().getTime();
-                    }
-                    mentions.stream[mentions.stream.length] = msg.content;
-                    if(mentions.pm) {
-                        bot.sendMessage(usr, "You were mentioned in a message on `" + msg.channel.server.name + "`:\n\n" + msg.content);
-                    }
-                }
-            } else if(msg.content.indexOf("@")>-1 && msg.content.substring(msg.content.indexOf("@")+1)) {
-                var usrnm = msg.content.substring(msg.content.indexOf("@")+1);
-                var usr = msg.channel.server.members.get("username", usrnm);
-                while(!usr && usrnm.length>0) {
-                    usrnm = usrnm.substring(0, usrnm.lastIndexOf(" "));
+            var content = msg.content;
+            while(content.indexOf("@")>-1 && content.substring(content.indexOf("@")+1)) {
+                var usr;
+                if(content.indexOf(bot.user.mention())==-1 && content.indexOf(">")>(content.indexOf("<@")+15)) {
+                    var usrid = content.substring(content.indexOf("<@")+2);
+                    usrid = usrid.substring(0, usrnm.indexOf(">"));
+                    content = content.indexOf("<@") + usrnm.indexOf(">") + 3;
+                    usr = msg.channel.server.members.get("id", usrid);
+                } else {
+                    var usrnm = content.substring(content.indexOf("@")+1);
                     usr = msg.channel.server.members.get("username", usrnm);
+                    while(!usr && usrnm.length>0) {
+                        usrnm = usrnm.substring(0, usrnm.lastIndexOf(" "));
+                        usr = msg.channel.server.members.get("username", usrnm);
+                    }
+                    content = content.indexOf("@") + usrnm.length + 1;
                 }
                 if(usr) {
+                    console.log(prettyDate() + "[INFO] " + msg.author.username + " mentioned " + usr.username + " in " + msg.channel.server.name);
                     var mentions = stats[msg.channel.server.id].members[msg.author.id].mentions;
-                    if(mentions.timestamp==0) {
-                        mentions.timestamp = new Date().getTime();
+                    mentions.stream[mentions.stream.length] = {
+                        timestamp: new Date().getTime(),
+                        author: msg.author.username,
+                        message: msg.content
+                    };
+                    if(mentions.pm) {
+                        bot.sendMessage(usr, "__You were mentioned in a message on **" + msg.channel.server.name + "**:__\n" + msg.content);
                     }
-                    mentions.stream[mentions.stream.length] = msg.content;
-                    bot.sendMessage(usr, "You were mentioned in a message on `" + msg.channel.server.name + "`:\n\n" + msg.content);
+                    saveData("./stats.json", function(err) {
+                        if(err) {
+                            console.log(prettyDate(new Date()) + "[ERROR] Could not save mention for " + usr.username);
+                        }
+                    });
                 }
             }
             
@@ -2147,9 +2211,11 @@ function clearStatCounter() {
                     stats[bot.servers[i].id].games[bot.servers[i].members[j].game.name] += 0.1;
                 }
                 // If member's mention data is 7 days old, clear it
-                if(stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.timestamp!=0 && dayDiff(new Date(stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.timestamp), new Date())>=7) {
-                    stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.timestamp = 0;
-                    stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.stream = [];
+                if(stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.stream.length>0) {
+                    if(dayDiff(new Date(stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.stream[0].timestamp), new Date())>=7) {
+                        stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.timestamp = 0;
+                        stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.stream = [];
+                    }
                 }
             }
         }
@@ -2286,6 +2352,10 @@ var defaultConfigFile = {
         option: "<allow? y/n>"
     },
     profile: {
+        value: true,
+        option: "<allow? y/n>"
+    },
+    char: {
         value: true,
         option: "<allow? y/n>"
     },
@@ -2619,7 +2689,7 @@ function dayDiff(first, second) {
 }
 
 // Generate help text
-function getHelp(svr) {
+function getHelp(svr) { // TODO: reformat help to add PM commands list
     var info = "";
     for(var cmd in commands) {
         if(commands[cmd]) {
