@@ -860,6 +860,8 @@ bot.on("ready", function() {
         for(var j=0; j<bot.servers[i].channels.length; j++) {
             botOn[bot.servers[i].id][bot.servers[i].channels[j].id] = true;
         }
+        // Run timer extensions
+        runTimerExtensions();
         // Send hello message
         //bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
         bot.stopTyping(bot.servers[i].defaultChannel);
@@ -1129,9 +1131,14 @@ bot.on("message", function (msg, user) {
                             var validity;
                             if(!extension.name || !extension.type || !extension.key || !extension.process) {
                                 validity = "missing parameter(s)";
-                            } else if(["keyword", "command"].indexOf(extension.type.toLowerCase())==-1) {
-                            // TODO: add timer extension type
+                            } else if(["keyword", "command", "timer"].indexOf(extension.type.toLowerCase())==-1) {
                                 validity = "invalid type";
+                            } else if(extension.type=="timer" && !extension.interval) {
+                                validity = "no interval provided";
+                            } else if(extension.type=="timer" && (extension.interval<10 || extension.interval>86400)) {
+                                validity = "interval must be between 10 seconds and 1 day";
+                            } else if(extension.type=="timer" && !extension.channels) {
+                                validity = "no channel(s) provided";
                             } else if(extension.type=="command" && extension.key.indexOf(" ")>-1) {
                                 validity = "command has spaces";
                             } else if(extension.type=="command" && commands[extension.key]) {
@@ -1179,6 +1186,9 @@ bot.on("message", function (msg, user) {
                                 bot.sendMessage(msg.channel, "Well, that didn't work. Here's the error: `" + validity + "`");
                             } else {
                                 configs.servers[svr.id].extensions[extension.name] = extension;
+                                if(extension.type=="timer") {
+                                    runTimerExtension(svr.id, extension.name);
+                                }
                                 console.log(prettyDate(new Date()) + "[INFO] Extension " + extension.name + " added to server " + svr.name);
                                 delete configs.servers[svr.id].extensions[extension.name].name;
                                 saveData("./config.json", function(err) {
@@ -1765,7 +1775,7 @@ bot.on("message", function (msg, user) {
                 }
                 if(usr) {
                     console.log(prettyDate(new Date()) + "[INFO] " + msg.author.username + " mentioned " + usr.username + " in " + msg.channel.server.name);
-                    var mentions = stats[msg.channel.server.id].members[msg.author.id].mentions;
+                    var mentions = stats[msg.channel.server.id].members[usr.id].mentions;
                     mentions.stream[mentions.stream.length] = {
                         timestamp: new Date().getTime(),
                         author: msg.author.username,
@@ -1853,7 +1863,7 @@ bot.on("message", function (msg, user) {
                 for(var ext in configs.servers[msg.channel.server.id].extensions) {
                     var extension = configs.servers[msg.channel.server.id].extensions[ext];
                     if(extension.channels) {
-                        if(extension.channels.indexOf(msg.channel.name)==-1) {
+                        if(extension.channels.indexOf(msg.channel.name)==-1 || extension.type=="timer") {
                             continue;
                         }
                     }
@@ -2272,6 +2282,7 @@ function clearMessageCounter() {
 function clearStatCounter() {
     // Clear member activity and game popularity info if 7 days old
     if(dayDiff(new Date(stats.timestamp), new Date())>=7) {
+        console.log(prettyDate(new Date()) + "[INFO] Cleared stats for this week");
         for(var svrid in stats) {
             if(svrid=="timestamp") {
                 continue;
@@ -2295,9 +2306,9 @@ function clearStatCounter() {
                 }
                 // If member's mention data is 7 days old, clear it
                 if(stats[bot.servers[i].id].members[bot.servers[i].members[j].id].mentions.stream.length>0) {
-                    if(dayDiff(new Date(stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.stream[0].timestamp), new Date())>=7) {
-                        stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.timestamp = 0;
-                        stats[bot.servers[i].id].members[bot.servers[i].id.members[j].id].mentions.stream = [];
+                    if(dayDiff(new Date(stats[bot.servers[i].id].members[bot.servers[i].members[j].id].mentions.stream[0].timestamp), new Date())>=7) {
+                        stats[bot.servers[i].id].members[bot.servers[i].members[j].id].mentions.timestamp = 0;
+                        stats[bot.servers[i].id].members[bot.servers[i].members[j].id].mentions.stream = [];
                     }
                 }
             }
@@ -2311,6 +2322,65 @@ function clearStatCounter() {
     setTimeout(function() {
         clearStatCounter();
     }, 300000);
+}
+
+// Start timer extensions on all servers
+function runTimerExtensions() {
+    for(var svrid in configs.servers) {
+        for(var extnm in configs.servers[svrid].extensions) {
+            if(configs.servers[svrid].extensions[extnm].type=="timer") {
+                runTimerExtension(svrid, extnm);
+            }
+        }
+    }
+}
+
+// Run a specific timer extension
+function runTimerExtension(svrid, extnm) {
+    var extension = configs.servers[svrid].extensions[extnm];
+    if(extension) {
+        var svr = bot.servers.get("id", svrid);
+        var params = {
+            unirest: unirest,
+            imgur: imgur,
+            image: giSearch,
+            setTimeout: setTimeout,
+            JSON: JSON,
+            Math: Math,
+            isNaN: isNaN,
+            Date: Date,
+            Array: Array,
+            Number: Number,
+            send: ""
+        }
+        try {
+            var context = new vm.createContext(params);
+            var script = new vm.Script(extension.process);
+            script.runInContext(context);
+            var wait = function(count) {
+                if(params.send=="" || !params.send) {
+                    setTimeout(function() {
+                        wait(count);
+                    }, 100);
+                } else if(count>30) {
+                    console.log(prettyDate(new Date()) + "[WARN] Timer extension " + extension.type + " in " + svr.name + " produced no output");
+                } else {
+                    for(var i=0; i<extension.channels; i++) {
+                        var ch = svr.channels.get("name", extension.channels[i]);
+                        if(ch) {
+                            bot.sendMessage(ch, params.send);
+                        }
+                    }
+                }
+            };
+            wait(0);
+        } catch(runError) {
+            console.log(prettyDate(new Date()) + "[ERROR] Failed to run timer extension " + extension.type + " in " + svr.name + ": " + runError);
+        }
+        setTimeout(function() {
+            runTimerExtension(svrid, extnm);
+        }, extension.interval * 1000);
+    }
 }
 
 // Converts seconds to a nicely formatted string in years, days, hours, minutes, seconds
