@@ -94,7 +94,6 @@ Latest, version **3.3**:
 
  - Added last seen in user profiles
  - New `say` command, just for fun
- - Character and emoji lookup with `char`
  - Added `timer` extension type
  - New auto-update system and forever support
  - Ability to change bot game live

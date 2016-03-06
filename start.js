@@ -1,8 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.3";
-// TODO: test all new stuff
+var version = "3.3-BETA";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -68,7 +67,7 @@ const util = require("util");
 const vm = require("vm");
 const searcher = require("google-search-scraper");
 const urlInfo = require("url-info-scraper");
-const base64 = require('node-base64-image');
+const base64 = require("node-base64-image");
 
 // List of possible greetings for new server members
 var greetings = ["++ Welcome to our little corner of hell!", "++ has joined the server.", "++ You're gonna have a jolly good time here!", "++ is new here.", "++ is here, everybody!", "++ sends his/her regards.", "++, welcome to the server!", "++ is our next victim...", "Hello ++!", "Please welcome our newest member, ++"];
@@ -456,15 +455,6 @@ var commands = {
             });
         }
     },
-    // Gets info about a given character or emoji
-    // TODO: char command for emoji/character lookup
-    "char": {
-        usage: "<one emoji/character>",
-        process: function(bot, msg, suffix) {
-            console.log(suffix.charCodeAt(0));
-            bot.sendMessage(msg.channel, "Not implemented yet.");
-        }
-    },
     // Silences the bot until the start statement is issued
     "quiet": {
         process: function(bot, msg, suffix) {
@@ -824,8 +814,7 @@ function rssfeed(bot, msg, url, count, full) {
 // Initializes bot and outputs to console
 var bot = new Discord.Client();
 bot.on("ready", function() {
-    //checkVersion();
-    // TODO: re-enable checkVersion (after testing)
+    checkVersion();
     
     // Make sure servers are properly configured and set variables
     for(var i=0; i<bot.servers.length; i++) {
@@ -863,7 +852,7 @@ bot.on("ready", function() {
         // Run timer extensions
         runTimerExtensions();
         // Send hello message
-        //bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
+        bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
         bot.stopTyping(bot.servers[i].defaultChannel);
     }
     
@@ -924,8 +913,7 @@ bot.on("ready", function() {
 });
 
 bot.on("message", function (msg, user) {
-    /*try {*/
-    // TODO: re-enable massive try/catch
+    try {
         // Stuff that only applies to PMs
         if(msg.channel.isPrivate && msg.author.id!=bot.user.id) {
             // Update command from maintainer
@@ -1059,6 +1047,7 @@ bot.on("message", function (msg, user) {
                         break;
                     case "stats":
                         bot.sendMessage(msg.channel, "Not implemented yet");
+                        // TODO: command usage stats
                         break;
                 }
                 return;
@@ -1602,6 +1591,7 @@ bot.on("message", function (msg, user) {
                         if(error) {
                             console.log(prettyDate(new Date()) + "[WARN] Failed to join new server, most likely user error");
                             bot.sendMessage(msg.channel, "Failed to join server. Please check your invite URL.");
+                            return;
                         } else {
                             console.log(prettyDate(new Date()) + "[INFO] Joined server " + server.name);
                             defaultConfig(server);
@@ -1613,6 +1603,7 @@ bot.on("message", function (msg, user) {
                             }
                             bot.sendMessage(msg.channel, "Successfully joined " + server.name);
                             adminMsg(false, server, msg.author, " has added me to " + server.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + server.name + "`. Check out https://git.io/v2e1w to learn more.");
+                            return;
                         }
                         bot.stopTyping(msg.channel);
                     });
@@ -2075,11 +2066,11 @@ bot.on("message", function (msg, user) {
                 bot.sendMessage(msg.channel,msg.author + ", you called?");
             }
         }
-    /*} catch(mainError) {
+    } catch(mainError) {
         bot.stopTyping(msg.channel);
         console.log(prettyDate(new Date()) + "[ERROR] Failed to process new message in " + msg.channel.server.name);
         console.log(mainError);
-    }*/
+    }
 });
 
 // Add server if joined outisde of bot
