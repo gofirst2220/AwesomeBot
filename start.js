@@ -3123,6 +3123,7 @@ function setup(i) {
                 }
                 break;
             default:
+                rl.close();
                 // Login to the bot's Discord account
                 bot.login(AuthDetails.email, AuthDetails.password, function(loginError) {
                     if(loginError) {
