@@ -833,14 +833,15 @@ function rssfeed(bot, msg, url, count, full) {
     var FeedParser = require("feedparser");
     var feedparser = new FeedParser();
     request(url).pipe(feedparser);
-    feedparser.on('error', function(error){
+    feedparser.on("error", function(error){
         console.log(prettyDate(new Date()) + "[ERROR] Failed to read requested feed.");
         bot.sendMessage(msg.channel, "Failed to read feed. Sorry.");
     });
     var shown = 0;
-    feedparser.on('readable', function() {
+    feedparser.on("readable", function() {
         var stream = this;
-        shown += 1
+        shown++;
+        console.log(shown);
         if(shown > count){
             return;
         }
@@ -856,6 +857,9 @@ function rssfeed(bot, msg, url, count, full) {
         });
         stream.alreadyRead = true;
     });
+    if(shown==0) {
+        bot.sendMessage(msg.channel, "Empty feed.");
+    }
 }
 
 // Initializes bot and outputs to console
