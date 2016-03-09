@@ -1805,7 +1805,7 @@ bot.on("message", function (msg, user) {
                     info = "**Mentions on " + svr.name + " in the last week**";
                     for(var i=0; i<stats[svr.id].members[msg.author.id].mentions.stream.length; i++) {
                         var time = prettyDate(new Date(stats[svr.id].members[msg.author.id].mentions.stream[i].timestamp))
-                        info += "\n__" + stats[svr.id].members[msg.author.id].mentions.stream[i].author + " at " + time.substring(1, time.length-2) + ":__\n" + stats[svr.id].members[msg.author.id].mentions.stream[i].message;
+                        info += "\n__*@" + stats[svr.id].members[msg.author.id].mentions.stream[i].author + " at " + time.substring(1, time.length-2) + ":*__\n" + stats[svr.id].members[msg.author.id].mentions.stream[i].message;
                     }
                     info += "\n\n";
                     stats[svr.id].members[msg.author.id].mentions.stream = [];
@@ -1872,7 +1872,7 @@ bot.on("message", function (msg, user) {
                         message: msg.content
                     };
                     if(mentions.pm) {
-                        bot.sendMessage(usr, "__You were mentioned in a message on **" + msg.channel.server.name + "**:__\n" + msg.content);
+                        bot.sendMessage(usr, "__You were mentioned by @" + msg.author.username + " on **" + msg.channel.server.name + "**:__\n" + msg.content);
                     }
                 }
             }
