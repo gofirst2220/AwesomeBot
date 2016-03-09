@@ -120,6 +120,7 @@ Latest, version **3.3**:
  - Improved toggles in admin console
  - Command-line setup on first run 
  - Added poll timestamps
+ - Revamped logging system with filters
  - Fixed many, many bugs  
  
 Open an issue to report a bug or suggest a new feature!
