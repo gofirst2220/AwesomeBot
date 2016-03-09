@@ -1291,7 +1291,7 @@ bot.on("message", function (msg, user) {
                         return;
                     }
                     if(suffix=="" && ["quit", "remove", "leave", "close", "list"].indexOf(n)==-1) {
-                        logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Parameter not provided for option " + n);
+                        logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Parameter not provided for option " + n + " in admin console for " + svr.name);
                         bot.sendMessage(msg.channel, "Missing parameter. Please see your options above.");
                         return;
                     }
@@ -1812,6 +1812,7 @@ bot.on("message", function (msg, user) {
                 } else {
                     info = "You haven't been mentioned on " + svr.name + " in the last week. I don't know if that's a good or bad thing...\n";
                 }
+                logMsg(new Date().getTime(), "INFO", msg.author.id, null, "User checked mentions in " + svr.name);
                 info += "*Remember, you can " + (stats[svr.id].members[msg.author.id].mentions.pm ? "disable" : "enable") + " PMs for mentions with `pmmentions " + svr.name + "`*";
                 bot.sendMessage(msg.channel, info);
                 return;
@@ -1833,7 +1834,7 @@ bot.on("message", function (msg, user) {
                 } else {
                     bot.sendMessage(msg.channel, "Turned off PMs for mentions in " + svr.name + ". Enable them again by replying with `pmmentions " + svr.name + "`");
                 }
-                logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Turned " + stats[svr.id].members[msg.author.id].mentions.pm ? "on" : "off" + " mention PMs in " + svr.name);
+                logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Turned " + (stats[svr.id].members[msg.author.id].mentions.pm ? "on" : "off") + " mention PMs in " + svr.name);
                 return;
             }
         }
