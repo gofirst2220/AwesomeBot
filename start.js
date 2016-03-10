@@ -1,7 +1,6 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
-var botOn = {};
-var version = "3.3-StillInBeta";
+var version = "3.3-BETA";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -88,64 +87,13 @@ var commands = {
                 return;
             }
             
-            var sortedMembers = [];
-            for(var member in stats[msg.channel.server.id].members) {
-                sortedMembers.push([member, stats[msg.channel.server.id].members[member].messages]);
-            }
-            sortedMembers.sort(function(a, b) {
-                return a[1] - b[1];
-            });
-            var sortedGames = [];
-            for(var game in stats[msg.channel.server.id].games) {
-                sortedGames.push([game, stats[msg.channel.server.id].games[game]]);
-            }
-            sortedGames.sort(function(a, b) {
-                return a[1] - b[1];
-            });
-            var sortedCommands = [];
-            var commandSum = 0;
-            for(var cmd in stats[msg.channel.server.id].commands) {
-                commandSum += stats[msg.channel.server.id].commands[cmd];
-                sortedCommands.push([cmd, stats[msg.channel.server.id].commands[cmd]]);
-            }
-            sortedCommands.sort(function(a, b) {
-                return a[1] - b[1];
-            });
-            
-            var info = "**" + msg.channel.server.name + " (this week)**\nMost active members:";
-            for(var i=sortedMembers.length-1; i>sortedMembers.length-6; i--) {
-                if(i<0) {
-                    break;
+            var data = getStats(msg.channel.server);
+            var info = "**" + msg.channel.server.name + " (this week)**"
+            for(var cat in data) {
+                info += "\n" + cat + ":";
+                for(var i=0; i<data[cat].length; i++) {
+                    info += "\n\t" + data[cat][i];
                 }
-                if(i==sortedMembers.length-1 && sortedMembers[i][1]==0) {
-                    info += "\n\t*Crickets*";
-                    break;
-                }
-                var usr = msg.channel.server.members.get("id", sortedMembers[i][0]);
-                if(usr && sortedMembers[i][1]>0) {
-                    info += "\n\t" + usr.username + ": " + sortedMembers[i][1] + " messages";
-                }
-            }
-            info += "\nMost-played games:";
-            for(var i=sortedGames.length-1; i>sortedGames.length-6; i--) {
-                if(i<0) {
-                    break;
-                }
-                if(i==sortedGames.length-1 && sortedGames[i][1]==0) {
-                    info += "\n\t*Maybe this isn't a gaming server...*";
-                    break;
-                }
-                info += "\n\t" + sortedGames[i][0] + ": " + secondsToString(sortedGames[i][1] * 3000);
-            }
-            info += "\nCommand usage:";
-            for(var i=sortedCommands.length-1; i>-1; i--) {
-                if(sortedCommands[i][1]>0) {
-                    var p = Math.floor(100 * sortedCommands[i][1] / commandSum);
-                    info += "\n\t" + ("  " + p).substring(p.toString().length-1) + "% " + sortedCommands[i][0] + ": " + sortedCommands[i][1] + " uses";
-                }
-            }
-            if(sortedCommands.length<1) {
-                info += "\n\tI'm completely useless here *cries*";
             }
             bot.sendMessage(msg.channel, info);
             
@@ -486,10 +434,10 @@ var commands = {
         process: function(bot, msg, suffix) {
             if(configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1 && suffix.toLowerCase()=="all") {
                 for(var i=0; i<msg.channel.server.channels; i++) {
-                    botOn[msg.channel.server.id][msg.channel.server.channels[i].id] = false;
+                    stats[msg.channel.server.id].botOn[msg.channel.server.channels[i].id] = false;
                 }
             } else if(configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1) {
-                botOn[msg.channel.server.id][msg.channel.id] = false;
+                stats[msg.channel.server.id].botOn[msg.channel.id] = false;
             } else {
                 logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, msg.author.username + " is not a bot admin and cannot quiet bot");
                 bot.sendMessage(msg.channel,msg.author + " Sorry, I won't listen to you :P");
@@ -755,54 +703,15 @@ var commands = {
                 usr = msg.channel.server.members.get("id", suffix.substring(2, suffix.length-1));
             }
             if(usr) {
-                var info = "**User Profile: " + usr + "**\n\tID: " + usr.id + "\n\tStatus: " + usr.status + "\n\tAvatar: ";
-                var avatar = "";
-                if(usr.avatarURL) {
-                    avatar = usr.avatarURL;
-                } else {
-                    avatar = "http://i.imgur.com/fU70HJK.png";
+                var data = getProfile(usr, msg);
+                var info = "";
+                for(var sect in data) {
+                    info += "**" + sect + ":**\n";
+                    for(var key in data[sect]) {
+                        info += "\t" + key + ": " + data[sect][key] + "\n";
+                    }
                 }
-                imgur.upload(avatar, function(error, res) {
-                    if(error || !res.data) {
-                        info += usr.avatarURL;
-                    } else {
-                        info += res.data.link;
-                    }
-                    if(usr.game) {
-                        info += "\n\tPlaying " + usr.game.name;
-                    }
-                    if(profileData[msg.author.id]) {
-                        for(var field in profileData[msg.author.id]) {
-                            info += "\n\t" + field.charAt(0).toUpperCase() + field.slice(1) + ": " + profileData[msg.author.id][field];
-                        }
-                    }
-                    var details = msg.channel.server.detailsOfUser(usr);
-                    if(details) {
-                        info += "\n**On " + msg.channel.server.name + "**";
-                        if(details.roles.length>0) {
-                            info += "\n\tRoles: " + details.roles[0].name;
-                            for(var i=1; i<details.roles.length; i++) {
-                                info += ", " + details.roles[i].name;
-                            }
-                        }
-                        var joined = prettyDate(new Date(details.joinedAt));
-                        info += "\n\tJoined: " + joined.substring(1, joined.length-2);
-                    }
-                    if(usr.status!="online" && configs.servers[msg.channel.server.id].stats.value) {
-                        var seen = prettyDate(new Date(stats[msg.channel.server.id].members[msg.author.id].seen));
-                        info += "\n\tLast seen: " + seen.substring(1, seen.length-2);
-                    }
-                    var other = 0;
-                    for(var i=0; i<bot.servers.length; i++) {
-                        if(bot.servers[i].members.get("id", usr.id)) {
-                            other++;
-                        }
-                    }
-                    if(other>1) {
-                        info += "\nHas " + other + " mutual servers with me";
-                    }
-                    bot.sendMessage(msg.channel, info);
-                });
+                bot.sendMessage(msg.channel, info);
             } else {
                 logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Requested member does not exist so profile cannot be shown");
                 bot.sendMessage(msg.channel, "That user doesn't exist :/");
@@ -864,22 +773,7 @@ bot.on("ready", function() {
     for(var i=0; i<bot.servers.length; i++) {
         bot.startTyping(bot.servers[i].defaultChannel);
         // Populate stats file
-        if(!stats[bot.servers[i].id]) {
-            stats[bot.servers[i].id] = {members: {}, games: {}, commands: {}};
-            logMsg(new Date().getTime(), "INFO", bot.servers[i].name, null, "Created stats");
-        }
-        for(var j=0; j<bot.servers[i].members.length; j++) {
-            if(!stats[bot.servers[i].id].members[bot.servers[i].members[j].id]) {
-                stats[bot.servers[i].id].members[bot.servers[i].members[j].id] = {
-                    messages: 0,
-                    seen: new Date().getTime(),
-                    mentions: {
-                        pm: false,
-                        stream: []
-                    }
-                };
-            }
-        }
+        populateStats(svr);
         // Configure new servers
         if(!configs.servers[bot.servers[i].id]) {
             defaultConfig(bot.servers[i]);
@@ -889,15 +783,10 @@ bot.on("ready", function() {
         // Set runtime values
         cleverOn[bot.servers[i].id] = true;
         spams[bot.servers[i].id] = {};
-        botOn[bot.servers[i].id] = {};
-        // Turn on bot
-        for(var j=0; j<bot.servers[i].channels.length; j++) {
-            botOn[bot.servers[i].id][bot.servers[i].channels[j].id] = true;
-        }
         // Run timer extensions
         runTimerExtensions();
         // Send hello message
-        bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
+        //bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
         bot.stopTyping(bot.servers[i].defaultChannel);
     }
     
@@ -1070,6 +959,7 @@ bot.on("message", function (msg, user) {
                         bot.sendMessage(msg.channel, "Goodbye, master.");
                         maintainerconsole = false;
                         break;
+                    // TODO: multiple games 
                     case "game":
                         bot.setStatus("online", suffix);
                         if(suffix==".") {
@@ -1684,10 +1574,7 @@ bot.on("message", function (msg, user) {
                             defaultConfig(server);
                             messages[server.id] = 0;
                             cleverOn[server.id] = 0;
-                            botOn[server.id] = {};
-                            for(var i=0; i<server.channels; i++) {
-                                botOn[server.id][server.channels[i].id] = true;
-                            }
+                            populateStats(server);
                             bot.sendMessage(msg.channel, "Successfully joined " + server.name);
                             adminMsg(false, server, msg.author, " has added me to " + server.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + server.name + "`. Check out https://git.io/v2e1w to learn more.");
                         }
@@ -1726,7 +1613,7 @@ bot.on("message", function (msg, user) {
                     if(!ch) {
                         logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Invalid channel provided for new poll");
                         bot.sendMessage(msg.channel, "Invalid channel.");
-                    } else if(botOn[svr.id][ch.id]) {
+                    } else if(stats[svr.id].botOn[ch.id]) {
                         if(configs.servers[svr.id].poll.value) {
                             if(polls[msg.author.id]) {
                                 logMsg(new Date().getTime(), "WARN", msg.author.id, null, "User has already started a poll");
@@ -1879,15 +1766,15 @@ bot.on("message", function (msg, user) {
             }
             
             // If start statement is issued, say hello and begin listening
-            if(msg.content.indexOf(bot.user.mention()) == 0 && msg.content.indexOf("start") > -1 && configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1 && !botOn[msg.channel.server.id][msg.channel.id]) {
+            if(msg.content.indexOf(bot.user.mention()) == 0 && msg.content.indexOf("start") > -1 && configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1 && !stats[msg.channel.server.id].botOn[msg.channel.id]) {
                 logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Bot has been started by an admin");
-                botOn[msg.channel.server.id][msg.channel.id] = true;
+                stats[msg.channel.server.id].botOn[msg.channel.id] = true;
                 bot.sendMessage(msg.channel, "Hello!");
                 return;
             }
             
             // Stop responding if the author is a blocked user or bot isn't on
-            if(configs.servers[msg.channel.server.id].blocked.value.indexOf(msg.author.id)>-1 || !botOn[msg.channel.server.id][msg.channel.id]) {
+            if(configs.servers[msg.channel.server.id].blocked.value.indexOf(msg.author.id)>-1 || !stats[msg.channel.server.id].botOn[msg.channel.id]) {
                 return;
             }
             
@@ -2088,7 +1975,7 @@ bot.on("message", function (msg, user) {
             var cmd = commands[cmdTxt];
             
             // Process commands
-            if(cmd && !msg.channel.isPrivate && !extensionApplied && botOn[msg.channel.server.id][msg.channel.id]) {
+            if(cmd && !msg.channel.isPrivate && !extensionApplied && stats[msg.channel.server.id].botOn[msg.channel.id]) {
                 if(configs.servers[msg.channel.server.id][cmdTxt]) {
                     if(!configs.servers[msg.channel.server.id][cmdTxt].value) {
                         return;
@@ -2098,7 +1985,7 @@ bot.on("message", function (msg, user) {
                 if(filter.indexOf(suffix)>-1 && configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)==-1 && configs.servers[msg.channel.server.id].nsfwfilter.value && configs.servers[msg.channel.server.id].servermod.value && cmdTxt!="reddit") {
                     logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Handling filtered query '" + msg.content + "' from " + msg.author.username);
                     kickUser(msg, "is abusing the bot", "attempting to fetch NSFW content");
-                } else if(botOn[msg.channel.server.id][msg.channel.id]) {
+                } else if(stats[msg.channel.server.id].botOn[msg.channel.id]) {
                     logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Treating '" + msg.content + "' from " + msg.author.username + " as a command");
                     if(["quiet", "ping", "help", "stats", "trivia"].indexOf(cmdTxt)==-1) {
                         if(!stats[msg.channel.server.id].commands[cmdTxt]) {
@@ -2179,7 +2066,7 @@ bot.on("message", function (msg, user) {
             if(msg.author == bot.user){
                 return;
             }
-            if(msg.author != bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction.value && botOn[msg.channel.server.id][msg.channel.id]) {
+            if(msg.author != bot.user && msg.isMentioned(bot.user) && configs.servers[msg.channel.server.id].tagreaction.value && stats[msg.channel.server.id].botOn[msg.channel.id]) {
                 logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Bot tagged by " + msg.author.username);
                 bot.sendMessage(msg.channel,msg.author + ", you called?");
             }
@@ -2197,10 +2084,7 @@ bot.on("serverCreated", function(svr) {
     defaultConfig(svr);
     messages[svr.id] = 0;
     cleverOn[svr.id] = 0;
-    botOn[svr.id] = {};
-    for(var i=0; i<svr.channels; i++) {
-        botOn[svr.id][svr.channels[i].id] = true;
-    }
+    populateStats(svr);
     adminMsg(false, svr, configs.maintainer ? configs.maintainer : {username: "I"}, configs.maintainer ? (configs.maintainer + " has added me to ") : " have added myself to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out https://git.io/v2e1w to learn more.");
 });
 
@@ -2215,7 +2099,7 @@ bot.on("serverDeleted", function(svr) {
 // New server member handling
 bot.on("serverNewMember", function(svr, usr) {
     // Check if this has been enabled in admin console and the bot is listening
-    if(configs.servers[svr.id].servermod.value && botOn[svr.id][svr.defaultChannel.id]) {
+    if(configs.servers[svr.id].servermod.value && stats[svr.id].botOn[svr.defaultChannel.id]) {
         logMsg(new Date().getTime(), "INFO", svr.name, null, "New member: " + usr.username);
         bot.sendMessage(svr.defaultChannel, greetings[getRandomInt(0, greetings.length-1)].replace("++", usr));
         var info = "Welcome to the " + svr.name + " Discord chat! " + configs.servers[svr.id].newgreeting.value + "\n\nI'm " + bot.user.username + " by the way. You can interact with me in any of the channels by tagging me with `@" + bot.user.username + "` and then stating any one of the following commands:" + getHelp(svr);
@@ -2233,7 +2117,7 @@ bot.on("serverNewMember", function(svr, usr) {
 
 // Message on user banned
 bot.on("userBanned", function(usr, svr) {
-    if(configs.servers[svr.id].servermod.value && botOn[svr.id][svr.defaultChannel.id]) {
+    if(configs.servers[svr.id].servermod.value && stats[svr.id].botOn[svr.defaultChannel.id]) {
         logMsg(new Date().getTime(), "INFO", svr.name, null, "User " + usr.username + " has been banned");
         bot.sendMessage(svr.defaultChannel, usr.username + " has been banned.");
     }
@@ -2241,7 +2125,7 @@ bot.on("userBanned", function(usr, svr) {
 
 // Message on user unbanned
 bot.on("userUnbanned", function(usr, svr) {
-    if(configs.servers[svr.id].servermod.value && botOn[svr.id][svr.defaultChannel.id]) {
+    if(configs.servers[svr.id].servermod.value && stats[svr.id].botOn[svr.defaultChannel.id]) {
         logMsg(new Date().getTime(), "INFO", svr.name, null, "User " + usr.username + " has been unbanned");
         bot.sendMessage(svr.defaultChannel, usr.username + " is no longer banned.");
     }
@@ -2293,6 +2177,37 @@ function triviaQ(chid) {
     });
     logMsg(new Date().getTime(), "INFO", bot.channels.get("id", chid).server.name, bot.channels.get("id", chid).name, "New trivia question");
     return info;
+}
+
+// Populate stats.json for a server
+function populateStats(svr) {
+    logMsg(new Date().getTime(), "INFO", svr.name, null, "Created stats");
+    // Overall server stats
+    stats[svr.id] = {
+        members: {},
+        games: {},
+        commands: {},
+        botOn: {}
+    };
+    // Turn on bot
+    for(var i=0; j<svr.channels.length; i++) {
+        if(!stats[svr.id].botOn[svr.channels[i].id]) {
+            stats[svr.id].botOn[svr.channels[i].id] = true;
+        }
+    }
+    // Stats for members
+    for(var i=0; j<svr.members.length; i++) {
+        if(!stats[svr.id].members[svr.members[i].id]) {
+            stats[svr.id].members[svr.members[i].id] = {
+                messages: 0,
+                seen: new Date().getTime(),
+                mentions: {
+                    pm: false,
+                    stream: []
+                }
+            };
+        }
+    }
 }
 
 // Get a line in a non-JSON file
@@ -2898,6 +2813,118 @@ function ytSearch(query, callback) {
         }
         callback(q);
     });
+}
+
+// Generate printable stats for a server
+function getStats(svr) {
+    var sortedMembers = [];
+    for(var member in stats[svr.id].members) {
+        sortedMembers.push([member, stats[svr.id].members[member].messages]);
+    }
+    sortedMembers.sort(function(a, b) {
+        return a[1] - b[1];
+    });
+    var sortedGames = [];
+    for(var game in stats[svr.id].games) {
+        sortedGames.push([game, stats[svr.id].games[game]]);
+    }
+    sortedGames.sort(function(a, b) {
+        return a[1] - b[1];
+    });
+    var sortedCommands = [];
+    var commandSum = 0;
+    for(var cmd in stats[svr.id].commands) {
+        commandSum += stats[svr.id].commands[cmd];
+        sortedCommands.push([cmd, stats[svr.id].commands[cmd]]);
+    }
+    sortedCommands.sort(function(a, b) {
+        return a[1] - b[1];
+    });
+    
+    var info = {
+        "Most active members": [],
+        "Most played games": [],
+        "Command usage": []
+    };
+    for(var i=sortedMembers.length-1; i>sortedMembers.length-6; i--) {
+        if(i<0) {
+            break;
+        }
+        var usr = svr.members.get("id", sortedMembers[i][0]);
+        if(usr && sortedMembers[i][1]>0) {
+            info["Most active members"][info["Most active members"].length] = usr.username + ": " + sortedMembers[i][1] + " messages";
+        }
+    }
+    info += "\nMost-played games:";
+    for(var i=sortedGames.length-1; i>sortedGames.length-6; i--) {
+        if(i<0) {
+            break;
+        }
+        info["Most played games"][info["Most played games"].length] = sortedGames[i][0] + ": " + secondsToString(sortedGames[i][1] * 3000);
+    }
+    info += "\nCommand usage:";
+    for(var i=sortedCommands.length-1; i>-1; i--) {
+        if(sortedCommands[i][1]>0) {
+            var p = Math.floor(100 * sortedCommands[i][1] / commandSum);
+            info["Command usage"][info["Command usage"].length] = ("  " + p).substring(p.toString().length-1) + "% " + sortedCommands[i][0] + ": " + sortedCommands[i][1] + " uses";
+        }
+    }
+    return info;
+} 
+
+// Generate printable user profile
+function getProfile(usr, msg) {
+    var usrinfo = {
+        "ID": usr.id,
+        "Status": usr.status
+    }
+    var avatar = "";
+    if(usr.avatarURL) {
+        avatar = usr.avatarURL;
+    } else {
+        avatar = "http://i.imgur.com/fU70HJK.png";
+    }
+    imgur.upload(avatar, function(error, res) {
+        if(error || !res.data) {
+            usrinfo["Avatar"] = usr.avatarURL;
+        } else {
+            usrinfo["Avatar"] = res.data.link;
+        }
+    });
+    if(usr.game) {
+        usrinfo["Playing"] = usr.game.name;
+    }
+    if(profileData[msg.author.id]) {
+        for(var field in profileData[msg.author.id]) {
+            usrinfo[field.charAt(0).toUpperCase() + field.slice(1)] = profileData[msg.author.id][field];
+        }
+    }
+    var details = msg.channel.server.detailsOfUser(usr);
+    if(details) {
+        var svrinfo = {};
+        if(details.roles.length>0) {
+            svrinfo["Roles"] = details.roles[0].name;
+            for(var i=1; i<details.roles.length; i++) {
+                info += ", " + details.roles[i].name;
+            }
+        }
+        var joined = prettyDate(new Date(details.joinedAt));
+        svrinfo["Joined"] = joined.substring(1, joined.length-2);
+    }
+    if(usr.status!="online" && configs.servers[msg.channel.server.id].stats.value) {
+        var seen = prettyDate(new Date(stats[msg.channel.server.id].members[usr.id].seen));
+        svrinfo["Last seen"] = seen.substring(1, seen.length-2);
+    }
+    var other = 0;
+    for(var i=0; i<bot.servers.length; i++) {
+        if(bot.servers[i].members.get("id", usr.id)) {
+            other++;
+        }
+    }
+    var info = {};
+    info["User profile: @" + usr.username] = usrinfo;
+    info["On " + msg.channel.server.name] = svrinfo;
+    return info;
 }
 
 // Delete last n bot messages

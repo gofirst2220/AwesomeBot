@@ -121,6 +121,7 @@ Latest, version **3.3**:
  - Command-line setup on first run 
  - Added poll timestamps
  - Revamped logging system with filters
+ - Made bot status persistent
  - Fixed many, many bugs  
  
 Open an issue to report a bug or suggest a new feature!
