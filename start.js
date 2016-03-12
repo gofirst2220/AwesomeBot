@@ -88,6 +88,12 @@ var commands = {
             bot.sendMessage(msg.channel, info);
         }
     },
+    // About AwesomeBot!
+    "about": {
+        process: function(bot, msg) {
+            bot.sendMessage(msg.channel, "Hello! I'm **" + bot.user.username + "**, here to help everyone on this server. A full list of commands and features is available with `@" + bot.user.username + " help`. You can PM me an invite link to add me to another server. To learn more, check out my GitHub page (https://git.io/v2e1w) or join the Discord server (https://discord.gg/0pRFCTcG2aIY53Jk)\n\n*v" + version + " by @anandroiduser, made with NodeJS*");
+        }
+    },
     // Shows top 5 games and active members
     "stats": {
         usage: "<(optional) clear>",
