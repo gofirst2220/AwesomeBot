@@ -1,5 +1,5 @@
 {
-  "name": "Awesomebot",
+  "name": "AwesomeBot",
   "version": "0.1.1",
   "author": "anandroiduser",
   "repository": {
@@ -43,7 +43,8 @@
     "url-info-scraper": "*",
     "cross-spawn": "*",
     "forever": "*",
-    "node-base64-image": "*"
+    "node-base64-image": "*",
+    "write-file-atomic": "*"
   },
   "scripts": {
     "start": "forever start.js"

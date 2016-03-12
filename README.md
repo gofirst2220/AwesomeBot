@@ -89,7 +89,7 @@ The file you attach should have the following basic structure:
 }
 ```
 
-`process` is the crucial component here (you can compress your code into a string [here](http://javascriptcompressor.com/)). This code is given 3 seconds to run in a sandbox, with access to the following:
+`process` is the crucial component here (you can compress your code into a string [using this website](http://javascriptcompressor.com/)). This code is given 3 seconds to run in a sandbox, with access to the following:
 
  - `unirest`: lightweight HTTP request library
  - `imgur`: preauthenticated `imgur-node-api` module
@@ -113,14 +113,17 @@ Latest, version **3.3**:
  - Added timer extension type
  - New auto-update system and forever support
  - Maintainer console to change bot game, status, etc.
+ - Added message archiving in admin console
  - Fixed external join server bug
  - Option for PMs when mentioned
  - New stats system for members and games
  - Per-server command usage info
  - Improved toggles in admin console
  - Command-line setup on first run 
+ - Persistent reminders with PM support
  - Added poll timestamps
  - Revamped logging system with filters
+ - Access to stats and profiles in web interface
  - Made bot status persistent
  - Fixed many, many bugs  
  
