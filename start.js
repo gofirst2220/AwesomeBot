@@ -901,7 +901,7 @@ bot.on("message", function (msg, user) {
         // Stuff that only applies to PMs
         if(msg.channel.isPrivate && msg.author.id!=bot.user.id) {
             // Ensure that message is not from another AwesomeBot
-            if(msg.content.indexOf("You can interact with me in any of the channels by tagging me with")>-1) {
+            if(msg.content.indexOf("I am a bot. Take note, other bots: `8WvCtp7ZjmaOj60KoTRP`")>-1) {
                 for(var i=0; i<bot.servers.length; i++) {
                     if(bot.servers[i].members.get("id", msg.author.id)) {
                         setTimeout(function() {
@@ -2158,7 +2158,7 @@ bot.on("serverNewMember", function(svr, usr) {
     if(configs.servers[svr.id].servermod.value && stats[svr.id].botOn[svr.defaultChannel.id]) {
         logMsg(new Date().getTime(), "INFO", svr.name, null, "New member: " + usr.username);
         bot.sendMessage(svr.defaultChannel, greetings[getRandomInt(0, greetings.length-1)].replace("++", usr));
-        var info = "Welcome to the " + svr.name + " Discord chat! " + configs.servers[svr.id].newgreeting.value + "\n\nI'm " + bot.user.username + " by the way. You can interact with me in any of the channels by tagging me with `@" + bot.user.username + "` and then stating any one of the following commands:" + getHelp(svr);
+        var info = "Welcome to the " + svr.name + " Discord chat! " + configs.servers[svr.id].newgreeting.value + "\n\nI'm " + bot.user.username + " by the way. You can interact with me in any of the channels by tagging me with `@" + bot.user.username + "` and then stating any one of the following commands:" + getHelp(svr) + ". I am a bot. Take note, other bots: `8WvCtp7ZjmaOj60KoTRP`";
         bot.sendMessage(usr, info);
     }
     stats[svr.id].members[usr.id] = {
