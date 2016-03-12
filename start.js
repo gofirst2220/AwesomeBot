@@ -900,13 +900,11 @@ bot.on("message", function (msg, user) {
     try {
         // Stuff that only applies to PMs
         if(msg.channel.isPrivate && msg.author.id!=bot.user.id) {
-            // Ensure that message is not from another AwesomeBot
+            // Ensure that message is not from another AwesomeBot and block if so
             if(msg.content.indexOf("I am a bot. Take note, other bots: `8WvCtp7ZjmaOj60KoTRP`")>-1) {
                 for(var i=0; i<bot.servers.length; i++) {
                     if(bot.servers[i].members.get("id", msg.author.id)) {
-                        setTimeout(function() {
-                            configs.servers[bot.servers[i].id].blocked.value[configs.servers[bot.servers[i].id].blocked.value.length] = msg.author.id;
-                        }, 1000);
+                        configs.servers[bot.servers[i].id].blocked.value[configs.servers[bot.servers[i].id].blocked.value.length] = msg.author.id;
                     }
                 }
             }
