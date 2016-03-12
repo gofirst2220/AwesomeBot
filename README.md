@@ -94,6 +94,7 @@ Latest, version **3.2.9**:
  
 Patch #1: Removed preceding space in usage strings  
 Patch #2: Updated version check URL  
+Patch #3: Switched to GET request for version check  
  
 Feel free to open an issue to report a bug or suggest a new feature!
 

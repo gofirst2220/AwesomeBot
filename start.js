@@ -1,7 +1,7 @@
 // Get all the basic modules and files setup
 const Discord = require("discord.js");
 var botOn = {};
-var version = "3.2.9p2";
+var version = "3.2.9p3";
 var outOfDate = 0;
 var configs = require("./config.json");
 const AuthDetails = require("./auth.json");
@@ -2362,7 +2362,7 @@ function getHelp(svr) {
 
 // Check for updates
 function checkVersion() {
-    unirest.post('http://awesome-botmakersinc.rhcloud.com/')
+    unirest.get('http://awesome-botmakersinc.rhcloud.com/')
     .header('Accept', 'application/json')
     .end(function(response) {
         try {
