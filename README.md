@@ -114,7 +114,6 @@ Latest, version **3.3**:
  - New auto-update system and forever support
  - Maintainer console to change bot game, status, etc.
  - Added message archiving in admin console
- - Fixed external join server bug
  - Option for PMs when mentioned
  - New stats system for members and games
  - Per-server command usage info
