@@ -911,48 +911,13 @@ bot.on("message", function (msg, user) {
             
             // Update command from maintainer
             if(updateconsole && msg.author.id==configs.maintainer && msg.content=="update") {
-                logMsg(new Date().getTime(), "INFO", "General", null, "Updating " + bot.user.username + ":");
-	            var spawn = require("child_process").spawn;
-                var log = function(err, stdout, stderr) {
-                    if(stdout) {
-                        console.log(stdout);
-                    }
-                    if(stderr) {
-                        console.log(stderr);
-                    }
-                };
-                var fetch = spawn("git", ["fetch"]);
-                fetch.stdout.on("data", function(data) {
-                    console.log(data.toString());
-                });
-                fetch.on("close", function(code) {
-                    var checkout = spawn("git", ["checkout","--", "start.js", "package.json"]);
-                    checkout.stdout.on("data", function(data) {
-                        console.log(data.toString());
-                    });
-                    checkout.on("close", function(code) {
-                        var npm = spawn("npm", ["install"]);
-                        npm.stdout.on("data", function(data) {
-                            console.log(data.toString());
-                        });
-                        npm.on("close", function(code) {
-                            logMsg(new Date().getTime(), "INFO", "General", null, "Successfully updated");
-                            bot.sendMessage(msg.channel, "Done! Shutting down...", function() {
-                                bot.logout(function() {
-                                    process.exit(1);
-                                });
-                            });
-                        });
-                    });
-                });
-                logMsg(new Date().getTime(), "ERROR", "General", null, "Could not update " + bot.user.username);
-                bot.sendMessage(msg.channel, "Something went wrong, could not update.");
+                updateBot(msg);
             }
             
             // Maintiner control panel for overall bot things
             if(msg.author.id==configs.maintainer && msg.content.toLowerCase()==("config")) {
                 logMsg(new Date().getTime(), "INFO", "General", null, "Maintainer console opened");
-                bot.sendMessage(msg.channel, "**Welcome to the " + bot.user.username + " maintainer console.** I am your owner. I will do what you say. Here are your options:\n\tquit\n\tgame <name of game or `.` to remove>\n\tusername <new name>\n\tavatar <URL of new profile pic>\n\tstatus <online or idle>\n\tkill\nUse the syntax `<option> <parameter>` as always! :)");
+                bot.sendMessage(msg.channel, "**Welcome to the " + bot.user.username + " maintainer console.** I am your owner. I will do what you say. Here are your options:\n\tquit\n\tgame <name of game or `.` to remove>\n\tusername <new name>\n\tavatar <URL of new profile pic>\n\tstatus <online or idle>\n\tupdate\n\tkill\nUse the syntax `<option> <parameter>` as always! :)");
                 maintainerconsole = true;
                 return;
             } else if(msg.author.id==configs.maintainer && maintainerconsole) {
@@ -964,7 +929,7 @@ bot.on("message", function (msg, user) {
                 } else {
                     n = msg.content.toLowerCase();
                 }
-                if(!n || ["quit", "game", "username", "avatar", "status", "kill"].indexOf(n)==-1) {
+                if(!n || ["quit", "game", "username", "avatar", "status", "update", "kill"].indexOf(n)==-1) {
                     logMsg(new Date().getTime(), "WARN", "General", null, "Maintainer provided invalid option in console");
                     bot.sendMessage(msg.channel, "Invalid option, please see list above.");
                     return;
@@ -1037,6 +1002,13 @@ bot.on("message", function (msg, user) {
                                 bot.sendMessage(msg.channel, "Ok, I am now `" + suffix + "`");
                             }
                         });
+                        break;
+                    case "update":
+                        if(outOfDate>0) {
+                            updateBot(msg);
+                        } else {
+                            bot.sendMessage(msg.channel, bot.user.username + " is up-to-date!");
+                        }
                         break;
                     case "kill":
                         logMsg(new Date().getTime(), "INFO", "General", null, "Kill command issued by maintainer");
@@ -2695,6 +2667,46 @@ function defaultConfig(svr) {
             }
         });
     }
+}
+
+// Update bot to new version via Git
+function updateBot(msg) {
+    logMsg(new Date().getTime(), "INFO", "General", null, "Updating " + bot.user.username + ":");
+    var spawn = require("child_process").spawn;
+    var log = function(err, stdout, stderr) {
+        if(stdout) {
+            console.log(stdout);
+        }
+        if(stderr) {
+            console.log(stderr);
+        }
+    };
+    var fetch = spawn("git", ["fetch"]);
+    fetch.stdout.on("data", function(data) {
+        console.log(data.toString());
+    });
+    fetch.on("close", function(code) {
+        var checkout = spawn("git", ["checkout","--", "start.js", "package.json"]);
+        checkout.stdout.on("data", function(data) {
+            console.log(data.toString());
+        });
+        checkout.on("close", function(code) {
+            var npm = spawn("npm", ["install"]);
+            npm.stdout.on("data", function(data) {
+                console.log(data.toString());
+            });
+            npm.on("close", function(code) {
+                logMsg(new Date().getTime(), "INFO", "General", null, "Successfully updated");
+                bot.sendMessage(msg.channel, "Done! Shutting down...", function() {
+                    bot.logout(function() {
+                        process.exit(1);
+                    });
+                });
+            });
+        });
+    });
+    logMsg(new Date().getTime(), "ERROR", "General", null, "Could not update " + bot.user.username);
+    bot.sendMessage(msg.channel, "Something went wrong, could not update.");
 }
 
 // Ensure that config.json is setup properly
