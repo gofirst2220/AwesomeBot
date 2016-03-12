@@ -1724,6 +1724,50 @@ bot.on("message", function (msg, user) {
                 return;
             }
             
+            // Vote via PM for a public poll
+            if(msg.content.indexOf("vote ")>-1 && msg.content.length>5) {
+                try {
+                    var suffix = msg.content.substring(msg.content.indexOf(" ")+1);
+                    var vt = suffix.substring(suffix.lastIndexOf(" ")+1);
+                    suffix = suffix.substring(0, suffix.lastIndexOf(" "));
+                    var chnm = suffix.substring(suffix.lastIndexOf(" ")+1);
+                    suffix = suffix.substring(0, suffix.lastIndexOf(" "));
+                    var svrnm = suffix;
+                    var svr = bot.servers.get("name", svrnm);
+                    if(!svr) {
+                        logMsg(new Date().getTime(), "WARN", msg.author.id, null, "User provided invalid server for PM voting");
+                        bot.sendMessage(msg.channel, "I'm not on that server or it doesn't exist");
+                        return;
+                    }
+                    var ch = svr.channels.get("name", chnm);
+                    if(!ch) {
+                        logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Channel does not exist for PM voting");
+                        bot.sendMessage(msg.channel, svr.name + " doesn't have that channel. Please try again...");
+                        return;
+                    }
+                    var act = activePolls(ch.id);
+                    if(!act) {
+                        logMsg(new Date().getTime(), "WARN", msg.author.id, null, "No active poll on provided server/channel for PM voting");
+                        bot.sendMessage(msg.channel, "There's no poll going on in that channel. Start one by replying `poll " + svr.name + " " + ch.name + "`");
+                        return;
+                    }
+                    if(isNaN(vt) || polls[act].responderIDs.indexOf(msg.author.id)>-1 || vt>=polls[act].options.length || vt<0) {
+                        logMsg(new Date().getTime(), "WARN", msg.author.id, null, "User provided invalid PM vote for poll in " + svr.name + ", " + ch.name);
+                        bot.sendMessage(msg.channel, "I couldn't cast your vote");
+                        return;
+                    }
+                    polls[act].responses[polls[act].responses.length] = vt;
+                    polls[act].responderIDs[polls[act].responderIDs.length] = msg.author.id;
+                    logMsg(new Date().getTime(), "INFO", svr.name, ch.name, "Vote cast for " + vt + " via PM");
+                    bot.sendMessage(msg.channel, "Got it! Your vote was cast anonymously ;)");
+                    return;
+                } catch(error) {
+                    logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Invalid PM voting syntax provided");
+                    bot.sendMessage(msg.channel, "Hmmm, I didn't get that. Make sure to use the syntax `vote <server> <channel> <no. of option>`");
+                    return;
+                }
+            }
+            
             // Mentions command, for list of user mentions and toggle
             if(msg.content.indexOf("mentions ")==0 && msg.content.length>9) {
                 var svr = bot.servers.get("name", msg.content.substring(9));
