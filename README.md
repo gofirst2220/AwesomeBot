@@ -62,6 +62,7 @@ You'll be prompted for authentication and configuration details, but here's a qu
     - `giphy_api_key`: [API key from Giphy](http://api.giphy.com/submit) for GIF search
     - `imgur_client_id`: Client ID from the Imgur API for uploading. You do not need to provide a redirect URL when you [register your application](https://imgur.com/signin?redirect=http://api.imgur.com/oauth2/addclient), and your Client ID can be anonymous
     - `wolfram_app_id`: Sign up for a [Wolfram developer account](https://developer.wolframalpha.com/portal/apisignup.html), add your application, and find its ID
+    - `openexchangerates_app_id`: App ID for currency conversion via Open Exchange Rates. Sign up for free access [here](https://openexchangerates.org/signup/free)
  - **config.json**:
     - `hosting`: Publicly available URL of bot's web interface (optional)
     - `maintainer`: Your *personal* Discord ID to be notified of updates and to access the maintainer console where you can change the bot status, game, etc. (highly recommended)
@@ -110,6 +111,7 @@ Latest, version **3.3**:
 
  - Added last seen in user profiles
  - New `say` command, just for fun
+ - Added currency conversion
  - Added timer extension type
  - New auto-update system and forever support
  - Maintainer console to change bot game, status, etc.

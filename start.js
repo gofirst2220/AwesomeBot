@@ -26,10 +26,10 @@ try {
     const Wiki = require("wikijs");
     const convert = require("convert-units");
     const imgur = require("imgur-node-api");
-    imgur.setClientID(AuthDetails.imgur_client_id);
+    const wolfram = require("wolfram-node")
     const urban = require("urban");
     const weather = require("weather-js");
-    const wolfram = require("wolfram-node").init(AuthDetails.wolfram_app_id);
+    const fx = require("money");
     const cheerio = require("cheerio");
     const util = require("util");
     const vm = require("vm");
@@ -392,8 +392,12 @@ var commands = {
                             return;
                         }
                     }
-                    logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Unsupported conversion unit(s)");
-                    bot.sendMessage(msg.channel, msg.author + " I don't support that unit, try something else.");
+                    try {
+                        bot.sendMessage(msg.channel, (Math.round(fx.convert(num, {from: unit.toUpperCase(), to: end.toUpperCase()}) * 100) / 100) + " " + end.toUpperCase());
+                    } catch(error) {
+                        logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Unsupported conversion unit(s)");
+                        bot.sendMessage(msg.channel, msg.author + " I don't support that unit, try something else.");
+                    }
                 } catch(err) {
                     logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "User used incorrect convert syntax");
                     bot.sendMessage(msg.channel, msg.author + " Are you sure you're using the correct syntax?");
@@ -779,7 +783,7 @@ bot.on("ready", function() {
             var html = "";
             try {
                 var defaultStats = "<br><b>Status:</b> Online<br><b>Bot ID:</b> " + bot.user.id + "<br><b>Version:</b> v" + version + "<br><b>Uptime:</b> " + (secondsToString(bot.uptime/1000) ? secondsToString(bot.uptime/1000) : "<i>None, how are you viewing this?</i>") + "<br><b>Disconnections:</b> " + disconnects + " so far";
-                html = "<html><head><title>" + bot.user.username + "</title><style>a {color: #212121;}a:visited {color: #212121;}select {font-size: 10pt;}button {font-size: 10pt;}</style><script type='text/javascript'>function colorLinks(hex) {var links = document.getElementsByTagName(\"a\");for(var i=0;i<links.length;i++) {if(links[i].href) {links[i].style.color = hex;}}}function switchColors(n) {localStorage.setItem(\"theme\", n);document.getElementById(\"themeswitcher\").value = n;if(n==\"white\") {document.body.style.backgroundColor=\"white\";document.body.style.color=\"black\";colorLinks(\"#212121\");}if(n==\"black\") {document.body.style.backgroundColor=\"black\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"dark\") {document.body.style.backgroundColor=\"#212121\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"blue\") {document.body.style.backgroundColor=\"#263238\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}document.getElementById(\"console\").style.backgroundColor=document.body.style.backgroundColor.slice(0);document.getElementById(\"console\").style.color=document.body.style.color.slice(0);if(n==\"contrast\") {document.body.style.backgroundColor=\"#F5F5F5\";document.body.style.color=\"#212121\";document.getElementById(\"console\").style.backgroundColor=\"#212121\";document.getElementById(\"console\").style.color=\"#F5F5F5\";colorLinks(\"#212121\");}}function switchStats(n) {var html = \"\";if(n==\"general\") {document.getElementById(\"statsselect\").style.visibility = \"hidden\";html = \"" + defaultStats + "\"} else {document.getElementById(\"statsselect\").style.visibility = \"visible\";n = parseInt(n);";
+                html = "<html><head><title>" + bot.user.username + "</title><style>body {-webkit-transition: background-color .25s, color .25s;-moz-transition: background-color .25s, color .25s;-ms-transition: background-color .25s, color .25s;-o-transition: background-color .25s, color .25s;transition: background-color .25s, color .25s;}#stats {-webkit-transition: opacity .25s;-moz-transition: opacity .25s;-ms-transition: opacity .25s;-o-transition: opacity .25s;transition: opacity .25s;}#console{-webkit-transition: background-color .25s, color .25s, opacity .25s;-moz-transition: background-color .25s, color .25s, opacity .25s;-ms-transition: background-color .25s, color .25s, opacity .25s;-o-transition: background-color .25s, color .25s, opacity .25s;transition: background-color .25s, color .25s, opacity .25s;}a {color: #212121;}a:visited {color: #212121;}select {font-size: 10pt;}button {font-size: 10pt;}</style><script type='text/javascript'>function colorLinks(hex) {var links = document.getElementsByTagName(\"a\");for(var i=0;i<links.length;i++) {if(links[i].href) {links[i].style.color = hex;}}}function switchColors(n) {localStorage.setItem(\"theme\", n);document.getElementById(\"themeswitcher\").value = n;if(n==\"white\") {document.body.style.backgroundColor=\"white\";document.body.style.color=\"black\";colorLinks(\"#212121\");}if(n==\"black\") {document.body.style.backgroundColor=\"black\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"dark\") {document.body.style.backgroundColor=\"#212121\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"blue\") {document.body.style.backgroundColor=\"#263238\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}document.getElementById(\"console\").style.backgroundColor=document.body.style.backgroundColor.slice(0);document.getElementById(\"console\").style.color=document.body.style.color.slice(0);if(n==\"contrast\") {document.body.style.backgroundColor=\"#F5F5F5\";document.body.style.color=\"#212121\";document.getElementById(\"console\").style.backgroundColor=\"#212121\";document.getElementById(\"console\").style.color=\"#F5F5F5\";colorLinks(\"#212121\");}}function switchStats(n) {document.getElementById(\"stats\").style.opacity = 0;setTimeout(function() {var html = \"\";if(n==\"general\") {document.getElementById(\"statsselect\").style.visibility = \"hidden\";html = \"" + defaultStats + "\"} else {document.getElementById(\"statsselect\").style.visibility = \"visible\";n = parseInt(n);";
                 for(var svrid in stats) {
                     if(svrid=="timestamp") {
                         continue;
@@ -799,7 +803,7 @@ bot.on("ready", function() {
                     }
                     html += "\";}";
                 }
-                html += "}document.getElementById(\"stats\").innerHTML = html ? html : \"<br><i>Nothing here</i>\";}function switchProfile(n) {var usrid = n.substring(0, n.indexOf(\"-\"));var svrid = n.substring(n.indexOf(\"-\")+1);var html = \"\";";
+                html += "}document.getElementById(\"stats\").innerHTML = html ? html : \"<br><i>Nothing here</i>\";setTimeout(function() {document.getElementById(\"stats\").style.opacity = 1;}, 250);}, 250);}function switchProfile(n) {document.getElementById(\"stats\").style.opacity = 0;setTimeout(function() {var usrid = n.substring(0, n.indexOf(\"-\"));var svrid = n.substring(n.indexOf(\"-\")+1);var html = \"\";";
                 for(var svrid in stats) {
                     if(svrid=="timestamp") {
                         continue;
@@ -830,7 +834,7 @@ bot.on("ready", function() {
                         html += "\";}";
                     }
                 }
-                html += "document.getElementById(\"stats\").innerHTML = html ? html : \"<br><i>Nothing here</i>\";}function switchLog() {var id = parseInt(document.getElementById(\"idselector\").value);var level = parseInt(document.getElementById(\"levelselector\").value);var html = \"\";"
+                html += "document.getElementById(\"stats\").innerHTML = html ? html : \"<br><i>Nothing here</i>\";setTimeout(function() {document.getElementById(\"stats\").style.opacity = 1;}, 250);}, 250);}function switchLog() {document.getElementById(\"console\").style.opacity = 0;setTimeout(function() {var id = parseInt(document.getElementById(\"idselector\").value);var level = parseInt(document.getElementById(\"levelselector\").value);var html = \"\";"
                 var ids = [null].concat(getLogIDs());
                 var levels = [null, "INFO", "WARN", "ERROR"];
                 for(var i=0; i<ids.length; i++) {
@@ -843,7 +847,7 @@ bot.on("ready", function() {
                         html += "\"}";
                     }
                 }
-                html += "document.getElementById(\"console\").innerHTML = html ? html : \"<i>Nothing here</i>\";document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;}</script></head><body onload='javascript:document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;switchColors(localStorage.getItem(\"theme\") ? localStorage.getItem(\"theme\") : \"white\");'><span style='font-family: \"Arial\"; margin-bottom: 0px;'><span style='font-size: 28;'><b>" + bot.user.username + "</b> Info</span><img style=\"float:right;width:10%;\" src=\"" + (bot.user.avatarURL ? bot.user.avatarURL : "http://i.imgur.com/fU70HJK.png") + "\"/><p><span style='font-size: 20;'><u>Statistics</u></span>&nbsp;&nbsp;<select onChange=\"javascript:switchStats(this.value);\"><option value=\"general\" selected>General</option>";
+                html += "document.getElementById(\"console\").innerHTML = html ? html : \"<i>Nothing here</i>\";document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;setTimeout(function() {document.getElementById(\"console\").style.opacity = 1;}, 250);}, 250);}</script></head><body onload='javascript:document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;switchColors(localStorage.getItem(\"theme\") ? localStorage.getItem(\"theme\") : \"white\");'><span style='font-family: \"Arial\"; margin-bottom: 0px;'><span style='font-size: 28;'><b>" + bot.user.username + "</b> Info</span><img style=\"float:right;width:10%;\" src=\"" + (bot.user.avatarURL ? bot.user.avatarURL : "http://i.imgur.com/fU70HJK.png") + "\"/><p><span style='font-size: 20;'><u>Statistics</u></span>&nbsp;&nbsp;<select onChange=\"javascript:switchStats(this.value);\"><option value=\"general\" selected>General</option>";
                 for(var svrid in stats) {
                     if(svrid=="timestamp") {
                         continue;
@@ -909,6 +913,7 @@ bot.on("message", function (msg, user) {
                         configs.servers[bot.servers[i].id].blocked.value[configs.servers[bot.servers[i].id].blocked.value.length] = msg.author.id;
                     }
                 }
+                return;
             }
             
             // Update command from maintainer
@@ -2253,14 +2258,16 @@ function triviaQ(chid) {
 
 // Populate stats.json for a server
 function populateStats(svr) {
-    logMsg(new Date().getTime(), "INFO", svr.name, null, "Created stats");
-    // Overall server stats
-    stats[svr.id] = {
-        members: {},
-        games: {},
-        commands: {},
-        botOn: {}
-    };
+    if(!stats[svr.id]) {
+        logMsg(new Date().getTime(), "INFO", svr.name, null, "Created stats");
+        // Overall server stats
+        stats[svr.id] = {
+            members: {},
+            games: {},
+            commands: {},
+            botOn: {}
+        };
+    }
     // Turn on bot
     for(var i=0; i<svr.channels.length; i++) {
         if(!stats[svr.id].botOn[svr.channels[i].id]) {
@@ -3491,6 +3498,17 @@ function setup(i) {
                             process.exit(1);
                         }
                     });
+                });
+                // Authenticate other modules
+                imgur.setClientID(AuthDetails.imgur_client_id);
+                wolfram.init(AuthDetails.wolfram_app_id);
+                unirest.get("https://openexchangerates.org/api/latest.json?app_id=" + AuthDetails.openexchangerates_app_id)
+                .header("Accept", "application/json")
+                .end(function(result) {
+                    if(result.status==200) {
+                        fx.rates = result.body.base;
+                        fx.rates = result.body.rates;
+                    }
                 });
                 break;
         }

@@ -44,7 +44,8 @@
     "cross-spawn": "*",
     "forever": "*",
     "node-base64-image": "*",
-    "write-file-atomic": "*"
+    "write-file-atomic": "*",
+    "money": "*"
   },
   "scripts": {
     "start": "forever start.js"
