@@ -122,9 +122,10 @@ Latest, version **3.3**:
  - Improved toggles in admin console
  - Command-line setup on first run 
  - Persistent reminders with PM support
+ - About command for bot info
  - Revamped logging system with filters
  - Added poll timestamps and PM voting
- - Access to stats and profiles in web interface
+ - Enhanced web interface with themes and stats
  - Made bot status persistent
  - Fixed many, many bugs  
  
