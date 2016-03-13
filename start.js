@@ -723,10 +723,6 @@ function rssfeed(bot, msg, url, count, full) {
         });
         stream.alreadyRead = true;
     });
-    if(shown==0) {
-        logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Request feed is empty");
-        bot.sendMessage(msg.channel, "Empty feed.");
-    }
 }
 
 // Initializes bot and outputs to console
