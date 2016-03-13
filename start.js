@@ -857,7 +857,7 @@ bot.on("ready", function() {
                 html += "</select>&nbsp;<select style=\"visibility: hidden;\" id=\"statsselect\" onChange=\"javascript:switchProfile(this.value);\"></select><span id=\"stats\">" + defaultStats + "<p></span><span style='font-size: 20;'><u>Servers</u><br></span><i>Number of messages only includes the past 24 hours.</i>";
                 for(var i=0; i<bot.servers.length; i++) {
                     var online = 0;
-                    html += "<br><b>" + bot.servers[i].name + ":</b> " + (messages[bot.servers[i].id] ? messages[bot.servers[i]] : 0) + " messages, ";
+                    html += "<br><b>" + bot.servers[i].name + ":</b> " + (messages[bot.servers[i].id] ? messages[bot.servers[i].id] : 0) + " messages, ";
                     for(var j=0; j<bot.servers[i].members.length; j++) {
                         if(bot.servers[i].members[j].status!="offline") {
                             online++;
