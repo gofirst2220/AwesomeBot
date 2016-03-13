@@ -45,7 +45,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3-BETA";
+var version = "3.3-RC";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -782,15 +782,15 @@ bot.on("ready", function() {
             response.writeHead(200);
             var html = "";
             try {
-                var defaultStats = "<br><b>Status:</b> Online<br><b>Bot ID:</b> " + bot.user.id + "<br><b>Version:</b> v" + version + "<br><b>Uptime:</b> " + (secondsToString(bot.uptime/1000) ? secondsToString(bot.uptime/1000) : "<i>None, how are you viewing this?</i>") + "<br><b>Disconnections:</b> " + disconnects + " so far";
-                html = "<html><head><title>" + bot.user.username + "</title><style>body {-webkit-transition: background-color .25s, color .25s;-moz-transition: background-color .25s, color .25s;-ms-transition: background-color .25s, color .25s;-o-transition: background-color .25s, color .25s;transition: background-color .25s, color .25s;}#stats {-webkit-transition: opacity .25s;-moz-transition: opacity .25s;-ms-transition: opacity .25s;-o-transition: opacity .25s;transition: opacity .25s;}#console{-webkit-transition: background-color .25s, color .25s, opacity .25s;-moz-transition: background-color .25s, color .25s, opacity .25s;-ms-transition: background-color .25s, color .25s, opacity .25s;-o-transition: background-color .25s, color .25s, opacity .25s;transition: background-color .25s, color .25s, opacity .25s;}a {color: #212121;}a:visited {color: #212121;}select {font-size: 10pt;}button {font-size: 10pt;}</style><script type='text/javascript'>function colorLinks(hex) {var links = document.getElementsByTagName(\"a\");for(var i=0;i<links.length;i++) {if(links[i].href) {links[i].style.color = hex;}}}function switchColors(n) {localStorage.setItem(\"theme\", n);document.getElementById(\"themeswitcher\").value = n;if(n==\"white\") {document.body.style.backgroundColor=\"white\";document.body.style.color=\"black\";colorLinks(\"#212121\");}if(n==\"black\") {document.body.style.backgroundColor=\"black\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"dark\") {document.body.style.backgroundColor=\"#212121\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"blue\") {document.body.style.backgroundColor=\"#263238\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"red\") {document.body.style.backgroundColor=\"#B71C1C\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"deep\") {document.body.style.backgroundColor=\"#004D40\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}document.getElementById(\"console\").style.backgroundColor=document.body.style.backgroundColor.slice(0);document.getElementById(\"console\").style.color=document.body.style.color.slice(0);if(n==\"contrast\") {document.body.style.backgroundColor=\"#F5F5F5\";document.body.style.color=\"#212121\";document.getElementById(\"console\").style.backgroundColor=\"#212121\";document.getElementById(\"console\").style.color=\"#F5F5F5\";colorLinks(\"#212121\");}}function switchStats(n) {document.getElementById(\"stats\").style.opacity = 0;setTimeout(function() {var html = \"\";if(n==\"general\") {document.getElementById(\"statsselect\").style.visibility = \"hidden\";html = \"" + defaultStats + "\"} else {document.getElementById(\"statsselect\").style.visibility = \"visible\";n = parseInt(n);";
+                var defaultStats = "<b>Status:</b> Online<br><b>Bot ID:</b> " + bot.user.id + "<br><b>Version:</b> v" + version + "<br><b>Uptime:</b> " + (secondsToString(bot.uptime/1000) ? secondsToString(bot.uptime/1000) : "<i>None, how are you viewing this?</i>") + "<br><b>Disconnections:</b> " + disconnects + " so far";
+                html = "<html><head><title>" + bot.user.username + "</title><style>::-webkit-scrollbar {width: 12px;}::-webkit-scrollbar-track {opacity: 0;}::-webkit-scrollbar-thumb {border-radius: 10px;-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);}body {-webkit-transition: background-color .25s, color .25s;-moz-transition: background-color .25s, color .25s;-ms-transition: background-color .25s, color .25s;-o-transition: background-color .25s, color .25s;transition: background-color .25s, color .25s;}button, select{background-color: white;color: black;padding: 1px 7px;text-align: center;font-size: 12pt;border-radius: 10px;height: 20px;border: 1px solid #616161;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}button:hover, select:hover {background-color: #212121;color: #EEEEEE;border-radius: 3px;}button:active, select:active {border-radius: 1px;}#profilepic {float: right;width: 10%;border-radius: 100%;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}#profilepic:hover {border-radius: 0px;}#stats {margin-top: 0.5%;padding-top: 0px;-webkit-transition: opacity .125s, height .25s;-moz-transition: opacity .125s, height .25s;-ms-transition: opacity .125s, height .25s;-o-transition: opacity .125s, height .25s;transition: opacity .125s, height .25s;}#servers {margin-top: 0.5%;}#console{font-family: \"Consolas\", \"Droid Sans Mono\";height: 50%;padding: 5px;overflow: scroll;overflow-x: hidden;border: 1px solid gray;margin-top: 0.5%;-webkit-transition: background-color .25s, color .25s, opacity .125s;-moz-transition: background-color .25s, color .25s, opacity .125s;-ms-transition: background-color .25s, color .25s, opacity .125s;-o-transition: background-color .25s, color .25s, opacity .125s;transition: background-color .25s, color .25s, opacity .125s;}a {color: #212121;}a:visited {color: #212121;}select {font-size: 10pt;}button {font-size: 10pt;}#credit {font-family: \"Arial\";font-size: 10pt;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}#credit:hover {font-size: 16pt;font-weight: bold;color: teal;}</style><script type='text/javascript'>function toggleSection(id) {}function colorLinks(hex) {var links = document.getElementsByTagName(\"a\");for(var i=0;i<links.length;i++) {if(links[i].href) {links[i].style.color = hex;}}}function switchColors(n) {localStorage.setItem(\"theme\", n);document.getElementById(\"themeswitcher\").value = n;if(n==\"white\") {document.body.style.backgroundColor=\"white\";document.body.style.color=\"black\";colorLinks(\"#212121\");}if(n==\"black\") {document.body.style.backgroundColor=\"black\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"dark\") {document.body.style.backgroundColor=\"#212121\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"blue\") {document.body.style.backgroundColor=\"#263238\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"red\") {document.body.style.backgroundColor=\"#B71C1C\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"deep\") {document.body.style.backgroundColor=\"#004D40\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}document.getElementById(\"console\").style.backgroundColor=document.body.style.backgroundColor.slice(0);document.getElementById(\"console\").style.color=document.body.style.color.slice(0);if(n==\"contrast\") {document.body.style.backgroundColor=\"#F5F5F5\";document.body.style.color=\"#212121\";document.getElementById(\"console\").style.backgroundColor=\"#212121\";document.getElementById(\"console\").style.color=\"#F5F5F5\";colorLinks(\"#212121\");}}function switchStats(n) {document.getElementById(\"stats\").style.opacity = 0;document.getElementById(\"stats\").style.height = 0;setTimeout(function() {var html = \"\";if(n==\"general\") {document.getElementById(\"statsselect\").style.opacity = 0;setTimeout(function() {document.getElementById(\"statsselect\").style.visibility = \"hidden\";}, 250);html = \"" + defaultStats + "\"} else {document.getElementById(\"statsselect\").style.visibility = \"visible\";document.getElementById(\"statsselect\").style.opacity = 1;n = parseInt(n);";
                 for(var svrid in stats) {
                     if(svrid=="timestamp") {
                         continue;
                     }
                     var svr = bot.servers.get("id", svrid);
                     var data = getStats(svr);
-                    html += "if(n==" + svrid + ") {html = \"<br><b>" + svr.name + " (this week)</b>";
+                    html += "if(n==" + svrid + ") {html = \"<b>" + svr.name + " (this week)</b>";
                     for(var cat in data) {
                         html += "<br>" + cat + ":";
                         for(var i=0; i<data[cat].length; i++) {
@@ -803,14 +803,14 @@ bot.on("ready", function() {
                     }
                     html += "\";}";
                 }
-                html += "}document.getElementById(\"stats\").innerHTML = html ? html : \"<br><i>Nothing here</i>\";setTimeout(function() {document.getElementById(\"stats\").style.opacity = 1;}, 250);}, 250);}function switchProfile(n) {document.getElementById(\"stats\").style.opacity = 0;setTimeout(function() {var usrid = n.substring(0, n.indexOf(\"-\"));var svrid = n.substring(n.indexOf(\"-\")+1);var html = \"\";";
+                html += "}document.getElementById(\"stats\").innerHTML = html ? html : \"<br><i>Nothing here</i>\";document.getElementById(\"stats\").style.height = (document.getElementById(\"stats\").innerHTML.match(/<br>/ig).length + 1) * 18;document.getElementById(\"stats\").style.opacity = 1;}, 125);}function switchProfile(n) {document.getElementById(\"stats\").style.opacity = 0;document.getElementById(\"stats\").style.height = 0;setTimeout(function() {var usrid = n.substring(0, n.indexOf(\"-\"));var svrid = n.substring(n.indexOf(\"-\")+1);var html = \"\";";
                 for(var svrid in stats) {
                     if(svrid=="timestamp") {
                         continue;
                     }
                     var svr = bot.servers.get("id", svrid);
                     
-                    html += "if(usrid==\"null\" && svrid==\"" + svrid + "\") {html = \"<br><b>" + svr.name + " (this week)</b>";
+                    html += "if(usrid==\"null\" && svrid==\"" + svrid + "\") {html = \"<b>" + svr.name + " (this week)</b>";
                     for(var cat in data) {
                         html += "<br>" + cat + ":";
                         for(var i=0; i<data[cat].length; i++) {
@@ -819,7 +819,7 @@ bot.on("ready", function() {
                     }
                     html += "\";}";
                     for(var usrid in stats[svrid].members) {
-                        html += "if(usrid==\"" + usrid + "\" && svrid==\"" + svrid + "\") {html = \"<br>";
+                        html += "if(usrid==\"" + usrid + "\" && svrid==\"" + svrid + "\") {html = \"";
                         var data = getProfile(svr.members.get("id", usrid), svr);
                         for(var sect in data) {
                             html += "<b>" + sect + ":</b><br>";
@@ -831,10 +831,11 @@ bot.on("ready", function() {
                                 }
                             }
                         }
+                        html = html.substring(0, html.length-4);
                         html += "\";}";
                     }
                 }
-                html += "document.getElementById(\"stats\").innerHTML = html ? html : \"<br><i>Nothing here</i>\";setTimeout(function() {document.getElementById(\"stats\").style.opacity = 1;}, 250);}, 250);}function switchLog() {document.getElementById(\"console\").style.opacity = 0;setTimeout(function() {var id = parseInt(document.getElementById(\"idselector\").value);var level = parseInt(document.getElementById(\"levelselector\").value);var html = \"\";"
+                html += "document.getElementById(\"stats\").innerHTML = html ? html : \"<br><i>Nothing here</i>\";document.getElementById(\"stats\").style.height = (document.getElementById(\"stats\").innerHTML.match(/<br>/ig).length + 1) * 18;document.getElementById(\"stats\").style.opacity = 1;}, 125);}function switchLog() {var ogcolor = document.getElementById(\"console\").style.color.slice(0);document.getElementById(\"console\").style.color = document.getElementById(\"console\").style.backgroundColor;setTimeout(function() {var id = parseInt(document.getElementById(\"idselector\").value);var level = parseInt(document.getElementById(\"levelselector\").value);var html = \"\";"
                 var ids = [null].concat(getLogIDs());
                 var levels = [null, "INFO", "WARN", "ERROR"];
                 for(var i=0; i<ids.length; i++) {
@@ -847,14 +848,14 @@ bot.on("ready", function() {
                         html += "\"}";
                     }
                 }
-                html += "document.getElementById(\"console\").innerHTML = html ? html : \"<i>Nothing here</i>\";document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;setTimeout(function() {document.getElementById(\"console\").style.opacity = 1;}, 250);}, 250);}</script></head><body onload='javascript:document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;switchColors(localStorage.getItem(\"theme\") ? localStorage.getItem(\"theme\") : \"white\");'><span style='font-family: \"Arial\"; margin-bottom: 0px;'><span style='font-size: 28;'><b>" + bot.user.username + "</b> Info</span><img style=\"float:right;width:10%;\" src=\"" + (bot.user.avatarURL ? bot.user.avatarURL : "http://i.imgur.com/fU70HJK.png") + "\"/><p><span style='font-size: 20;'><u>Statistics</u></span>&nbsp;&nbsp;<select onChange=\"javascript:switchStats(this.value);\"><option value=\"general\" selected>General</option>";
+                html += "document.getElementById(\"console\").innerHTML = html ? html : \"<i>Nothing here</i>\";document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;document.getElementById(\"console\").style.color = ogcolor;}, 125);}</script></head><body onload='javascript:document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;switchColors(localStorage.getItem(\"theme\") ? localStorage.getItem(\"theme\") : \"contrast\");'><span style='font-family: \"Arial\"; margin-bottom: 0px;'><span style='font-size: 28;'><b>" + bot.user.username + "</b> Info</span><img id=\"profilepic\" src=\"" + (bot.user.avatarURL ? bot.user.avatarURL : "http://i.imgur.com/fU70HJK.png") + "\"/><br><br><span style='font-size: 20;'><u>Statistics</u></span>&nbsp;&nbsp;<select onChange=\"javascript:switchStats(this.value);\"><option value=\"general\" selected>General</option>";
                 for(var svrid in stats) {
                     if(svrid=="timestamp") {
                         continue;
                     }
                     html += "<option value=" + svrid + ">" + bot.servers.get("id", svrid) + "</option>";
                 }
-                html += "</select>&nbsp;<select style=\"visibility: hidden;\" id=\"statsselect\" onChange=\"javascript:switchProfile(this.value);\"></select><span id=\"stats\">" + defaultStats + "<p></span><span style='font-size: 20;'><u>Servers</u><br></span><i>Number of messages only includes the past 24 hours.</i>";
+                html += "</select>&nbsp;<select style=\"visibility: hidden;\" id=\"statsselect\" onChange=\"javascript:switchProfile(this.value);\"></select><div id=\"stats\">" + defaultStats + "</div><br><span style='font-size: 20;'><u>Servers</u><br></span><div id=\"servers\"><i>Number of messages only includes the past 24 hours.</i>";
                 for(var i=0; i<bot.servers.length; i++) {
                     var online = 0;
                     html += "<br><b>" + bot.servers[i].name + ":</b> " + (messages[bot.servers[i].id] ? messages[bot.servers[i].id] : 0) + " messages, ";
@@ -865,7 +866,7 @@ bot.on("ready", function() {
                     }
                     html += online + " members online (owner: @" + bot.servers[i].owner.username + ")";
                 }
-                html += "<p><span style='font-size: 20; margin-bottom: 0px;'><u>Activity Log</u></span></span>&nbsp;&nbsp;<select id=\"idselector\" onChange=\"javascript:switchLog();\">";
+                html += "</div><br><span style='font-size: 20; margin-bottom: 0px;'><u>Activity Log</u></span></span>&nbsp;&nbsp;<select id=\"idselector\" onChange=\"javascript:switchLog();\">";
                 for(var i=0; i<ids.length; i++) {
                     var printnm = ids[i];
                     if(!isNaN(ids[i])) {
@@ -878,11 +879,11 @@ bot.on("ready", function() {
                 for(var i=0; i<levels.length; i++) {
                     html += "<option value=" + i + (levels[i] ? "" : " selected") + ">" + (levels[i] ? levels[i] : "All") + "</option>";
                 }
-                html += "</select><div id=\"console\" style='font-family: \"Consolas\", \"Droid Sans Mono\"; height: 50%; margin: 0; padding: 5px; overflow: scroll; overflow-x: hidden; border: 1px solid gray;'>";
+                html += "</select><div id=\"console\">";
                 for(var i=0; i<logs.length; i++) {
                     html += printLog(logs[i]) + "<br>";
                 }
-                html += "</div><br><button onclick=\"javascript:location.reload()\">Refresh</button>&nbsp;<select id=\"themeswitcher\" onChange=\"javascript:switchColors(this.value);\"><option value=\"white\">White</option><option value=\"contrast\">Contrast</option><option value=\"black\">Black</option><option value=\"dark\">Dark</option><option value=\"blue\">Blue</option><option value=\"red\">Red</option><option value=\"deep\">Deep</option></select><br><br><i>Created by @anandroiduser, <a href='https://git.io/v2e1w'>https://git.io/v2e1w</a></i></body></html>";
+                html += "</div><br><button id=\"refresher\" onclick=\"javascript:location.reload()\">Refresh</button>&nbsp;<select id=\"themeswitcher\" onChange=\"javascript:switchColors(this.value);\"><option value=\"white\">White</option><option value=\"contrast\">Contrast</option><option value=\"black\">Black</option><option value=\"dark\">Dark</option><option value=\"blue\">Blue</option><option value=\"red\">Red</option><option value=\"deep\">Deep</option></select><br><br><span id=\"credit\"><i>Created by @anandroiduser, <a href='https://git.io/v2e1w'>https://git.io/v2e1w</a></i></span></body></html>";
             } catch(err) {
                 logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to write web interface");
                 html = bot.user.username + " v" + version + " running for " + secondsToString(bot.uptime/1000);
@@ -1794,7 +1795,13 @@ bot.on("message", function (msg, user) {
                 } else {
                     bot.sendMessage(msg.channel, "Turned off PMs for mentions in " + svr.name + ". Enable them again by replying with `pmmentions " + svr.name + "`");
                 }
-                logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Turned " + (stats[svr.id].members[msg.author.id].mentions.pm ? "on" : "off") + " mention PMs in " + svr.name);
+                saveData("./stats.json", function(err) {
+                    if(err) {
+                        logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save updated PM preferences for " + msg.author.username);
+                    } else {
+                        logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Turned " + (stats[svr.id].members[msg.author.id].mentions.pm ? "on" : "off") + " mention PMs in " + svr.name);
+                    }
+                });
                 return;
             }
         }
@@ -1830,10 +1837,10 @@ bot.on("message", function (msg, user) {
                     mentions.stream[mentions.stream.length] = {
                         timestamp: new Date().getTime(),
                         author: msg.author.username,
-                        message: msg.content.cleanContent
+                        message: msg.cleanContent
                     };
                     if(mentions.pm) {
-                        bot.sendMessage(usr, "__You were mentioned by @" + msg.author.username + " on **" + msg.channel.server.name + "**:__\n" + msg.content);
+                        bot.sendMessage(usr, "__You were mentioned by @" + msg.author.username + " on **" + msg.channel.server.name + "**:__\n" + msg.cleanContent);
                     }
                 }
             }
