@@ -815,12 +815,15 @@ bot.on("ready", function() {
                         continue;
                     }
                     var svr = bot.servers.get("id", svrid);
-                    
-                    html += "if(usrid==\"null\" && svrid==\"" + svrid + "\") {html = \"<b>" + svr.name + " (this week)</b>";
-                    for(var cat in data) {
-                        html += "<br>" + cat + ":";
-                        for(var i=0; i<data[cat].length; i++) {
-                            html += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + data[cat][i];
+                    html += "if(usrid==\"null\" && svrid==\"" + svrid + "\") {html = \"";
+                    if(svr) {
+                        html += "<b>" + svr.name + " (this week)</b>";
+                        var data = getStats(svr);
+                        for(var cat in data) {
+                            html += "<br>" + cat + ":";
+                            for(var i=0; i<data[cat].length; i++) {
+                                html += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + data[cat][i];
+                            }
                         }
                     }
                     html += "\";}";
@@ -2233,7 +2236,7 @@ bot.on("presence", function(oldusr, newusr) {
         for(var i=0; i<bot.servers.length; i++) {
             if(bot.servers[i].members.get("id", newusr.id)) {
                 if(oldusr.status=="online" && newusr.status!="online") {
-                    stats[bot.servers[i].id].members[newusr.id].seen = new Date().getTime();
+                    stats[bot.servers[i].id].members[oldusr.id].seen = new Date().getTime();
                 }
                 if(oldusr.username!=newusr.username && configs.servers[bot.servers[i].id].servermod.value) {
                     bot.sendMessage(bot.servers[i].defaultChannel, "**@" + oldusr.username + "** is now **@" + newusr.username + "**");
@@ -2674,20 +2677,7 @@ function defaultConfig(svr) {
                     }
                 }
             }
-            stats[svr.id].members[svr.members[i].id] = {
-                messages: 0,
-                seen: new Date().getTime(),
-                mentions: {
-                    pm: false,
-                    stream: []
-                }
-            };
         }
-        saveData("./stats.json", function(err) {
-            if(err) {
-                logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save updated stats");
-            }
-        });
         configs.servers[svr.id] = JSON.parse(JSON.stringify(defaultConfigFile)); 
         configs.servers[svr.id].admins.value = adminList;
         saveData("./config.json", function(err) {
