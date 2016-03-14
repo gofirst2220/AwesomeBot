@@ -1,5 +1,3 @@
-**Note: You should not use this branch if you want a stable bot. v3.3 stable will be released soon; this branch exists only for testing and collaborative purposes.**
-
 AwesomeBot [![Build Status](https://travis-ci.org/anandroiduser/AwesomeBot.svg?branch=master)](https://travis-ci.org/anandroiduser/AwesomeBot)
 ==========
 

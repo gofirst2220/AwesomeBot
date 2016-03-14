@@ -3,5 +3,6 @@
     "maintainer": "",
     "game": "",
     "botblocked": [],
+    "setup": false,
     "servers": {}
 }

@@ -44,7 +44,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3-RCF";
+var version = "3.3";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
