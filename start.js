@@ -44,7 +44,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3-RC";
+var version = "3.3-RCF";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -1160,9 +1160,6 @@ bot.on("message", function (msg, user) {
                                         for(var ext in configs.servers[svr.id].extensions) {
                                             info += "\n\t" + ext + ", " + configs.servers[svr.id].extensions[ext].type;
                                         }
-                                        if(Object.keys(configs.servers[svr.id].extensions).length==0) {
-                                            info += "\n\tNo extensions added.";
-                                        }
                                         bot.sendMessage(msg.channel, info);
                                     }
                                 });
@@ -1439,6 +1436,9 @@ bot.on("message", function (msg, user) {
                                 var info = "Deleted extension " + suffix + " from this server.\nUpdated extension list:";
                                 for(var ext in configs.servers[svr.id].extensions) {
                                     info += "\n\t" + ext + ", " + configs.servers[svr.id].extensions[ext].type;
+                                }
+                                if(Object.keys(configs.servers[svr.id].extensions).length==0) {
+                                    info += "\n\tNo extensions added.";
                                 }
                             } else {
                                 logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Extension " + suffix + " not found in " + svr.name);
