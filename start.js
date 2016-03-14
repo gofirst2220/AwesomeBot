@@ -737,6 +737,9 @@ var bot = new Discord.Client();
 bot.on("ready", function() {
     checkVersion();
     
+    // Clear stats and configs for old servers
+    pruneData();
+    
     // Make sure servers are properly configured and set variables
     for(var i=0; i<bot.servers.length; i++) {
         bot.startTyping(bot.servers[i].defaultChannel);
@@ -1599,6 +1602,44 @@ bot.on("message", function (msg, user) {
                 return;
             }
             
+            // Discreet say command for admins
+            if(msg.content.indexOf("say ")==0) {
+                var svrnm = msg.content.substring(msg.content.indexOf(" ")+1);
+                var svr;
+                do {
+                    svrnm = svrnm.substring(0, svrnm.lastIndexOf(" "));
+                    svr = bot.servers.get("name", svrnm);
+                } while(!svr && svrnm.length>0);
+                if(!svr) {
+                    logMsg(new Date().getTime(), "WARN", msg.author.id, null, "User provided invalid server for discreet say");
+                    bot.sendMessage(msg.channel, "Huh, that's not a server I know of. To add me, reply with the invite link. *kthx*");
+                    return;
+                }
+                if(configs.servers[svr.id].admins.value.indexOf(msg.author.id)==-1) {
+                    logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Cannot say because user is not a bot admin in " + svr.name);
+                    bot.sendMessage(msg.channel, "You're not an admin in that server :P");
+                    return;
+                }
+                var chnm = msg.content.substring(svrnm.length+5);
+                chnm = chnm.substring(0, chnm.indexOf(" "));
+                var ch = svr.channels.get("name", chnm);
+                if(!ch) {
+                    logMsg(new Date().getTime(), "WARN", msg.author.id, null, "User provided invalid channel for discreet say");
+                    bot.sendMessage(msg.channel, "There's no such channel on " + svr.name);
+                    return;
+                }
+                var suffix = msg.content.substring(svrnm.length+chnm.length+6);
+                if(!suffix) {
+                    logMsg(new Date().getTime(), "WARN", msg.author.id, null, "No discreet message to say in " + svr.name + ", " + ch.name);
+                    bot.sendMessage(msg.channel, "Idk what to say...Please use the syntax `say " + svr.name + " " + ch.name + " <something to say>`");
+                    return;
+                }
+                bot.sendMessage(msg.channel, "Alright, check #" + ch.name)
+                bot.sendMessage(ch, suffix);
+                logMsg(new Date().getTime(), "INFO", svr.name, ch.name, "Saying '" + suffix + "' at admin's request via PM");
+                return;
+            }
+            
             // Join new servers via PM
             if((msg.content.indexOf("https://discord.gg")>-1 || msg.content.indexOf("https://discordapp.com/invite/")>-1)) {
                 try {
@@ -1741,7 +1782,7 @@ bot.on("message", function (msg, user) {
                     polls[act].responses.push(vt);
                     polls[act].responderIDs.push(msg.author.id);
                     logMsg(new Date().getTime(), "INFO", svr.name, ch.name, "Vote cast for " + vt + " via PM");
-                    bot.sendMessage(msg.channel, "Got it! Your vote was cast anonymously ;)");
+                    bot.sendMessage(msg.channel, "Got it! Your vote was cast anonymously ( ͡° ͜ʖ ͡°)");
                     return;
                 } catch(error) {
                     logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Invalid PM voting syntax provided");
@@ -2305,6 +2346,35 @@ function populateStats(svr) {
                 }
             };
         }
+    }
+}
+
+// Clear old stats and configs
+function pruneData() {
+    var changed = false;
+    for(var svrid in configs.servers) {
+        var svr = bot.servers.get("id", svrid);
+        if(!svr) {
+            changed = true;
+            delete configs.servers[svrid];
+        }
+    }
+    if(changed) {
+        saveData("./config.json", function(err) {
+            if(err) {
+                logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to clean old server configs");
+            }
+        });
+    }
+    for(var svrid in stats) {
+        var svr = bot.servers.get("id", svrid);
+        if(!svr && svrid!="timestamp") {
+            changed = true;
+            delete stats[svrid];
+        } 
+    }
+    if(changed) {
+        logMsg(new Date().getTime(), "INFO", "General", null, "Pruned old server configs");
     }
 }
 
