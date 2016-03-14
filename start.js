@@ -44,7 +44,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3.0p1";
+var version = "3.3.0p2";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -796,11 +796,13 @@ bot.on("ready", function() {
                     }
                     var svr = bot.servers.get("id", svrid);
                     var data = getStats(svr);
-                    html += "if(n==" + svrid + ") {html = \"<b>" + svr.name + " (this week)</b>";
-                    for(var cat in data) {
-                        html += "<br>" + cat + ":";
-                        for(var i=0; i<data[cat].length; i++) {
-                            html += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + data[cat][i];
+                    html += "if(n==" + svrid + ") {html = \"<b>" + svr.name.replaceAll("\"", "'") + " (this week)</b>" + (Object.keys(data).length>0 ? "" : "<br><i>Nothing here</i>");
+                    if(Object.keys(data).length>0) {
+                        for(var cat in data) {
+                            html += "<br>" + cat.replaceAll("\"", "'") + ":";
+                            for(var i=0; i<data[cat].length; i++) {
+                                html += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + data[cat][i].replaceAll("\"", "'");
+                            }
                         }
                     }
                     html += "\";document.getElementById(\"statsselect\").innerHTML = \"<option value=\'null-" + svrid + "\' selected><i>View Profile</i></option>";
@@ -812,7 +814,7 @@ bot.on("ready", function() {
                     }
                     html += "\";}";
                 }
-                html += "}document.getElementById(\"stats\").innerHTML = html || \"<br><i>Nothing here</i>\";document.getElementById(\"stats\").style.height = (document.getElementById(\"stats\").innerHTML.match(/<br>/ig).length + 1) * 18;document.getElementById(\"stats\").style.opacity = 1;}, 125);}function switchProfile(n) {document.getElementById(\"stats\").style.opacity = 0;document.getElementById(\"stats\").style.height = 0;setTimeout(function() {var usrid = n.substring(0, n.indexOf(\"-\"));var svrid = n.substring(n.indexOf(\"-\")+1);var html = \"\";";
+                html += "}document.getElementById(\"stats\").innerHTML = html || \"<i>Nothing here</i>\";document.getElementById(\"stats\").style.height = (document.getElementById(\"stats\").innerHTML.match(/<br>/ig).length + 1) * 18;document.getElementById(\"stats\").style.opacity = 1;}, 125);}function switchProfile(n) {document.getElementById(\"stats\").style.opacity = 0;document.getElementById(\"stats\").style.height = 0;setTimeout(function() {var usrid = n.substring(0, n.indexOf(\"-\"));var svrid = n.substring(n.indexOf(\"-\")+1);var html = \"\";";
                 for(var svrid in stats) {
                     if(svrid=="timestamp") {
                         continue;
@@ -820,12 +822,16 @@ bot.on("ready", function() {
                     var svr = bot.servers.get("id", svrid);
                     html += "if(usrid==\"null\" && svrid==\"" + svrid + "\") {html = \"";
                     if(svr) {
-                        html += "<b>" + svr.name + " (this week)</b>";
                         var data = getStats(svr);
-                        for(var cat in data) {
-                            html += "<br>" + cat + ":";
-                            for(var i=0; i<data[cat].length; i++) {
-                                html += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + data[cat][i];
+                        html += "<b>" + svr.name.replaceAll("\"", "'") + " (this week)</b>";
+                        if(Object.keys(data).length==0) {
+                            html += "<br><i>Nothing here</i>";
+                        } else {
+                            for(var cat in data) {
+                                html += "<br>" + cat.replaceAll("\"", "'") + ":";
+                                for(var i=0; i<data[cat].length; i++) {
+                                    html += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + data[cat][i].replaceAll("\"", "'");
+                                }
                             }
                         }
                     }
@@ -836,12 +842,12 @@ bot.on("ready", function() {
                         if(usr) {
                             var data = getProfile(usr, svr);
                             for(var sect in data) {
-                                html += "<b>" + sect + ":</b><br>";
+                                html += "<b>" + sect.replaceAll("\"", "'") + ":</b><br>";
                                 for(var key in data[sect]) {
                                     if(key=="Avatar") {
-                                        html += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + key + ": <a href='" + data[sect][key] + "'>Click Here</a><br>";
+                                        html += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + key.replaceAll("\"", "'") + ": <a href='" + data[sect][key] + "'>Click Here</a><br>";
                                     } else {
-                                        html += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + key + ": " + data[sect][key] + "<br>";
+                                        html += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + key.replaceAll("\"", "'") + ": " + data[sect][key] + "<br>";
                                     }
                                 }
                             }
@@ -850,7 +856,7 @@ bot.on("ready", function() {
                         html += "\";}";
                     }
                 }
-                html += "document.getElementById(\"stats\").innerHTML = html || \"<br><i>Nothing here</i>\";document.getElementById(\"stats\").style.height = (document.getElementById(\"stats\").innerHTML.match(/<br>/ig).length + 1) * 18;document.getElementById(\"stats\").style.opacity = 1;}, 125);}function switchLog() {var ogcolor = document.getElementById(\"console\").style.color.slice(0);document.getElementById(\"console\").style.color = document.getElementById(\"console\").style.backgroundColor;setTimeout(function() {var id = parseInt(document.getElementById(\"idselector\").value);var level = parseInt(document.getElementById(\"levelselector\").value);var html = \"\";"
+                html += "document.getElementById(\"stats\").innerHTML = html || \"<i>Nothing here</i>\";document.getElementById(\"stats\").style.height = (document.getElementById(\"stats\").innerHTML.match(/<br>/ig).length + 1) * 18;document.getElementById(\"stats\").style.opacity = 1;}, 125);}function switchLog() {var ogcolor = document.getElementById(\"console\").style.color.slice(0);document.getElementById(\"console\").style.color = document.getElementById(\"console\").style.backgroundColor;setTimeout(function() {var id = parseInt(document.getElementById(\"idselector\").value);var level = parseInt(document.getElementById(\"levelselector\").value);var html = \"\";"
                 var ids = [null].concat(getLogIDs());
                 var levels = [null, "INFO", "WARN", "ERROR"];
                 for(var i=0; i<ids.length; i++) {
@@ -868,18 +874,18 @@ bot.on("ready", function() {
                     if(svrid=="timestamp") {
                         continue;
                     }
-                    html += "<option value=" + svrid + ">" + bot.servers.get("id", svrid) + "</option>";
+                    html += "<option value=" + svrid + ">" + bot.servers.get("id", svrid).name.replaceAll("\"", "'") + "</option>";
                 }
                 html += "</select>&nbsp;<select style=\"visibility: hidden;\" id=\"statsselect\" onChange=\"javascript:switchProfile(this.value);\"></select><div id=\"stats\">" + defaultStats + "</div><br><span style='font-size: 20;'><u>Servers</u><br></span><div id=\"servers\"><i>Number of messages only includes the past 24 hours.</i>";
                 for(var i=0; i<bot.servers.length; i++) {
                     var online = 0;
-                    html += "<br><b>" + bot.servers[i].name + ":</b> " + (messages[bot.servers[i].id] || 0) + " message" + ((messages[bot.servers[i].id] || 0)==1 ? "" : "s") + ", ";
+                    html += "<br><b>" + bot.servers[i].name.replaceAll("\"", "'") + ":</b> " + (messages[bot.servers[i].id] || 0) + " message" + ((messages[bot.servers[i].id] || 0)==1 ? "" : "s") + ", ";
                     for(var j=0; j<bot.servers[i].members.length; j++) {
                         if(bot.servers[i].members[j].status!="offline") {
                             online++;
                         }
                     }
-                    html += online + " member" + (online==1 ? "" : "s") + " online (owner: @" + bot.servers[i].owner.username + ")";
+                    html += online + " member" + (online==1 ? "" : "s") + " online (owner: @" + bot.servers[i].owner.username.replaceAll("\"", "'") + ")";
                 }
                 html += "</div><br><span style='font-size: 20; margin-bottom: 0px;'><u>Activity Log</u></span></span>&nbsp;&nbsp;<select id=\"idselector\" onChange=\"javascript:switchLog();\">";
                 for(var i=0; i<ids.length; i++) {
