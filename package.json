@@ -1,5 +1,5 @@
 {
-  "name": "Awesomebot",
+  "name": "AwesomeBot",
   "version": "0.1.1",
   "author": "anandroiduser",
   "repository": {
@@ -40,7 +40,10 @@
     "weather-js": "*",
     "wolfram-node": "*",
     "google-search-scraper": "*",
-    "url-info-scraper": "*"
+    "url-info-scraper": "*",
+    "cross-spawn": "*",
+    "write-file-atomic": "*",
+    "money": "*"
   },
   "scripts": {
     "start": "node start.js"
