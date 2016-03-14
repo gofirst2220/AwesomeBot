@@ -44,7 +44,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3";
+var version = "3.3.0p1";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -807,7 +807,7 @@ bot.on("ready", function() {
                     for(var usrid in stats[svrid].members) {
                         var usr = bot.users.get("id", usrid);
                         if(usr) {
-                            html += "<option value='" + usrid + "-" + svrid + "'>" + usr.username + "</option>";
+                            html += "<option value='" + usrid + "-" + svrid + "'>" + usr.username.replaceAll("\"", "'") + "</option>";
                         }
                     }
                     html += "\";}";
@@ -2444,6 +2444,11 @@ function countOccurrences(arr, ref) {
 
     return a;
 }
+
+// Fast replacement in string prototype
+String.prototype.replaceAll = function(str1, str2, ignore) {
+    return this.replace(new RegExp(str1.replace(/([\/\,\!\\\^\$\{\}\[\]\(\)\.\*\+\?\|\<\>\-\&])/g,"\\$&"),(ignore?"gi":"g")),(typeof(str2)=="string")?str2.replace(/\$/g,"$$$$"):str2);
+} 
 
 // Determine if string contains substring in an array
 function contains(arr, str, sens) {

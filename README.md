@@ -129,6 +129,8 @@ Latest, version **3.3**:
  - Support for YouTube playlists and channels
  - Improved roll command with optional min and max
  - Fixed many, many bugs  
+
+Patch #1: Fixed username quote bug in web interface
  
 Open an issue to report a bug or suggest a new feature!
 
