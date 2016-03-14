@@ -1392,6 +1392,7 @@ bot.on("message", function (msg, user) {
                                     delete stats[svr.id];
                                     logMsg(new Date().getTime(), "INFO", "General", null, "Left server " + svr.name);
                                     bot.sendMessage(msg.channel, bot.user.username + " has left " + svr.name);
+                                    delete adminconsole[msg.author.id];
                                 }
                             });
                             break;
@@ -1606,14 +1607,6 @@ bot.on("message", function (msg, user) {
                         if(error) {
                             logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Could not join new server, most likely user error");
                             bot.sendMessage(msg.channel, "Failed to join server. Please check your invite URL.");
-                        } else {
-                            logMsg(new Date().getTime(), "INFO", "General", null, "Joined server " + server.name + ", invited by " + msg.author.username);
-                            defaultConfig(server);
-                            messages[server.id] = 0;
-                            cleverOn[server.id] = 0;
-                            populateStats(server);
-                            bot.sendMessage(msg.channel, "Successfully joined " + server.name);
-                            adminMsg(false, server, msg.author, " has added me to " + server.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + server.name + "`. Check out https://git.io/v2e1w to learn more.");
                         }
                         bot.stopTyping(msg.channel);
                         return;
@@ -2172,12 +2165,12 @@ bot.on("message", function (msg, user) {
 
 // Add server if joined outisde of bot
 bot.on("serverCreated", function(svr) {
-    logMsg(new Date().getTime(), "INFO", "General", null, "Server " + svr.name + " added");
     defaultConfig(svr);
     messages[svr.id] = 0;
     cleverOn[svr.id] = 0;
+    spams[svr.id] = {};
     populateStats(svr);
-    adminMsg(false, svr, configs.maintainer || {username: "I"}, configs.maintainer ? (configs.maintainer + " has added me to ") : " have added myself to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out https://git.io/v2e1w to learn more.");
+    adminMsg(false, svr, {username: "I"}, " have been added to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out https://git.io/v2e1w to learn more.");
 });
 
 // Leave server if deleted
