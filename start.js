@@ -1658,6 +1658,7 @@ bot.on("message", function (msg, user) {
                     logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to join new server, invited by " + msg.author.username);
                     bot.sendMessage(msg.channel, "Failed to join server. I might be terminally ill...");
                 }
+                return;
             }
 
             // End poll if it has been initialized previously
@@ -3365,7 +3366,7 @@ function getHelp(svr) {
         }
     }
 
-    info += "\n\nFor example, you could do `@" + bot.user.username + " remindme 5 s Hello`. You can get app links from the Google Play store by using `linkme <some app>`.\n\nThe following commands are also available via PM:\n\tpoll <server> <channel>\n\tmentions <server>\n\tprofile <key>,<value>\n\tconfig <server>\n\nOn top of all this, you can talk to me about anything privately or in the main chat (by tagging me). Have fun! ;)\n\nVersion " + version + " by @anandroiduser, https://git.io/v2e1w";
+    info += "\n\nFor example, you could do `@" + bot.user.username + " remindme 5 s Hello`. You can get app links from the Google Play store by using `linkme <some app>`.\n\nThe following commands are also available via PM:\n\tpoll " + svr.name + " <channel>\n\tvote " + svr.name + " <channel> <no. of option>\n\tmentions " + svr.name + "\n\tprofile <key>,<value>\n\tconfig " + svr.name + "\n\tsay " + svr.name + " <channel> <something to say>\n\nOn top of all this, you can talk to me about anything privately or in the main chat (by tagging me). Have fun! ;)\n\nVersion " + version + " by @anandroiduser, https://git.io/v2e1w";
     return info;
 }
 
