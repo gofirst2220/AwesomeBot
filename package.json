@@ -42,12 +42,11 @@
     "google-search-scraper": "*",
     "url-info-scraper": "*",
     "cross-spawn": "*",
-    "forever": "*",
     "write-file-atomic": "*",
     "money": "*"
   },
   "scripts": {
-    "start": "forever start.js"
+    "start": "node start.js"
   },
   "main": "start.js"
 }

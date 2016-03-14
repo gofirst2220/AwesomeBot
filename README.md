@@ -113,7 +113,7 @@ Latest, version **3.3**:
  - New `say` command, just for fun
  - Added currency conversion
  - Added timer extension type
- - New auto-update system and forever support
+ - New auto-update system (beta)
  - Maintainer console to change bot game, status, etc.
  - Prevent bot spam with verification system
  - Added message archiving in admin console

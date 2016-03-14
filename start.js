@@ -2700,9 +2700,10 @@ function defaultConfig(svr) {
     }
 }
 
-// Update bot to new version via Git
+// Update bot to new version via Git (beta)
 function updateBot(msg) {
     logMsg(new Date().getTime(), "INFO", "General", null, "Updating " + bot.user.username + ":");
+    bot.sendMessage(msg.channel, "*Updating " + bot.user.username + ". This feature is in beta, and may not work.*");
     var spawn = require("child_process").spawn;
     var log = function(err, stdout, stderr) {
         if(stdout) {
