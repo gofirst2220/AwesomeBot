@@ -132,6 +132,7 @@ Latest, version **3.3**:
 
 Patch #1: Fixed username quote bug in web interface  
 Patch #2: Another web interface fix  
+Patch #3: Tweaked button/select color in web interface
  
 Open an issue to report a bug or suggest a new feature!
 
