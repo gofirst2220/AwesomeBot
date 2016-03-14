@@ -923,11 +923,17 @@ bot.on("message", function (msg, user) {
         // Stuff that only applies to PMs
         if(msg.channel.isPrivate && msg.author.id!=bot.user.id) {
             // Ensure that message is not from another AwesomeBot and block if so
+            if(configs.botblocked.indexOf(msg.author.id)>-1) {
+                return;
+            }
             if(msg.content.indexOf("Take note, other bots: `8WvCtp7ZjmaOj60KoTRP`")>-1) {
-                for(var i=0; i<bot.servers.length; i++) {
-                    if(bot.servers[i].members.get("id", msg.author.id)) {
-                        configs.servers[bot.servers[i].id].blocked.value.push(msg.author.id);
-                    }
+                if(configs.botblocked.indexOf(msg.author.id)==-1) {
+                    configs.botblocked.push(msg.author.id);
+                    saveData("./config.json", function(err) {
+                        if(err) {
+                            logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save updated config");
+                        }
+                    });
                 }
                 return;
             }
