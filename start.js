@@ -1607,6 +1607,8 @@ bot.on("message", function (msg, user) {
                         if(error) {
                             logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Could not join new server, most likely user error");
                             bot.sendMessage(msg.channel, "Failed to join server. Please check your invite URL.");
+                        } else {
+                            bot.sendMessage(msg.channel, "Processing invite...Should be done soon!");
                         }
                         bot.stopTyping(msg.channel);
                         return;
@@ -2086,7 +2088,7 @@ bot.on("message", function (msg, user) {
                     }
                     logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Treating '" + msg.content + "' from " + msg.author.username + " as chatterbot prompt"); 
                 } else {
-                    logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Treating '" + msg.content + "' from as chatterbot prompt"); 
+                    logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Treating '" + msg.content + "' as chatterbot prompt"); 
                 }
                 bot.startTyping(msg.channel);
                 
@@ -2170,7 +2172,7 @@ bot.on("serverCreated", function(svr) {
     cleverOn[svr.id] = 0;
     spams[svr.id] = {};
     populateStats(svr);
-    adminMsg(false, svr, {username: "I"}, " have been added to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out https://git.io/v2e1w to learn more.");
+    adminMsg(false, svr, {username: bot.user.username}, " (me) has been added to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out https://git.io/v2e1w to learn more.");
 });
 
 // Leave server if deleted
