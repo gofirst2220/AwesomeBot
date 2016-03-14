@@ -11,7 +11,7 @@ try {
     // Hijack spawn for auto-update to work properly
     (function() {
         var childProcess = require("child_process");
-        childProcess.spawn = require('cross-spawn');
+        childProcess.spawn = require("cross-spawn");
     })();
 
     // Misc. modules to make everything work
@@ -36,7 +36,6 @@ try {
     const readline = require("readline");
     const searcher = require("google-search-scraper");
     const urlInfo = require("url-info-scraper");
-    const base64 = require("node-base64-image");
 } catch(startError) {
     console.log("Failed to start: ");
     console.log(startError);
@@ -72,9 +71,6 @@ var admintime = {};
 var updateconsole = false;
 var maintainerconsole = false
 
-// List of possible greetings for new server members
-var greetings = ["++ Welcome to our little corner of hell!", "++ has joined the server.", "++ You're gonna have a jolly good time here!", "++ is new here.", "++ is here, everybody!", "++ sends his/her regards.", "++, welcome to the server!", "++ is our next victim...", "Hello ++!", "Please welcome our newest member, ++"];
-
 // List of bot commands along with usage and process for each
 var commands = {
     // Checks if bot is alive and shows version and uptime
@@ -96,7 +92,7 @@ var commands = {
     },
     // Shows top 5 games and active members
     "stats": {
-        usage: "<(optional) clear>",
+        usage: "[clear]",
         process: function(bot, msg, suffix) {
             if(!stats[msg.channel.server.id]) {
                 logMsg(new Date().getTime(), "ERROR", msg.channel.server.name, msg.channel.name, "Failed to read stats");
@@ -122,7 +118,7 @@ var commands = {
     },
     // Searches Google for a given query
     "search": {
-        usage: "<query> <count>",
+        usage: "<query> [<count>]",
         process: function(bot, msg, suffix) {
             if(suffix) {
                 var query = suffix.substring(0, suffix.lastIndexOf(" "));
@@ -162,7 +158,7 @@ var commands = {
     },
     // Fetches Twitter timelines and tweets
     "twitter": {
-        usage: "<username> <count>",
+        usage: "<username> [<count>]",
         process: function(bot, msg, suffix) {
             if(suffix) {
                 var user = suffix.substring(0, suffix.indexOf(" "));
@@ -209,7 +205,7 @@ var commands = {
             if(!suffix) {
                 bot.sendMessage(msg.channel, "\t\n");
             } else {
-                bot.sendMessage(msg.channel, suffix);
+                bot.sendMessage(msg.channel, msg.cleanContent.substring(bot.user.username.length+6));
             }
         }
     },
@@ -274,7 +270,7 @@ var commands = {
                 rating = "r";
             }
 		    getGIF(tags, function(id) {
-                if(typeof id !== "undefined") {
+                if(typeof id!=="undefined") {
                     bot.sendMessage(msg.channel, "http://media.giphy.com/media/" + id + "/giphy.gif");
                 } else {
                     logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "GIF not found for " + suffix);
@@ -348,7 +344,7 @@ var commands = {
                             logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Ambiguous search term '" + suffix + "' provided");
                             bot.sendMessage(msg.channel, "There are several matching Wikipedia articles; try making your query more specific.");
                         } else {
-                            var sumText = summary.split('\n');
+                            var sumText = summary.split("\n");
                             var count = 0;
                             var continuation = function() {
                                 var paragraph = sumText.shift();
@@ -538,14 +534,14 @@ var commands = {
     },
     // Sends reminders in given time for given note
     "remindme": {
-        usage: "<no.> <h, m, or s> <note>",
+        usage: "<no.> <d, h, m, or s> <note>",
         process: function(bot, msg, suffix) {
             parseReminder(suffix, msg.author, msg.channel);
         }
     },
     // Gets top (max 4) posts in given subreddit, sorting hot, includes pinned
     "reddit": {
-        usage: "<subreddit> <count>",
+        usage: "<subreddit> [<count>]",
         process: function(bot, msg, suffix) {
             var path = "/.json"
             var count = 5;
@@ -604,7 +600,7 @@ var commands = {
     },
     // Gets top (max 4) posts in given RSS feed name 
     "rss": {
-        usage: "<site> <count>",
+        usage: "<site> [<count>]",
         process: function(bot, msg, suffix) {
             if(configs.servers[msg.channel.server.id].rss.value[0]) {
                 var site = suffix.substring(0, suffix.indexOf(" "));
@@ -625,17 +621,24 @@ var commands = {
     },
     // Generates a random number
     "roll": {
-        usage: "<max no. inclusive>",
+        usage: "[<min inclusive>] [<max inclusive>]",
         process: function(bot, msg, suffix) {
-            if(!suffix || suffix=="null" || isNaN(suffix) || suffix < 1) {
-                logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "User provided nonsensical roll parameter");
-                bot.sendMessage(msg.channel, msg.author + " Wut.");
-                return;
-            }
-            if(suffix) {
-                bot.sendMessage(msg.channel, msg.author + " rolled a " + getRandomInt(0, suffix));
+            if(suffix.indexOf(" ")>-1) {
+                var min = suffix.substring(0, suffix.indexOf(" "));
+                var max = suffix.substring(suffix.indexOf(" ")+1);
+            } else if(!suffix) {
+                var min = 1;
+                var max = 6;
             } else {
-                bot.sendMessage(msg.channel, msg.author + " rolled a " + getRandomInt(0, 6));
+                var min = 0;
+                var max = suffix;
+            }
+            var roll = getRandomInt(parseInt(min), parseInt(max));
+            if(isNaN(roll)) {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, msg.author.username + " provided nonsensical roll parameter");
+                bot.sendMessage(msg.channel, msg.author + " Wut.");
+            } else {
+                bot.sendMessage(msg.channel, msg.author + " rolled a " + parseInt(roll));
             }
         }
     },
@@ -648,7 +651,7 @@ var commands = {
                     if(!games[msg.channel.server.members[i].game.name]) {
                         games[msg.channel.server.members[i].game.name] = [];
                     }
-                    games[msg.channel.server.members[i].game.name][games[msg.channel.server.members[i].game.name].length] = msg.channel.server.members[i].username;
+                    games[msg.channel.server.members[i].game.name].push(msg.channel.server.members[i].username);
                 }
             }
             var info = "";
@@ -669,7 +672,7 @@ var commands = {
             var usr = msg.channel.server.members.get("username", suffix);
             if(!suffix) {
                 usr = msg.author;
-            } else if(suffix.charAt(0)=='<') {
+            } else if(suffix.charAt(0)=="<") {
                 usr = msg.channel.server.members.get("id", suffix.substring(2, suffix.length-1));
             }
             if(usr) {
@@ -698,7 +701,7 @@ var commands = {
 
 // Fetches posts from RSS feeds listed in config.json
 function rssfeed(bot, msg, url, count, full) {
-    if(count > 4 || !count || count=="" || count=="null") {
+    if(count > 4 || !count || isNaN(count)) {
         count = 4;
     }
     var FeedParser = require("feedparser");
@@ -775,15 +778,15 @@ bot.on("ready", function() {
     // Set up webserver for online bot status, optimized for RedHat OpenShift deployment
     var http = require("http");
     var server_port = process.env.OPENSHIFT_NODEJS_PORT || 8080;
-    var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
+    var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || "127.0.0.1";
     var server = http.createServer(function(request, response) {
         if(request.method=="GET") {
-            response.setHeader('Content-Type', 'text/html');
+            response.setHeader("Content-Type", "text/html");
             response.writeHead(200);
             var html = "";
             try {
                 var defaultStats = "<b>Status:</b> Online<br><b>Bot ID:</b> " + bot.user.id + "<br><b>Version:</b> v" + version + "<br><b>Uptime:</b> " + (secondsToString(bot.uptime/1000) || "<i>None, how are you viewing this?</i>") + "<br><b>Disconnections:</b> " + disconnects + " so far";
-                html = "<html><head><title>" + bot.user.username + "</title><meta charset=\"UTF-8\"><style>::-webkit-scrollbar {width: 12px;}::-webkit-scrollbar-track {opacity: 0;}::-webkit-scrollbar-thumb {border-radius: 10px;-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);}body {-webkit-transition: background-color .25s, color .25s;-moz-transition: background-color .25s, color .25s;-ms-transition: background-color .25s, color .25s;-o-transition: background-color .25s, color .25s;transition: background-color .25s, color .25s;}button, select{background-color: white;color: black;padding: 1px 7px;text-align: center;font-size: 12pt;border-radius: 10px;height: 20px;border: 1px solid #616161;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}button:hover, select:hover {background-color: #212121;color: #EEEEEE;border-radius: 3px;}button:active, select:active {border-radius: 1px;}#profilepic {float: right;width: 10%;border-radius: 100%;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}#profilepic:hover {border-radius: 0px;}#stats {margin-top: 0.5%;padding-top: 0px;-webkit-transition: opacity .125s, height .25s;-moz-transition: opacity .125s, height .25s;-ms-transition: opacity .125s, height .25s;-o-transition: opacity .125s, height .25s;transition: opacity .125s, height .25s;}#servers {margin-top: 0.5%;}#console{font-family: \"Consolas\", \"Droid Sans Mono\";height: 50%;padding: 5px;overflow: scroll;overflow-x: hidden;border: 1px solid gray;margin-top: 0.5%;-webkit-transition: background-color .25s, color .25s, opacity .125s;-moz-transition: background-color .25s, color .25s, opacity .125s;-ms-transition: background-color .25s, color .25s, opacity .125s;-o-transition: background-color .25s, color .25s, opacity .125s;transition: background-color .25s, color .25s, opacity .125s;}a {color: #212121;}a:visited {color: #212121;}select {font-size: 10pt;}button {font-size: 10pt;}#credit {font-family: \"Arial\";font-size: 10pt;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}#credit:hover {font-size: 16pt;font-weight: bold;color: teal;}</style><script type='text/javascript'>function toggleSection(id) {}function colorLinks(hex) {var links = document.getElementsByTagName(\"a\");for(var i=0;i<links.length;i++) {if(links[i].href) {links[i].style.color = hex;}}}function switchColors(n) {localStorage.setItem(\"theme\", n);document.getElementById(\"themeswitcher\").value = n;if(n==\"white\") {document.body.style.backgroundColor=\"white\";document.body.style.color=\"black\";colorLinks(\"#212121\");}if(n==\"black\") {document.body.style.backgroundColor=\"black\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"dark\") {document.body.style.backgroundColor=\"#212121\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"blue\") {document.body.style.backgroundColor=\"#263238\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"red\") {document.body.style.backgroundColor=\"#B71C1C\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"deep\") {document.body.style.backgroundColor=\"#004D40\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}document.getElementById(\"console\").style.backgroundColor=document.body.style.backgroundColor.slice(0);document.getElementById(\"console\").style.color=document.body.style.color.slice(0);if(n==\"contrast\") {document.body.style.backgroundColor=\"#F5F5F5\";document.body.style.color=\"#212121\";document.getElementById(\"console\").style.backgroundColor=\"#212121\";document.getElementById(\"console\").style.color=\"#F5F5F5\";colorLinks(\"#212121\");}}function switchStats(n) {document.getElementById(\"stats\").style.opacity = 0;document.getElementById(\"stats\").style.height = 0;setTimeout(function() {var html = \"\";if(n==\"general\") {document.getElementById(\"statsselect\").style.opacity = 0;setTimeout(function() {document.getElementById(\"statsselect\").style.visibility = \"hidden\";}, 250);html = \"" + defaultStats + "\"} else {document.getElementById(\"statsselect\").style.visibility = \"visible\";document.getElementById(\"statsselect\").style.opacity = 1;n = parseInt(n);";
+                html = "<html><head><title>" + bot.user.username + "</title><meta charset=\"UTF-8\"><style>::-webkit-scrollbar {width: 12px;}::-webkit-scrollbar-track {opacity: 0;}::-webkit-scrollbar-thumb {border-radius: 10px;-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);}body {opacity: 0;-webkit-transition: background-color .25s, color .25s, opacity .25s;-moz-transition: background-color .25s, color .25s, opacity .25s;-ms-transition: background-color .25s, color .25s, opacity .25s;-o-transition: background-color .25s, color .25s, opacity .25s;transition: background-color .25s, color .25s, opacity .25s;}button, select{background-color: white;color: black;padding: 1px 7px;text-align: center;font-size: 12pt;border-radius: 10px;height: 20px;border: 1px solid #616161;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}button:hover, select:hover {background-color: #212121;color: #EEEEEE;border-radius: 3px;}button:active, select:active {border-radius: 1px;}#profilepic {float: right;width: 10%;border-radius: 100%;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}#profilepic:hover {border-radius: 0px;}#stats {margin-top: 0.5%;padding-top: 0px;-webkit-transition: opacity .125s, height .25s;-moz-transition: opacity .125s, height .25s;-ms-transition: opacity .125s, height .25s;-o-transition: opacity .125s, height .25s;transition: opacity .125s, height .25s;}#servers {margin-top: 0.5%;}#console{font-family: \"Consolas\", \"Droid Sans Mono\";height: 50%;padding: 5px;overflow: scroll;overflow-x: hidden;border: 1px solid gray;margin-top: 0.5%;-webkit-transition: background-color .25s, color .25s, opacity .125s;-moz-transition: background-color .25s, color .25s, opacity .125s;-ms-transition: background-color .25s, color .25s, opacity .125s;-o-transition: background-color .25s, color .25s, opacity .125s;transition: background-color .25s, color .25s, opacity .125s;}a {color: #212121;}a:visited {color: #212121;}select {font-size: 10pt;}button {font-size: 10pt;}#credit {font-family: \"Arial\";font-size: 10pt;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}#credit:hover {font-size: 16pt;font-weight: bold;color: teal;}</style><script type=\"text/javascript\">function toggleSection(id) {}function colorLinks(hex) {var links = document.getElementsByTagName(\"a\");for(var i=0;i<links.length;i++) {if(links[i].href) {links[i].style.color = hex;}}}function switchColors(n) {localStorage.setItem(\"theme\", n);document.getElementById(\"themeswitcher\").value = n;if(n==\"white\") {document.body.style.backgroundColor=\"white\";document.body.style.color=\"black\";colorLinks(\"#212121\");}if(n==\"black\") {document.body.style.backgroundColor=\"black\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"dark\") {document.body.style.backgroundColor=\"#212121\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"blue\") {document.body.style.backgroundColor=\"#263238\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"red\") {document.body.style.backgroundColor=\"#B71C1C\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"deep\") {document.body.style.backgroundColor=\"#004D40\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}document.getElementById(\"console\").style.backgroundColor=document.body.style.backgroundColor.slice(0);document.getElementById(\"console\").style.color=document.body.style.color.slice(0);if(n==\"contrast\") {document.body.style.backgroundColor=\"#F5F5F5\";document.body.style.color=\"#212121\";document.getElementById(\"console\").style.backgroundColor=\"#212121\";document.getElementById(\"console\").style.color=\"#F5F5F5\";colorLinks(\"#212121\");}}function switchStats(n) {document.getElementById(\"stats\").style.opacity = 0;document.getElementById(\"stats\").style.height = 0;setTimeout(function() {var html = \"\";if(n==\"general\") {document.getElementById(\"statsselect\").style.opacity = 0;setTimeout(function() {document.getElementById(\"statsselect\").style.visibility = \"hidden\";}, 250);html = \"" + defaultStats + "\"} else {document.getElementById(\"statsselect\").style.visibility = \"visible\";document.getElementById(\"statsselect\").style.opacity = 1;n = parseInt(n);";
                 for(var svrid in stats) {
                     if(svrid=="timestamp") {
                         continue;
@@ -799,7 +802,10 @@ bot.on("ready", function() {
                     }
                     html += "\";document.getElementById(\"statsselect\").innerHTML = \"<option value=\'null-" + svrid + "\' selected><i>View Profile</i></option>";
                     for(var usrid in stats[svrid].members) {
-                        html += "<option value='" + usrid + "-" + svrid + "'>" + bot.users.get("id", usrid).username + "</option>";
+                        var usr = bot.users.get("id", usrid);
+                        if(usr) {
+                            html += "<option value='" + usrid + "-" + svrid + "'>" + usr.username + "</option>";
+                        }
                     }
                     html += "\";}";
                 }
@@ -820,18 +826,21 @@ bot.on("ready", function() {
                     html += "\";}";
                     for(var usrid in stats[svrid].members) {
                         html += "if(usrid==\"" + usrid + "\" && svrid==\"" + svrid + "\") {html = \"";
-                        var data = getProfile(svr.members.get("id", usrid), svr);
-                        for(var sect in data) {
-                            html += "<b>" + sect + ":</b><br>";
-                            for(var key in data[sect]) {
-                                if(key=="Avatar") {
-                                    html += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + key + ": <a href='" + data[sect][key] + "'>Click Here</a><br>";
-                                } else {
-                                    html += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + key + ": " + data[sect][key] + "<br>";
+                        var usr = svr.members.get("id", usrid);
+                        if(usr) {
+                            var data = getProfile(usr, svr);
+                            for(var sect in data) {
+                                html += "<b>" + sect + ":</b><br>";
+                                for(var key in data[sect]) {
+                                    if(key=="Avatar") {
+                                        html += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + key + ": <a href='" + data[sect][key] + "'>Click Here</a><br>";
+                                    } else {
+                                        html += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + key + ": " + data[sect][key] + "<br>";
+                                    }
                                 }
                             }
+                            html = html.substring(0, html.length-4);
                         }
-                        html = html.substring(0, html.length-4);
                         html += "\";}";
                     }
                 }
@@ -848,7 +857,7 @@ bot.on("ready", function() {
                         html += "\"}";
                     }
                 }
-                html += "document.getElementById(\"console\").innerHTML = html || \"<i>Nothing here</i>\";document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;document.getElementById(\"console\").style.color = ogcolor;}, 125);}</script></head><body onload='javascript:document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;switchColors(localStorage.getItem(\"theme\") ? localStorage.getItem(\"theme\") : \"contrast\");'><span style='font-family: \"Arial\"; margin-bottom: 0px;'><span style='font-size: 28;'><b>" + bot.user.username + "</b> Info</span><img id=\"profilepic\" src=\"" + (bot.user.avatarURL || "http://i.imgur.com/fU70HJK.png") + "\"/><br><br><span style='font-size: 20;'><u>Statistics</u></span>&nbsp;&nbsp;<select onChange=\"javascript:switchStats(this.value);\"><option value=\"general\" selected>General</option>";
+                html += "document.getElementById(\"console\").innerHTML = html || \"<i>Nothing here</i>\";document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;document.getElementById(\"console\").style.color = ogcolor;}, 125);}</script></head><body onload='javascript:document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;switchColors(localStorage.getItem(\"theme\") ? localStorage.getItem(\"theme\") : \"contrast\");document.body.style.opacity = 1;'><span style='font-family: \"Arial\"; margin-bottom: 0px;'><span style='font-size: 28;'><b>" + bot.user.username + "</b> Info</span><img id=\"profilepic\" src=\"" + (bot.user.avatarURL || "http://i.imgur.com/fU70HJK.png") + "\"/><br><br><span style='font-size: 20;'><u>Statistics</u></span>&nbsp;&nbsp;<select onChange=\"javascript:switchStats(this.value);\"><option value=\"general\" selected>General</option>";
                 for(var svrid in stats) {
                     if(svrid=="timestamp") {
                         continue;
@@ -858,13 +867,13 @@ bot.on("ready", function() {
                 html += "</select>&nbsp;<select style=\"visibility: hidden;\" id=\"statsselect\" onChange=\"javascript:switchProfile(this.value);\"></select><div id=\"stats\">" + defaultStats + "</div><br><span style='font-size: 20;'><u>Servers</u><br></span><div id=\"servers\"><i>Number of messages only includes the past 24 hours.</i>";
                 for(var i=0; i<bot.servers.length; i++) {
                     var online = 0;
-                    html += "<br><b>" + bot.servers[i].name + ":</b> " + (messages[bot.servers[i].id] || 0) + " messages, ";
+                    html += "<br><b>" + bot.servers[i].name + ":</b> " + (messages[bot.servers[i].id] || 0) + " message" + ((messages[bot.servers[i].id] || 0)==1 ? "" : "s") + ", ";
                     for(var j=0; j<bot.servers[i].members.length; j++) {
                         if(bot.servers[i].members[j].status!="offline") {
                             online++;
                         }
                     }
-                    html += online + " members online (owner: @" + bot.servers[i].owner.username + ")";
+                    html += online + " member" + (online==1 ? "" : "s") + " online (owner: @" + bot.servers[i].owner.username + ")";
                 }
                 html += "</div><br><span style='font-size: 20; margin-bottom: 0px;'><u>Activity Log</u></span></span>&nbsp;&nbsp;<select id=\"idselector\" onChange=\"javascript:switchLog();\">";
                 for(var i=0; i<ids.length; i++) {
@@ -883,7 +892,7 @@ bot.on("ready", function() {
                 for(var i=0; i<logs.length; i++) {
                     html += printLog(logs[i]) + "<br>";
                 }
-                html += "</div><br><button id=\"refresher\" onclick=\"javascript:location.reload()\">Refresh</button>&nbsp;<select id=\"themeswitcher\" onChange=\"javascript:switchColors(this.value);\"><option value=\"white\">White</option><option value=\"contrast\">Contrast</option><option value=\"black\">Black</option><option value=\"dark\">Dark</option><option value=\"blue\">Blue</option><option value=\"red\">Red</option><option value=\"deep\">Deep</option></select><br><br><span id=\"credit\"><i>Created by @anandroiduser, <a href='https://git.io/v2e1w'>https://git.io/v2e1w</a></i></span></body></html>";
+                html += "</div><br><button id=\"refresher\" onclick=\"javascript:document.body.style.opacity = 0;setTimeout(function() {location.reload();}, 250);\">Refresh</button>&nbsp;<select id=\"themeswitcher\" onChange=\"javascript:switchColors(this.value);\"><option value=\"white\">White</option><option value=\"contrast\">Contrast</option><option value=\"black\">Black</option><option value=\"dark\">Dark</option><option value=\"blue\">Blue</option><option value=\"red\">Red</option><option value=\"deep\">Deep</option></select><br><br><span id=\"credit\"><i>Created by @anandroiduser, <a href='https://git.io/v2e1w'>https://git.io/v2e1w</a></i></span></body></html>";
             } catch(err) {
                 logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to write web interface");
                 html = bot.user.username + " v" + version + " running for " + secondsToString(bot.uptime/1000);
@@ -900,7 +909,7 @@ bot.on("ready", function() {
     }
     
     // Ready to go!
-	logMsg(new Date().getTime(), "INFO", "General", null, "Connected, serving in " + bot.servers.length + " servers and " + bot.channels.length + " channels");
+	logMsg(new Date().getTime(), "INFO", "General", null, "Connected, serving in " + bot.servers.length + " server" + (bot.servers.length==1 ? "" : "s") + " and " + bot.users.length + " user" + (bot.users.length==1 ? "" : "s"));
 });
 
 bot.on("message", function (msg, user) {
@@ -908,10 +917,10 @@ bot.on("message", function (msg, user) {
         // Stuff that only applies to PMs
         if(msg.channel.isPrivate && msg.author.id!=bot.user.id) {
             // Ensure that message is not from another AwesomeBot and block if so
-            if(msg.content.indexOf("I am a bot. Take note, other bots: `8WvCtp7ZjmaOj60KoTRP`")>-1) {
+            if(msg.content.indexOf("Take note, other bots: `8WvCtp7ZjmaOj60KoTRP`")>-1) {
                 for(var i=0; i<bot.servers.length; i++) {
                     if(bot.servers[i].members.get("id", msg.author.id)) {
-                        configs.servers[bot.servers[i].id].blocked.value[configs.servers[bot.servers[i].id].blocked.value.length] = msg.author.id;
+                        configs.servers[bot.servers[i].id].blocked.value.push(msg.author.id);
                     }
                 }
                 return;
@@ -923,9 +932,9 @@ bot.on("message", function (msg, user) {
             }
             
             // Maintiner control panel for overall bot things
-            if(msg.author.id==configs.maintainer && msg.content.toLowerCase()==("config")) {
+            if(msg.author.id==configs.maintainer && msg.content.toLowerCase()==("config") && !adminconsole[msg.author.id]) {
                 logMsg(new Date().getTime(), "INFO", "General", null, "Maintainer console opened");
-                bot.sendMessage(msg.channel, "**Welcome to the " + bot.user.username + " maintainer console.** I am your owner. I will do what you say. Here are your options:\n\tquit\n\tgame <name of game or `.` to remove>\n\tusername <new name>\n\tavatar <URL of new profile pic>\n\tstatus <online or idle>\n\tupdate\n\tkill\nUse the syntax `<option> <parameter>` as always! :)");
+                bot.sendMessage(msg.channel, "**Welcome to the " + bot.user.username + " maintainer console.** I am your owner. I will do what you say. Here are your options:\n\tquit\n\tgame <name of game or `.` to remove>\n\tusername <new name>\n\tstatus <online or idle>\n\tupdate\n\tkill\nUse the syntax `<option> <parameter>` as always! :)");
                 maintainerconsole = true;
                 return;
             } else if(msg.author.id==configs.maintainer && maintainerconsole) {
@@ -937,11 +946,11 @@ bot.on("message", function (msg, user) {
                 } else {
                     n = msg.content.toLowerCase();
                 }
-                if(!n || ["quit", "game", "username", "avatar", "status", "update", "kill"].indexOf(n)==-1) {
+                if(!n || ["quit", "game", "username", "status", "update", "kill"].indexOf(n)==-1) {
                     logMsg(new Date().getTime(), "WARN", "General", null, "Maintainer provided invalid option in console");
                     bot.sendMessage(msg.channel, "Invalid option, please see list above.");
                     return;
-                } else if((!suffix && ["game", "username", "avatar", "status"].indexOf(msg.content)>-1) || (n=="status" && ["online", "idle"].indexOf(suffix)==-1)) {
+                } else if((!suffix && ["game", "username", "status"].indexOf(msg.content)>-1) || (n=="status" && ["online", "idle"].indexOf(suffix)==-1)) {
                     logMsg(new Date().getTime(), "WARN", "General", null, "Maintainer provided invalid parameters in console");
                     bot.sendMessage(msg.channel, "Missing or incorrect parameter");
                     return;
@@ -971,34 +980,20 @@ bot.on("message", function (msg, user) {
                         });
                         break;
                     case "username":
-                        bot.sendMessage(msg.channel, "Due to an issue with Discord.JS, changing the bot username is not supported at this time. Hopefully this can be re-enabled in a future update.");
-                        /*bot.setUsername(suffix, function(err) {
+                        if(suffix==bot.user.username) {
+                            logMsg(new Date().getTime(), "WARN", "General", null, "Maintainer provided existing username");
+                            bot.sendMessage(msg.channel, "That's already my name! Haha");
+                            return;
+                        }
+                        bot.setUsername(suffix, function(err) {
                             if(err) {
-                                logMsg(new Date().getTime(), "ERROR", "General", null "Failed to change username to " + suffix);
+                                logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to change username to " + suffix);
                                 bot.sendMessage(msg.channel, "Uh-oh, something went wrong :o");
                             } else {
                                 logMsg(new Date().getTime(), "INFO", "General", null, "Changed bot username to " + suffix);
                                 bot.sendMessage(msg.channel, "Done!");
                             }
-                        });*/
-                        break;
-                    case "avatar":
-                        bot.sendMessage(msg.channel, "Due to an issue with Discord.JS, changing the bot avatar is not supported at this time. Hopefully this can be re-enabled in a future update.");
-                        /*base64.base64encoder(suffix, {string: true}, function(error, image) {
-                            if(error) {
-                                logMsg(new Date().getTime(), "WARN", "General", null, "Could not parse maintainer's avatar image");
-                                bot.sendMessage(msg.channel, "That doesn't seem to be an image...");
-                            }
-                            bot.updateDetails({avatar: image}, function(err) {
-                                if(err) {
-                                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to change avatar to " + suffix);
-                                    bot.sendMessage(msg.channel, "My face!!!!!!111 :(");
-                                } else {
-                                    logMsg(new Date().getTime(), "INFO", "General", null, "Changed bot avatar to " + suffix);
-                                    bot.sendMessage(msg.channel, "I like this one :D");
-                                }
-                            });
-                        });*/
+                        });
                         break;
                     case "status":
                         bot.setStatus(suffix, function(err) {
@@ -1094,7 +1089,7 @@ bot.on("message", function (msg, user) {
                         try {
                             var extension = JSON.parse(result.raw_body);
                             var validity;
-                            if(!extension.name || !extension.type || !extension.key || !extension.process) {
+                            if(!extension.name || !extension.type || (!extension.key && extension.type!="timer") || !extension.process) {
                                 validity = "missing parameter(s)";
                             } else if(["keyword", "command", "timer"].indexOf(extension.type.toLowerCase())==-1) {
                                 validity = "invalid type";
@@ -1165,6 +1160,9 @@ bot.on("message", function (msg, user) {
                                         for(var ext in configs.servers[svr.id].extensions) {
                                             info += "\n\t" + ext + ", " + configs.servers[svr.id].extensions[ext].type;
                                         }
+                                        if(Object.keys(configs.servers[svr.id].extensions).length==0) {
+                                            info += "\n\tNo extensions added.";
+                                        }
                                         bot.sendMessage(msg.channel, info);
                                     }
                                 });
@@ -1226,7 +1224,7 @@ bot.on("message", function (msg, user) {
                                 info += usr.username + " is no longer a server admin.";
                             } else {
                                 logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Added " + usr.username + " as a bot admin in " + svr.name);
-                                configs.servers[svr.id].admins.value[configs.servers[svr.id].admins.value.length] = usr.id;
+                                configs.servers[svr.id].admins.value.push(usr.id);
                                 info += usr.username + " is now a server admin.";
                             }
                             info += "\nUpdated admins list for this server:";
@@ -1244,41 +1242,47 @@ bot.on("message", function (msg, user) {
                             break;
                         // Block/unblock users
                         case "blocked":
-                            if(isNaN(suffix)) {
-                                var usr = svr.members.get("username", suffix);
+                            if(suffix==".") {
+                                logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Cleared blocked list for " + svr.name);
+                                configs.servers[svr.id].blocked.value = [];
+                                var info = "Cleared blocked member list.";
                             } else {
-                                var usr = svr.members.get("id", suffix);
-                            }
-                            var info = "";
-                            if(!usr) {
-                                logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Member not found to block in " + svr.name);
-                                bot.sendMessage(msg.channel, "Sorry, no such user.");
-                                return;
-                            } else if(configs.servers[svr.id].blocked.value.indexOf(usr.id)>-1) {
-                                logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Unblocked " + usr.username + " in " + svr.name);
-                                configs.servers[svr.id].blocked.value.splice(configs.servers[svr.id].blocked.value.indexOf(usr.id), 1);
-                                info += "Removed user " + usr.username + " from blocked list.";
-                            } else {
-                                if(configs.servers[svr.id].admins.value.indexOf(usr.id)>-1) {
-                                    logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Cannot block another bot admin in " + svr.name);
-                                    bot.sendMessage(msg.channel, "You can't block other bot admins in the server. That would be mean.");
-                                } else if(usr.id==configs.maintainer) {
-                                    logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Cannot block bot maintainer from " + svr.name);
-                                } else if(usr.id==msg.author.id) {
-                                    logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Cannot block themselves in " + svr.name);
-                                    bot.sendMessage(msg.channel, "You can't block yourself! Lol");
+                                if(isNaN(suffix)) {
+                                    var usr = svr.members.get("username", suffix);
                                 } else {
-                                    logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Blocked " + usr.username + " in " + svr.name);
-                                    configs.servers[svr.id].blocked.value[configs.servers[svr.id].blocked.value.length] = usr.id;
-                                    info += "Blocked user " + usr.username + " from using this bot in this server.";
+                                    var usr = svr.members.get("id", suffix);
                                 }
-                            }
-                            info += "\nUpdated blocked list for this server:";
-                            for(var i=0; i<configs.servers[svr.id].blocked.value.length; i++) {
-                                info += "\n\t" + bot.users.get("id", configs.servers[svr.id].blocked.value[i]).username + ", ID " + configs.servers[svr.id].blocked.value[i];
-                            }
-                            if(configs.servers[svr.id].blocked.value.length==0) {
-                                info += "\n\tNo users are blocked.";
+                                var info = "";
+                                if(!usr) {
+                                    logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Member not found to block in " + svr.name);
+                                    bot.sendMessage(msg.channel, "Sorry, no such user.");
+                                    return;
+                                } else if(configs.servers[svr.id].blocked.value.indexOf(usr.id)>-1) {
+                                    logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Unblocked " + usr.username + " in " + svr.name);
+                                    configs.servers[svr.id].blocked.value.splice(configs.servers[svr.id].blocked.value.indexOf(usr.id), 1);
+                                    info += "Removed user " + usr.username + " from blocked list.";
+                                } else {
+                                    if(configs.servers[svr.id].admins.value.indexOf(usr.id)>-1) {
+                                        logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Cannot block another bot admin in " + svr.name);
+                                        bot.sendMessage(msg.channel, "You can't block other bot admins in the server. That would be mean.");
+                                    } else if(usr.id==configs.maintainer) {
+                                        logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Cannot block bot maintainer from " + svr.name);
+                                    } else if(usr.id==msg.author.id) {
+                                        logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Cannot block themselves in " + svr.name);
+                                        bot.sendMessage(msg.channel, "You can't block yourself! Lol");
+                                    } else {
+                                        logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Blocked " + usr.username + " in " + svr.name);
+                                        configs.servers[svr.id].blocked.value.push(usr.id);
+                                        info += "Blocked user " + usr.username + " from using this bot in this server.";
+                                    }
+                                }
+                                info += "\nUpdated blocked list for this server:";
+                                for(var i=0; i<configs.servers[svr.id].blocked.value.length; i++) {
+                                    info += "\n\t" + bot.users.get("id", configs.servers[svr.id].blocked.value[i]).username + ", ID " + configs.servers[svr.id].blocked.value[i];
+                                }
+                                if(configs.servers[svr.id].blocked.value.length==0) {
+                                    info += "\n\tNo users are blocked.";
+                                }
                             }
                             saveData("./config.json", function(err) {
                                 if(err) {
@@ -1335,8 +1339,8 @@ bot.on("message", function (msg, user) {
                                     logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Invalid feed name provided in admin console for " + svr.name);
                                     info += "Invalid feed name.";
                                 } else {
-                                    configs.servers[svr.id].rss.value[1][configs.servers[svr.id].rss.value[1].length] = url;
-                                    configs.servers[svr.id].rss.value[2][configs.servers[svr.id].rss.value[2].length] = nm;
+                                    configs.servers[svr.id].rss.value[1].push(url);
+                                    configs.servers[svr.id].rss.value[2].push(nm);
                                     logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Feed " + nm + " added in " + svr.name);
                                     info += "Feed " + nm + " added.";
                                 }
@@ -1558,7 +1562,7 @@ bot.on("message", function (msg, user) {
                 }
                 var key = msg.content.substring(8,msg.content.indexOf(","));
                 var value = msg.content.substring(msg.content.indexOf(",")+1);
-                if(["id", "status", "avatar"].indexOf(key.toLowerCase())>-1) {
+                if(["id", "status"].indexOf(key.toLowerCase())>-1) {
                     logMsg(new Date().getTime(), "WARN", msg.author.id, null, "User tried to assign default profile value");
                     bot.sendMessage(msg.channel, "You can't change the value for " + key);
                     return;
@@ -1685,11 +1689,11 @@ bot.on("message", function (msg, user) {
                     var start = 0;
                     for(var i=0; i<msg.content.length; i++) {
                         if(msg.content.charAt(i)==',') {
-                            polls[msg.author.id].options[polls[msg.author.id].options.length] = msg.content.substring(start, i);
+                            polls[msg.author.id].options.push(msg.content.substring(start, i));
                             start = i+1;
                         }
                     }
-                    polls[msg.author.id].options[polls[msg.author.id].options.length] = msg.content.substring(start, msg.content.length);
+                    polls[msg.author.id].options.push(msg.content.substring(start, msg.content.length));
                 }
                 bot.sendMessage(msg.channel, "OK, got it. You can end the poll by sending me `poll close`.");
                 polls[msg.author.id].open = true;
@@ -1736,8 +1740,8 @@ bot.on("message", function (msg, user) {
                         bot.sendMessage(msg.channel, "I couldn't cast your vote");
                         return;
                     }
-                    polls[act].responses[polls[act].responses.length] = vt;
-                    polls[act].responderIDs[polls[act].responderIDs.length] = msg.author.id;
+                    polls[act].responses.push(vt);
+                    polls[act].responderIDs.push(msg.author.id);
                     logMsg(new Date().getTime(), "INFO", svr.name, ch.name, "Vote cast for " + vt + " via PM");
                     bot.sendMessage(msg.channel, "Got it! Your vote was cast anonymously ;)");
                     return;
@@ -1834,11 +1838,11 @@ bot.on("message", function (msg, user) {
                 if(usr) {
                     logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, usr.username + " mentioned by " + msg.author.username);
                     var mentions = stats[msg.channel.server.id].members[usr.id].mentions;
-                    mentions.stream[mentions.stream.length] = {
+                    mentions.stream.push({
                         timestamp: new Date().getTime(),
                         author: msg.author.username,
                         message: msg.cleanContent
-                    };
+                    });
                     if(mentions.pm) {
                         bot.sendMessage(usr, "__You were mentioned by @" + msg.author.username + " on **" + msg.channel.server.name + "**:__\n" + msg.cleanContent);
                     }
@@ -1864,14 +1868,14 @@ bot.on("message", function (msg, user) {
                     // Tracks spam for a user with each new message, expires after 45 seconds
                     if(!spams[msg.channel.server.id][msg.author.id]) {
                         spams[msg.channel.server.id][msg.author.id] = [];
-                        spams[msg.channel.server.id][msg.author.id][spams[msg.channel.server.id][msg.author.id].length] = msg.content;
+                        spams[msg.channel.server.id][msg.author.id].push(msg.content);
                         setTimeout(function() {
                             delete spams[msg.channel.server.id][msg.author.id];
                         }, 45000);
                     // Add a message to the user's spam list if it is similar to the last one
                     } else if(levenshtein.get(spams[msg.channel.server.id][msg.author.id][spams[msg.channel.server.id][msg.author.id].length-1], msg.content)<3) {
                         logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Adding message from " + msg.author.username + " to their spam list");
-                        spams[msg.channel.server.id][msg.author.id][spams[msg.channel.server.id][msg.author.id].length] = msg.content;
+                        spams[msg.channel.server.id][msg.author.id].push(msg.content);
                         
                         // First-time spam warning 
                         if(spams[msg.channel.server.id][msg.author.id].length == 5) {
@@ -1904,8 +1908,8 @@ bot.on("message", function (msg, user) {
                             return;
                         }
                         if(polls[act].responderIDs.indexOf(msg.author.id)==-1 && vt<polls[act].options.length && vt>=0) {
-                            polls[act].responses[polls[act].responses.length] = vt;
-                            polls[act].responderIDs[polls[act].responderIDs.length] = msg.author.id;
+                            polls[act].responses.push(vt);
+                            polls[act].responderIDs.push(msg.author.id);
                             logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Vote cast for " + vt + " by " + msg.author.username);
                         } else {
                             logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Could not cast " + msg.author.username + "'s vote, duplicate or not an option");
@@ -1993,11 +1997,13 @@ bot.on("message", function (msg, user) {
                 while(app.indexOf(",")>-1 && apps.length<=10) {
                     var cand = app.substring(0, app.indexOf(","));
                     app = app.substring(app.indexOf(",")+1);
-                    if(apps.indexOf(cand)==-1 && cand!="" && cand) {
-                        apps[apps.length] = cand;
+                    if(apps.indexOf(cand)==-1 && cand) {
+                        apps.push(cand);
                     }
                 }
-                apps[apps.length] = app;
+                if(apps.indexOf(app)==-1 && app) {
+                    apps.push(app);
+                }
                 
                 // Make sure query is not empty
                 if(apps.length==0) {
@@ -2013,9 +2019,10 @@ bot.on("message", function (msg, user) {
                     var basePath = "https://play.google.com/store/search?&c=apps&q=" + apps[i] + "&hl=en";
                     var data;
                     // Scrapes Play Store search results webpage for information
-                    request(basePath, function(error, res, chunk) {
-                        if (!error && res.statusCode == 200) {
-                            data = scrapeSearch(chunk);
+                    var u;
+                    unirest.get(basePath)
+                    .end(function(response) {
+                        data = scrapeSearch(response.raw_body);
                             var send = "";
                             if(data.items[0] != null) {
                                 send = data.items[0].name + " by " + data.items[0].company + ", ";
@@ -2031,7 +2038,6 @@ bot.on("message", function (msg, user) {
                             }
                             bot.stopTyping(msg.channel);
                             bot.sendMessage(msg.channel, send);
-                        }
                     });
                 }
                 
@@ -2185,6 +2191,7 @@ bot.on("serverNewMember", function(svr, usr) {
     // Check if this has been enabled in admin console and the bot is listening
     if(configs.servers[svr.id].servermod.value && stats[svr.id].botOn[svr.defaultChannel.id]) {
         logMsg(new Date().getTime(), "INFO", svr.name, null, "New member: " + usr.username);
+        var greetings = ["++ Welcome to our little corner of hell!", "++ has joined the server.", "++ You're gonna have a jolly good time here!", "++ is new here.", "++ is here, everybody!", "++ sends his/her regards.", "++, welcome to the server!", "++ is our next victim...", "Hello ++!", "Please welcome our newest member, ++"];
         bot.sendMessage(svr.defaultChannel, greetings[getRandomInt(0, greetings.length-1)].replace("++", usr));
         var info = "Welcome to the " + svr.name + " Discord chat! " + configs.servers[svr.id].newgreeting.value + "\n\nI'm " + bot.user.username + " by the way. You can interact with me in any of the channels by tagging me with `@" + bot.user.username + "` and then stating any one of the following commands:" + getHelp(svr) + ". I am a bot. Take note, other bots: `8WvCtp7ZjmaOj60KoTRP`";
         bot.sendMessage(usr, info);
@@ -2197,6 +2204,11 @@ bot.on("serverNewMember", function(svr, usr) {
             stream: []
         }
     };
+});
+
+bot.on("serverMemberRemoved", function(svr, usr) {
+    logMsg(new Date().getTime(), "INFO", svr.name, null, "Member removed: " + usr.username);
+    delete stats[svr.id].members[usr.id];
 });
 
 // Message on user banned
@@ -2217,13 +2229,15 @@ bot.on("userUnbanned", function(usr, svr) {
 
 // Update lastSeen status on presence change
 bot.on("presence", function(oldusr, newusr) {
-    for(var i=0; i<bot.servers.length; i++) {
-        if(bot.servers[i].members.get("id", newusr.id)) {
-            if(oldusr.status=="online" && newusr.status!="online") {
-                stats[bot.servers[i].id].members[newusr.id].seen = new Date().getTime();
-            }
-            if(oldusr.username!=newusr.username && configs[bot.servers[i].id].servermod.value) {
-                bot.sendMessage(bot.servers[i].defaultChannel, "**@" + oldusr.username + "** is now **@" + newusr.username + "**");
+    if(newusr.id!=bot.user.id) {
+        for(var i=0; i<bot.servers.length; i++) {
+            if(bot.servers[i].members.get("id", newusr.id)) {
+                if(oldusr.status=="online" && newusr.status!="online") {
+                    stats[bot.servers[i].id].members[newusr.id].seen = new Date().getTime();
+                }
+                if(oldusr.username!=newusr.username && configs.servers[bot.servers[i].id].servermod.value) {
+                    bot.sendMessage(bot.servers[i].defaultChannel, "**@" + oldusr.username + "** is now **@" + newusr.username + "**");
+                }
             }
         }
     }
@@ -2257,7 +2271,7 @@ function triviaQ(chid) {
         info += line.substring(line.indexOf(":")+2);
     });
     getLine("./trivia/trivia" + n + ".txt", (r * 4)-1, function(err, line) {
-        trivia[chid].answer = line.substring(line.indexOf(":")+2).replace('#', '');
+        trivia[chid].answer = line.substring(line.indexOf(":")+2).replace("#", "");
     });
     logMsg(new Date().getTime(), "INFO", bot.channels.get("id", chid).server.name, bot.channels.get("id", chid).name, "New trivia question");
     return info;
@@ -2483,12 +2497,13 @@ function runTimerExtension(svrid, extnm) {
                         wait(count);
                     }, 100);
                 } else if(count>30) {
-                    logMsg(new Date().getTime(), "WARN", svr.name, null, "Timer extension " + extension.type + " in produced no output");
+                    logMsg(new Date().getTime(), "WARN", svr.name, null, "Timer extension " + extension.type + " produced no output");
                 } else {
-                    for(var i=0; i<extension.channels; i++) {
+                    for(var i=0; i<extension.channels.length; i++) {
                         var ch = svr.channels.get("name", extension.channels[i]);
                         if(ch) {
                             bot.sendMessage(ch, params.send);
+                            logMsg(new Date().getTime(), "INFO", svr.name, ch.name, "Timer extension " + extension.type + " executed successfully");
                         }
                     }
                 }
@@ -2513,19 +2528,19 @@ function secondsToString(seconds) {
     
     var str = "";
     if(numyears>0) {
-        str += numyears + " years ";
+        str += numyears + " year" + (numyears==1 ? "" : "s") + " ";
     }
     if(numdays>0) {
-        str += numdays + " days ";
+        str += numdays + " day" + (numdays==1 ? "" : "s") + " ";
     }
     if(numhours>0) {
-        str += numhours + " hours ";
+        str += numhours + " hour" + (numhours==1 ? "" : "s") + " ";
     }
     if(numminutes>0) {
-        str += numminutes + " minutes ";
+        str += numminutes + " minute" + (numminutes==1 ? "" : "s") + " ";
     }
     if(numseconds>0) {
-        str += numseconds + " seconds ";
+        str += numseconds + " second" + (numseconds==1 ? "" : "s") + " ";
     }
     return str;
 }
@@ -2538,7 +2553,7 @@ var defaultConfigFile = {
     },
     blocked: {
         value: [],
-        option: "<username or ID to add/remove>"
+        option: "<username or ID to add/remove, or `.` to clear>"
     },
     newgreeting: {
         value: "",
@@ -2655,7 +2670,7 @@ function defaultConfig(svr) {
             if(svr.rolesOfUser(svr.members[i])) {
                 for(var j=0; j<svr.rolesOfUser(svr.members[i]).length; j++) {
                     if(svr.rolesOfUser(svr.members[i])[j].hasPermission("banMembers") && adminList.indexOf(svr.members[i].id)==-1 && svr.members[i].id!=bot.user.id) {
-                        adminList[adminList.length] = svr.members[i].id;
+                        adminList.push(svr.members[i].id);
                     }
                 }
             }
@@ -2832,10 +2847,12 @@ function pollResults(usrid, intro, outro) {
 function kickUser(msg, desc1, desc2) {
     bot.kickMember(msg.author, msg.channel.server, function(err) {
         if(err) {
-            configs.servers[msg.channel.server.id].blocked[configs.servers[msg.channel.server.id].blocked.value.length] = msg.author.id;
+            bot.sendMessage(msg.author, "Stop " + desc2 + ". The chat mods have been notified about this, and you have been blocked from using me.");
+            adminMsg(false, msg.channel.server, msg.author, " " + desc1 + " in " + msg.channel.server.name + ", so I blocked them from using me.");
             saveData("./config.json", function(error) {
-                adminMsg(error, msg.channel.server, msg.author, " " + desc1 + " in " + msg.channel.server.name + ", so I blocked them from using me.");
-                bot.sendMessage(msg.author, "Stop " + desc2 + ". The chat mods have been notified about this, and you have been blocked from using me.");
+                if(error) {
+                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated configs for " + svr.name);
+                }
             });
         } else {
             adminMsg(err, msg.channel.server, msg.author, " " + desc1 + " in " + msg.channel.server.name + ", so I kicked them from the server.");
@@ -2843,14 +2860,18 @@ function kickUser(msg, desc1, desc2) {
     });
 }
 
+bot.on("channelCreated", function(ch) {
+    console.log(ch.name);
+});
+
 // Searches Google Images for keyword(s)
 function giSearch(query, num, callback) {
 	var url = "https://www.googleapis.com/customsearch/v1?key=" + AuthDetails.google_api_key + "&cx=" + AuthDetails.custom_search_id + "&safe=high&q=" + (query.replace(/\s/g, '+').replace(/&/g, '')) + "&alt=json&searchType=image" + num;
-	request(url, function(err, res, body) {
-		var data;
-		try {
-			data = JSON.parse(body);
-		} catch (error) {
+    unirest.get(url)
+    .header("Accept", "application/json")
+    .end(function(response) {
+        var data = response.body;
+        if(!data) {
 			logMsg(new Date().getTime(), "ERROR", "General", null, "Could not connect to Google Images");
 			return;
 		}
@@ -2866,25 +2887,25 @@ function giSearch(query, num, callback) {
 // Google Play Store search page scraper
 function scrapeSearch(data) {
     x = cheerio.load(data);
-    var card_list = x('.card-list');
+    var card_list = x(".card-list");
     var items = [];
-    card_list.find('.card').each(function() {
+    card_list.find(".card").each(function() {
         var card = {};
         var card_data = x(this);
-        card['cover-image'] = card_data.find('img.cover-image').attr('src');
-        card['click-target'] = card_data.find('.card-click-target').attr('src');
-        card['name'] = card_data.find('.details .title').attr('title');
-        card['url'] = 'https://play.google.com' + card_data.find('.details .title').attr('href');
-        card['company'] = card_data.find('.details .subtitle').attr('title');
-        card['html_description'] = card_data.find('.details .description').text();
-        card['rating_description'] = card_data.find('.tiny-star').attr('aria-label');
-        var rating_style = card_data.find('.tiny-star .current-rating').attr('style');
+        card["cover-image"] = card_data.find("img.cover-image").attr("src");
+        card["click-target"] = card_data.find(".card-click-target").attr("src");
+        card["name"] = card_data.find(".details .title").attr("title");
+        card["url"] = "https://play.google.com" + card_data.find(".details .title").attr("href");
+        card["company"] = card_data.find(".details .subtitle").attr("title");
+        card["html_description"] = card_data.find(".details .description").text();
+        card["rating_description"] = card_data.find(".tiny-star").attr("aria-label");
+        var rating_style = card_data.find(".tiny-star .current-rating").attr("style");
         if(rating_style) {
-            card['rating'] = parseFloat(rating_style.match(/\d+/g)[0]*5 / 100.0);
+            card["rating"] = parseFloat(rating_style.match(/\d+/g)[0]*5 / 100.0);
         } else {
-            card['rating'] = "unknown";
+            card["rating"] = "unknown";
         }
-        card['price'] = card_data.find('.price-container .display-price').text();
+        card["price"] = card_data.find(".price-container .display-price").text();
 
         items.push(card);
     });
@@ -2898,7 +2919,7 @@ function scrapeSearch(data) {
 }
 
 // Searches Giphy for matching GIFs
-function getGIF(tags, func, rating) {
+function getGIF(tags, callback, rating) {
     var params = {
         "api_key": AuthDetails.giphy_api_key,
         "rating": rating,
@@ -2908,20 +2929,17 @@ function getGIF(tags, func, rating) {
     var query = qs.stringify(params);
 
     if(tags!==null) {
-        query += "&tag=" + tags.join('+')
+        query += "&tag=" + tags.join("+")
     }
     
-    request("http://api.giphy.com/v1/gifs/random?" + query, function(error, response, body) {
-        if(error || response.statusCode!==200) {
+    unirest.get("http://api.giphy.com/v1/gifs/random?" + query)
+    .header("Accept", "application/json")
+    .end(function(response) {
+        if(response.status!==200 || !response.body) {
             logMsg(new Date().getTime(), "ERROR", "General", null, "Could not connect to Giphy");
+            callback(null);
         } else {
-            try {
-                var responseObj = JSON.parse(body)
-                func(responseObj.data.id);
-            } catch(err) {
-                logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to retreive GIF for " + tags);
-                func(null);
-            }
+            callback(response.body.data.id);
         }
     }.bind(this));
 }
@@ -2934,16 +2952,23 @@ function ytSearch(query, callback) {
 	youtube.search(query, 1, function(error, result) {
         if(error) {
             logMsg(new Date().getTime(), "ERROR", "General", null, "Could not connect to YouTube");
-            q =  "`¯\_(ツ)_/¯`";
+            q =  "`¯\\_(ツ)_/¯`";
         } else {
             if (!result || !result.items || result.items.length < 1) {
                 logMsg(new Date().getTime(), "WARN", "General", null, "No YouTube results for " + query);
-                q = "`¯\_(ツ)_/¯`";
-            } else if(result.items[0].id.videoId=="http://www.youtube.com/watch?v=undefined") {
-                logMsg(new Date().getTime(), "WARN", "General", null, "No YouTube results for " + query);
-                q = "`¯\_(ツ)_/¯`";
+                q = "`¯\\_(ツ)_/¯`";
             } else {
-                q = "http://www.youtube.com/watch?v=" + result.items[0].id.videoId;
+                switch(result.items[0].id.kind) {
+                    case "youtube#playlist":
+                        q = "http://www.youtube.com/playlist?list=" + result.items[0].id.playlistId;
+                        break;
+                    case "youtube#video":
+                        q = "http://www.youtube.com/watch?v=" + result.items[0].id.videoId;
+                        break;
+                    case "youtube#channel":
+                        q = "http://www.youtube.com/channel/" + result.items[0].id.channelId;
+                        break;
+                }
             }
         }
         callback(q);
@@ -2987,19 +3012,19 @@ function getStats(svr) {
         }
         var usr = svr.members.get("id", sortedMembers[i][0]);
         if(usr && sortedMembers[i][1]>0) {
-            info["Most active members"][info["Most active members"].length] = usr.username + ": " + sortedMembers[i][1] + " messages";
+            info["Most active members"].push(usr.username + ": " + sortedMembers[i][1] + " message" + (sortedMembers[i][1]==1 ? "" : "s"));
         }
     }
     for(var i=sortedGames.length-1; i>sortedGames.length-6; i--) {
         if(i<0) {
             break;
         }
-        info["Most played games"][info["Most played games"].length] = sortedGames[i][0] + ": " + secondsToString(sortedGames[i][1] * 3000);
+        info["Most played games"].push(sortedGames[i][0] + ": " + secondsToString(sortedGames[i][1] * 3000));
     }
     for(var i=sortedCommands.length-1; i>-1; i--) {
         if(sortedCommands[i][1]>0) {
             var p = Math.floor(100 * sortedCommands[i][1] / commandSum);
-            info["Command usage"][info["Command usage"].length] = ("  " + p).substring(p.toString().length-1) + "% " + sortedCommands[i][0] + ": " + sortedCommands[i][1] + " uses";
+            info["Command usage"].push(("  " + p).substring(p.toString().length-1) + "% " + sortedCommands[i][0] + ": " + sortedCommands[i][1] + " use" + (sortedCommands[i][1]==1 ? "" : "s"));
         }
     }
     for(var key in info) {
@@ -3087,14 +3112,14 @@ function archiveMessages(open, ch, count) {
         if(!error) {
             var archive = [];
             for(var i=0; i<messages.length; i++) {
-                archive[archive.length] = {
+                archive.push({
                     timestamp: messages[i].timestamp,
                     id: messages[i].id,
                     edited: messages[i].editedTimestamp!=null,
                     content: messages[i].cleanContent,
                     attachments: messages[i].attachments.length>0,
                     author: messages[i].author.username  
-                };
+                });
             }
             writeFileAtomic("./" + ch.id + ".json", JSON.stringify(archive, null, 4), function(err) {
                 if(err) {
@@ -3133,7 +3158,7 @@ function parseReminder(suffix, usr, pch) {
         remind = suffix.substring(0, suffix.lastIndexOf(" in "));
         suffix = suffix.substring(suffix.lastIndexOf(" in ")+4);
         num = suffix;
-        if(["h", "m", "s"].indexOf(num.charAt(num.length-1).toString().toLowerCase())!=-1) {
+        if(["d", "h", "m", "s"].indexOf(num.charAt(num.length-1).toString().toLowerCase())!=-1) {
             time = num.charAt(num.length-1).toString().toLowerCase();
             num = num.substring(0, num.length-1);
         } else if(num.indexOf(" ")!=-1) {
@@ -3144,7 +3169,7 @@ function parseReminder(suffix, usr, pch) {
         num = suffix.substring(0, suffix.indexOf(" "));
         suffix = suffix.substring(suffix.indexOf(" ")+1);
         time = "s";
-        if(["h", "m", "s"].indexOf(num.charAt(num.length-1).toString().toLowerCase())!=-1) {
+        if(["d", "h", "m", "s"].indexOf(num.charAt(num.length-1).toString().toLowerCase())!=-1) {
             time = num.charAt(num.length-1).toString().toLowerCase();
             num = num.substring(0, num.length-1);
         } else {
@@ -3154,7 +3179,7 @@ function parseReminder(suffix, usr, pch) {
         remind = suffix;
     }
 
-    if(isNaN(num) || ["h", "m", "s"].indexOf(time)==-1 || remind=="") {
+    if(isNaN(num) || ["d", "h", "m", "s"].indexOf(time)==-1 || remind=="") {
         bot.sendMessage(ch, tag + "Sorry, I don't know what that means. Make sure you're using the syntax `remindme <no.> <h, m, or s> <note>`");
         return;
     } else if(num<0) {
@@ -3165,6 +3190,9 @@ function parseReminder(suffix, usr, pch) {
     
     var countdown = 0;
     switch(time) {
+        case "d":
+            countdown = num * 86400000;
+            break;
         case "h":
             countdown = num * 3600000;
             break;
@@ -3180,11 +3208,11 @@ function parseReminder(suffix, usr, pch) {
 
 // Save a reminder
 function saveReminder(usrid, remind, countdown) {
-    reminders[reminders.length] = {
+    reminders.push({
         user: usrid,
         note: remind,
         time: new Date().getTime() + countdown
-    };
+    });
     setReminder(reminders.length-1);
     saveData("./reminders.json", function(err) {
         if(err) {
@@ -3287,13 +3315,13 @@ function getHelp(svr) {
 
 // Log to database and console
 function logMsg(timestamp, level, id, ch, msg) {
-    logs[logs.length] = {
+    logs.push({
         timestamp: timestamp,
         level: level,
         id: id,
         ch: ch,
         msg: msg
-    };
+    });
     console.log(printLog(logs[logs.length-1]));
 }
 
@@ -3322,7 +3350,7 @@ function getLog(idFilter, levelFilter) {
     });
     var printables = [];
     for(var i=0; i<results.length; i++) {
-        printables[printables.length] = printLog(results[i]);
+        printables.push(printLog(results[i]));
     }
     return printables;
 }
@@ -3332,7 +3360,7 @@ function getLogIDs() {
     var ids = [];
     for(var i=0; i<logs.length; i++) {
         if(ids.indexOf(logs[i].id)==-1) {
-            ids[ids.length] = logs[i].id;
+            ids.push(logs[i].id);
         }
     }
     return ids;
@@ -3340,8 +3368,8 @@ function getLogIDs() {
 
 // Check for updates
 function checkVersion() {
-    unirest.get('http://awesome-botmakersinc.rhcloud.com/')
-    .header('Accept', 'application/json')
+    unirest.get("http://awesome-botmakersinc.rhcloud.com/")
+    .header("Accept", "application/json")
     .end(function(response) {
         try {
             if(!response.body || !response.body[0]) {

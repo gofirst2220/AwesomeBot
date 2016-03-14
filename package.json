@@ -43,7 +43,6 @@
     "url-info-scraper": "*",
     "cross-spawn": "*",
     "forever": "*",
-    "node-base64-image": "*",
     "write-file-atomic": "*",
     "money": "*"
   },

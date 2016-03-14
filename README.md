@@ -115,6 +115,7 @@ Latest, version **3.3**:
  - Added timer extension type
  - New auto-update system and forever support
  - Maintainer console to change bot game, status, etc.
+ - Prevent bot spam with verification system
  - Added message archiving in admin console
  - Option for PMs when mentioned
  - New stats system for members and games
@@ -127,6 +128,8 @@ Latest, version **3.3**:
  - Added poll timestamps and PM voting
  - Enhanced web interface with themes and stats
  - Made bot status persistent
+ - Support for YouTube playlists and channels
+ - Improved roll command with optional min and max
  - Fixed many, many bugs  
  
 Open an issue to report a bug or suggest a new feature!
