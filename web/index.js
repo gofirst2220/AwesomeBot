@@ -29,7 +29,11 @@ function doSetup() {
                 
                 getJSON("/data?section=list&type=logids", function(data) {
                     for(var i=0; i<data.stream.length; i++) {
-                        document.getElementById("idselector").innerHTML += "<option id=\"id-" + data.stream[i] + "\" value\"" + data.stream[i] + "\">" + data.stream[i] + "</option>";
+                        if(!isNaN(parseInt(data.stream[i][1]))) {
+                            document.getElementById("idselector").innerHTML += "<option id=\"id-" + data.stream[i][1] + "\" value=\"" + data.stream[i][1] + "\">@" + data.stream[i][0] + "</option>";
+                        } else {
+                            document.getElementById("idselector").innerHTML += "<option id=\"id-" + data.stream[i][0] + "\" value=\"" + data.stream[i][0] + "\">" + data.stream[i][0] + "</option>";
+                        }
                     }
                     
                     switchLog();
@@ -267,7 +271,11 @@ function switchLog() {
     }, 125);
 }
 
-var getJSON = function(url, callback) {
+function checkAuth(key) {
+    alert(key);
+}
+
+function getJSON(url, callback) {
     var xhr = new XMLHttpRequest();
     xhr.open("get", url, true);
     xhr.responseType = "json";

@@ -58,7 +58,7 @@ body {
     transition: all .25s;
 }
 
-button, select{
+button, select, input {
     background-color: #EEEEEE;
     color: black;
     padding: 1px 7px;
@@ -73,12 +73,14 @@ button, select{
     -o-transition: all .25s;
     transition: all .25s;
 }
-button:hover, select:hover {
+button:hover, select:hover, input:hover {
     background-color: #212121;
     color: #EEEEEE;
     border-radius: 3px;
 }
-button:active, select:active {
+button:active, select:active, input:active, input:focus {
+    background-color: #212121;
+    color: #EEEEEE;
     border-radius: 1px;
 }
 

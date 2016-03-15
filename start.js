@@ -70,6 +70,7 @@ var adminconsole = {};
 var admintime = {};
 var updateconsole = false;
 var maintainerconsole = false
+var onlinemaintainerconsole = {};
 
 // List of bot commands along with usage and process for each
 var commands = {
@@ -909,10 +910,18 @@ bot.on("message", function (msg, user) {
             }
             
             // Maintiner control panel for overall bot things
-            if(msg.author.id==configs.maintainer && msg.content.toLowerCase()==("config") && !adminconsole[msg.author.id]) {
+            if(msg.author.id==configs.maintainer && msg.content.toLowerCase()==("config") && !maintainerconsole && !adminconsole[msg.author.id]) {
                 logMsg(new Date().getTime(), "INFO", "General", null, "Maintainer console opened");
-                bot.sendMessage(msg.channel, "**Welcome to the " + bot.user.username + " maintainer console.** I am your owner. I will do what you say. Here are your options:\n\tquit\n\tgame <name of game or `.` to remove>\n\tusername <new name>\n\tstatus <online or idle>\n\tupdate\n\tkill\nUse the syntax `<option> <parameter>` as always! :)");
-                maintainerconsole = true;
+                if(configs.hosting) {
+                    if(!onlinemaintainerconsole[msg.author.id]) {
+                        onlinemaintainerconsole[msg.author.id] = {
+                            // TODO: Generate maintainer config key if hosting enabled
+                        }
+                    }
+                } else {
+                    bot.sendMessage(msg.channel, "**Welcome to the " + bot.user.username + " maintainer console.** I am your owner. I will do what you say. Here are your options:\n\tquit\n\tgame <name of game or `.` to remove>\n\tusername <new name>\n\tstatus <online or idle>\n\tupdate\n\tkill\nUse the syntax `<option> <parameter>` as always! :)");
+                    maintainerconsole = true;
+                }
                 return;
             } else if(msg.author.id==configs.maintainer && maintainerconsole) {
                 var n = "";
@@ -2599,6 +2608,18 @@ function secondsToString(seconds) {
     return str;
 }
 
+// Generate key for online config
+function keyGen(length) {
+    var key = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for(var i=0; i<5; i++) {
+        key += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+
+    return key;
+}
+
 // Default config file
 var defaultConfigFile = {
     admins: {
@@ -3406,12 +3427,27 @@ function getLog(idFilter, levelFilter) {
 // Count number of log IDs
 function getLogIDs() {
     var ids = [];
+    var secs = [];
     for(var i=0; i<logs.length; i++) {
-        if(ids.indexOf(logs[i].id.replaceAll("\"", "'"))==-1) {
-            ids.push(logs[i].id.replaceAll("\"", "'"));
+        var cand;
+        var secc;
+        if(!isNaN(logs[i].id)) {
+            secc = logs[i].id;
+            cand = bot.users.get("id", logs[i].id).username.replaceAll("\"", "'");
+        } else {
+            secc = ".";
+            cand = logs[i].id.replaceAll("\"", "'");
+        }
+        if(ids.indexOf(cand)==-1) {
+            secs.push(secc);
+            ids.push(cand);
         }
     }
-    return ids;
+    var f = [];
+    for(var i=0; i<ids.length; i++) {
+        f.push([ids[i], secs[i]]);
+    }
+    return f;
 }
 
 // Check for updates
