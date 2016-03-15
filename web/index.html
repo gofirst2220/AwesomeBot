@@ -1,0 +1,72 @@
+<html>
+<head>
+    <title>Bot Info Loading...</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="./index.css">
+    <script type="text/javascript" src="./index.js"></script>
+</head>
+<body onload="javascript:doSetup();">
+    <span style="font-family: 'Arial'; margin-bottom: 0px;">
+        <span style="font-size: 28;">
+            <b id="botname"></b> Info
+        </span>
+        <img id="profilepic" src="" />
+        <br><br>
+        
+        <span style="font-size: 20;">
+            <u>Statistics</u>
+        </span>
+        &nbsp;
+        <select id="statsselect" onChange="javascript:switchStats(this.value);">
+            <option value="null" selected>General</option>
+        </select>
+        <select style="visibility: hidden;" id="profileselect" onChange="javascript:switchProfile(this.value);">
+        </select>
+        <div id="stats"></div>
+        <br>
+        
+        <span style="font-size: 20;">
+            <u>Servers</u>
+            <br>
+        </span>
+        <div id="servers">
+            <i>Number of messages only includes the past 24 hours.</i>
+        </div>
+        <br>
+        
+        <span style="font-size: 20; margin-bottom: 0px;">
+            <u>Activity Log</u>
+        </span>
+        &nbsp;
+        <select id="idselector" onChange="javascript:switchLogID(this.value);">
+            <option id="id-null" value="null">All</option>
+        </select>
+        <select id="levelselector" onChange="javascript:switchLogLevel(this.value);">
+            <option id="level-null" value="null">All</option>
+            <option id="level-INFO" value="INFO">Info</option>>
+            <option id="level-WARN" value="WARN">Warning</option>
+            <option id="level-ERROR" value="ERROR">Error</option>
+        </select>
+        <div id="console"></div>
+        <br>
+        
+        <button id="refresher" onclick="javascript:document.body.style.opacity = 0;setTimeout(function() {location.reload();}, 250);">Refresh</button>
+        
+        <select id="themeswitcher" onChange="javascript:switchColors(this.value);">
+            <option id="theme-white" value="white">White</option>
+            <option id="theme-contrast" value="contrast">Contrast</option>
+            <option id="theme-black" value="black">Black</option>
+            <option id="theme-dark" value="dark">Dark</option>
+            <option id="theme-blue" value="blue">Blue</option>
+            <option id="theme-red" value="red">Red</option>
+            <option id="theme-deep" value="deep">Deep</option>
+        </select>
+        <br><br>
+        
+        <span id="credit">
+            <i>Created by @anandroiduser, <a href='https://git.io/v2e1w'>https://git.io/v2e1w</a></i>
+        </span>
+    </span>
+    <div id="darkener" style="display:none"></div>
+</body>
+</html>

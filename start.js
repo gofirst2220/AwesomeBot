@@ -787,133 +787,87 @@ bot.on("ready", function() {
     app.use(bodyParser.urlencoded({extended: true}));
     var server_port = process.env.OPENSHIFT_NODEJS_PORT || 8080;
     var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || "127.0.0.1";
-    app.get("/", function(req, res) {
-        var html = "";
-        try {
-            var defaultStats = "<b>Status:</b> Online<br><b>Bot ID:</b> " + bot.user.id + "<br><b>Version:</b> v" + version + "<br><b>Uptime:</b> " + (secondsToString(bot.uptime/1000) || "<i>None, how are you viewing this?</i>") + "<br><b>Disconnections:</b> " + disconnects + " so far";
-            html = "<html><head><title>" + bot.user.username + "</title><meta charset=\"UTF-8\"><style>::-webkit-scrollbar {width: 12px;}::-webkit-scrollbar-track {opacity: 0;}::-webkit-scrollbar-thumb {border-radius: 10px;-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);}body {opacity: 0;-webkit-transition: background-color .25s, color .25s, opacity .25s;-moz-transition: background-color .25s, color .25s, opacity .25s;-ms-transition: background-color .25s, color .25s, opacity .25s;-o-transition: background-color .25s, color .25s, opacity .25s;transition: background-color .25s, color .25s, opacity .25s;}button, select{background-color: #EEEEEE;color: black;padding: 1px 7px;text-align: center;font-size: 12pt;border-radius: 10px;height: 20px;border: 1px solid #616161;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}button:hover, select:hover {background-color: #212121;color: #EEEEEE;border-radius: 3px;}button:active, select:active {border-radius: 1px;}#profilepic {float: right;width: 10%;border-radius: 100%;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}#profilepic:hover {border-radius: 0px;}#stats {margin-top: 0.5%;padding-top: 0px;-webkit-transition: opacity .125s, height .25s;-moz-transition: opacity .125s, height .25s;-ms-transition: opacity .125s, height .25s;-o-transition: opacity .125s, height .25s;transition: opacity .125s, height .25s;}#servers {margin-top: 0.5%;}#console{font-family: \"Consolas\", \"Droid Sans Mono\";height: 50%;padding: 5px;overflow: scroll;overflow-x: hidden;border: 1px solid gray;margin-top: 0.5%;-webkit-transition: background-color .25s, color .25s, opacity .125s;-moz-transition: background-color .25s, color .25s, opacity .125s;-ms-transition: background-color .25s, color .25s, opacity .125s;-o-transition: background-color .25s, color .25s, opacity .125s;transition: background-color .25s, color .25s, opacity .125s;}a {color: #212121;}a:visited {color: #212121;}select {font-size: 10pt;}button {font-size: 10pt;}#credit {font-family: \"Arial\";font-size: 10pt;-webkit-transition: all .25s;-moz-transition: all .25s;-ms-transition: all .25s;-o-transition: all .25s;transition: all .25s;}#credit:hover {font-size: 16pt;font-weight: bold;color: teal;}</style><script type=\"text/javascript\">function toggleSection(id) {}function colorLinks(hex) {var links = document.getElementsByTagName(\"a\");for(var i=0;i<links.length;i++) {if(links[i].href) {links[i].style.color = hex;}}}function switchColors(n) {localStorage.setItem(\"theme\", n);document.getElementById(\"themeswitcher\").value = n;if(n==\"white\") {document.body.style.backgroundColor=\"white\";document.body.style.color=\"black\";colorLinks(\"#212121\");}if(n==\"black\") {document.body.style.backgroundColor=\"black\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"dark\") {document.body.style.backgroundColor=\"#212121\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"blue\") {document.body.style.backgroundColor=\"#263238\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"red\") {document.body.style.backgroundColor=\"#B71C1C\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}if(n==\"deep\") {document.body.style.backgroundColor=\"#004D40\";document.body.style.color=\"#EEEEEE\";colorLinks(\"#BDBDBD\");}document.getElementById(\"console\").style.backgroundColor=document.body.style.backgroundColor.slice(0);document.getElementById(\"console\").style.color=document.body.style.color.slice(0);if(n==\"contrast\") {document.body.style.backgroundColor=\"#F5F5F5\";document.body.style.color=\"#212121\";document.getElementById(\"console\").style.backgroundColor=\"#212121\";document.getElementById(\"console\").style.color=\"#F5F5F5\";colorLinks(\"#212121\");}}function switchStats(n) {document.getElementById(\"stats\").style.opacity = 0;document.getElementById(\"stats\").style.height = 0;setTimeout(function() {var html = \"\";if(n==\"general\") {document.getElementById(\"statsselect\").style.opacity = 0;setTimeout(function() {document.getElementById(\"statsselect\").style.visibility = \"hidden\";}, 250);html = \"" + defaultStats + "\"} else {document.getElementById(\"statsselect\").style.visibility = \"visible\";document.getElementById(\"statsselect\").style.opacity = 1;n = parseInt(n);";
-            for(var svrid in stats) {
-                if(svrid=="timestamp") {
-                    continue;
+    
+    app.get("/data", function(req, res) {
+        var data = {};
+        
+        if(req.query.section=="list" && req.query.type) {
+            if(req.query.type=="servers") {
+                data.stream = [];
+                for(var i=0; i<bot.servers.length; i++) {
+                    data.stream.push([bot.servers[i].name.replaceAll("\"", "'"), bot.servers[i].id]);
                 }
-                var svr = bot.servers.get("id", svrid);
-                var data = getStats(svr);
-                html += "if(n==" + svrid + ") {html = \"<b>" + svr.name.replaceAll("\"", "'") + " (this week)</b>" + (Object.keys(data).length>0 ? "" : "<br><i>Nothing here</i>");
-                if(Object.keys(data).length>0) {
-                    for(var cat in data) {
-                        html += "<br>" + cat.replaceAll("\"", "'") + ":";
-                        for(var i=0; i<data[cat].length; i++) {
-                            html += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + data[cat][i].replaceAll("\"", "'");
-                        }
-                    }
-                }
-                html += "\";document.getElementById(\"statsselect\").innerHTML = \"<option value=\'null-" + svrid + "\' selected><i>View Profile</i></option>";
-                for(var usrid in stats[svrid].members) {
-                    var usr = bot.users.get("id", usrid);
-                    if(usr) {
-                        html += "<option value='" + usrid + "-" + svrid + "'>" + usr.username.replaceAll("\"", "'") + "</option>";
-                    }
-                }
-                html += "\";}";
-            }
-            html += "}document.getElementById(\"stats\").innerHTML = html || \"<i>Nothing here</i>\";document.getElementById(\"stats\").style.height = (document.getElementById(\"stats\").innerHTML.match(/<br>/ig).length + 1) * 18;document.getElementById(\"stats\").style.opacity = 1;}, 125);}function switchProfile(n) {document.getElementById(\"stats\").style.opacity = 0;document.getElementById(\"stats\").style.height = 0;setTimeout(function() {var usrid = n.substring(0, n.indexOf(\"-\"));var svrid = n.substring(n.indexOf(\"-\")+1);var html = \"\";";
-            for(var svrid in stats) {
-                if(svrid=="timestamp") {
-                    continue;
-                }
-                var svr = bot.servers.get("id", svrid);
-                html += "if(usrid==\"null\" && svrid==\"" + svrid + "\") {html = \"";
+                data.stream.sort(function(a, b) {
+                    a = a[0].toUpperCase();
+                    b = b[0].toUpperCase();
+                    return a < b ? -1 : a > b ? 1 : 0;
+                });
+            } else if(req.query.type=="members" && req.query.svrid) {
+                var svr = bot.servers.get("id", req.query.svrid);
                 if(svr) {
-                    var data = getStats(svr);
-                    html += "<b>" + svr.name.replaceAll("\"", "'") + " (this week)</b>";
-                    if(Object.keys(data).length==0) {
-                        html += "<br><i>Nothing here</i>";
-                    } else {
-                        for(var cat in data) {
-                            html += "<br>" + cat.replaceAll("\"", "'") + ":";
-                            for(var i=0; i<data[cat].length; i++) {
-                                html += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + data[cat][i].replaceAll("\"", "'");
-                            }
-                        }
+                    data.stream = [];
+                    for(var i=0; i<svr.members.length; i++) {
+                        data.stream.push([svr.members[i].username.replaceAll("\"", "'"), svr.members[i].id]);
                     }
+                    data.stream.sort(function(a, b) {
+                        a = a[0].toUpperCase();
+                        b = b[0].toUpperCase();
+                        return a < b ? -1 : a > b ? 1 : 0;
+                    });
                 }
-                html += "\";}";
-                for(var usrid in stats[svrid].members) {
-                    html += "if(usrid==\"" + usrid + "\" && svrid==\"" + svrid + "\") {html = \"";
-                    var usr = svr.members.get("id", usrid);
+            } else if(req.query.type=="logids") {
+                data.stream = getLogIDs().sort();
+            } else if(req.query.type=="bot") {
+                data = {
+                    username: bot.user.username,
+                    id: bot.user.id,
+                    uptime: secondsToString(bot.uptime/1000),
+                    version: version,
+                    disconnects: disconnects,
+                    avatar: bot.user.avatarURL
+                };
+            }
+        } else if(req.query.section=="stats" && req.query.type && req.query.svrid) {
+            var svr = bot.servers.get("id", req.query.svrid);
+            if(svr) {
+                if(req.query.type=="profile" && req.query.usrid) {
+                    var usr = svr.members.get("id", req.query.usrid);
                     if(usr) {
-                        var data = getProfile(usr, svr);
-                        for(var sect in data) {
-                            html += "<b>" + sect.replaceAll("\"", "'") + ":</b><br>";
-                            for(var key in data[sect]) {
-                                if(key=="Avatar") {
-                                    html += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + key.replaceAll("\"", "'") + ": <a href='" + data[sect][key] + "'>Click Here</a><br>";
-                                } else {
-                                    html += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + key.replaceAll("\"", "'") + ": " + data[sect][key] + "<br>";
-                                }
-                            }
-                        }
-                        html = html.substring(0, html.length-4);
+                        data = getProfile(usr, svr);
                     }
-                    html += "\";}";
-                }
+                } else if(req.query.type=="server") {
+                    data = getStats(svr);
+                    data.name = svr.name.replaceAll("\"", "'");
+                } 
             }
-            html += "document.getElementById(\"stats\").innerHTML = html || \"<i>Nothing here</i>\";document.getElementById(\"stats\").style.height = (document.getElementById(\"stats\").innerHTML.match(/<br>/ig).length + 1) * 18;document.getElementById(\"stats\").style.opacity = 1;}, 125);}function switchLog() {var ogcolor = document.getElementById(\"console\").style.color.slice(0);document.getElementById(\"console\").style.color = document.getElementById(\"console\").style.backgroundColor;setTimeout(function() {var id = parseInt(document.getElementById(\"idselector\").value);var level = parseInt(document.getElementById(\"levelselector\").value);var html = \"\";"
-            var ids = [null].concat(getLogIDs());
-            var levels = [null, "INFO", "WARN", "ERROR"];
-            for(var i=0; i<ids.length; i++) {
-                for(var j=0; j<levels.length; j++) {
-                    html += "if(id==" + i + " && level==" + j + ") {html = \"";
-                    var logList = getLog(ids[i], levels[j]);
-                    for(var k=0; k<logList.length; k++) {
-                        html += logList[k] + "<br>";
-                    }
-                    html += "\"}";
-                }
-            }
-            html += "document.getElementById(\"console\").innerHTML = html || \"<i>Nothing here</i>\";document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;document.getElementById(\"console\").style.color = ogcolor;}, 125);}</script></head><body onload='javascript:document.getElementById(\"console\").scrollTop = document.getElementById(\"console\").scrollHeight;switchColors(localStorage.getItem(\"theme\") ? localStorage.getItem(\"theme\") : \"contrast\");document.body.style.opacity = 1;'><span style='font-family: \"Arial\"; margin-bottom: 0px;'><span style='font-size: 28;'><b>" + bot.user.username + "</b> Info</span><img id=\"profilepic\" src=\"" + (bot.user.avatarURL || "http://i.imgur.com/fU70HJK.png") + "\"/><br><br><span style='font-size: 20;'><u>Statistics</u></span>&nbsp;&nbsp;<select onChange=\"javascript:switchStats(this.value);\"><option value=\"general\" selected>General</option>";
-            for(var svrid in stats) {
-                if(svrid=="timestamp") {
-                    continue;
-                }
-                html += "<option value=" + svrid + ">" + bot.servers.get("id", svrid).name.replaceAll("\"", "'") + "</option>";
-            }
-            html += "</select>&nbsp;<select style=\"visibility: hidden;\" id=\"statsselect\" onChange=\"javascript:switchProfile(this.value);\"></select><div id=\"stats\">" + defaultStats + "</div><br><span style='font-size: 20;'><u>Servers</u><br></span><div id=\"servers\"><i>Number of messages only includes the past 24 hours.</i>";
+        } else if(req.query.section=="servers") {
+            var servers = {};
             for(var i=0; i<bot.servers.length; i++) {
-                var online = 0;
-                html += "<br><b>" + bot.servers[i].name.replaceAll("\"", "'") + ":</b> " + (messages[bot.servers[i].id] || 0) + " message" + ((messages[bot.servers[i].id] || 0)==1 ? "" : "s") + ", ";
-                for(var j=0; j<bot.servers[i].members.length; j++) {
-                    if(bot.servers[i].members[j].status!="offline") {
-                        online++;
-                    }
-                }
-                html += online + " member" + (online==1 ? "" : "s") + " online (owner: @" + bot.servers[i].owner.username.replaceAll("\"", "'") + ")";
+                var online = bot.servers[i].members.getAll("status", "online").length;
+                var idle = bot.servers[i].members.getAll("status", "idle").length;
+                var info = (messages[bot.servers[i].id] || 0) + " message" + ((messages[bot.servers[i].id] || 0)==1 ? "" : "s") + ", " + online + " member" + (online==1 ? "" : "s") + " online and " + idle + " idle (owner: @" + bot.servers[i].owner.username.replaceAll("\"", "'") + ")";
+                servers[bot.servers[i].name.replaceAll("\"", "'")] = info;
             }
-            html += "</div><br><span style='font-size: 20; margin-bottom: 0px;'><u>Activity Log</u></span>&nbsp;&nbsp;<select id=\"idselector\" onChange=\"javascript:switchLog();\">";
-            for(var i=0; i<ids.length; i++) {
-                var printnm = ids[i];
-                if(!isNaN(ids[i])) {
-                    var usr = bot.users.get("id", ids[i]);
-                    printnm = usr ? ("@" + usr.username) : ids[i];
-                }
-                html += "<option value=" + i + (printnm ? "" : " selected") + ">" + (printnm || "All") + "</option>";
+            data.stream = [];
+            for(var i=0; i<Object.keys(servers).sort().length; i++) {
+                data.stream.push([Object.keys(servers).sort()[i], servers[Object.keys(servers).sort()[i]]]);
             }
-            html += "</select>&nbsp;<select id=\"levelselector\"onChange=\"javascript:switchLog();\">";
-            for(var i=0; i<levels.length; i++) {
-                html += "<option value=" + i + (levels[i] ? "" : " selected") + ">" + (levels[i] || "All") + "</option>";
-            }
-            html += "</select><div id=\"console\">";
-            for(var i=0; i<logs.length; i++) {
-                html += printLog(logs[i]) + "<br>";
-            }
-            html += "</div><br><button id=\"refresher\" onclick=\"javascript:document.body.style.opacity = 0;setTimeout(function() {location.reload();}, 250);\">Refresh</button>&nbsp;<select id=\"themeswitcher\" onChange=\"javascript:switchColors(this.value);\"><option value=\"white\">White</option><option value=\"contrast\">Contrast</option><option value=\"black\">Black</option><option value=\"dark\">Dark</option><option value=\"blue\">Blue</option><option value=\"red\">Red</option><option value=\"deep\">Deep</option></select><br><br><span id=\"credit\"><i>Created by @anandroiduser, <a href='https://git.io/v2e1w'>https://git.io/v2e1w</a></i></span></span></body></html>";
-        } catch(err) {
-            logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to write web interface");
-            html = bot.user.username + " v" + version + " running for " + secondsToString(bot.uptime/1000);
+        } else if(req.query.section=="log") {
+            var id = [null, "null", undefined, "undefined"].indexOf(req.query.id)>-1 ? null : decodeURI(req.query.id);
+            var level = [null, "null", undefined, "undefined"].indexOf(req.query.level)>-1 ? null : decodeURI(req.query.level);
+            var logList = getLog(id, level);
+            data.stream = logList;
         }
+        
+        res.json(data);
+    });
+    
+    app.get("/", function(req, res) {
+        var html = fs.readFileSync("./web/index.html");
         res.writeHead(200, {"Content-Type": "text/html"});
         res.end(html);
     });
+    app.use(express.static("web"));
     
     try {
         app.listen(server_port, server_ip_address, function() {
@@ -3103,16 +3057,19 @@ function getStats(svr) {
         }
         var usr = svr.members.get("id", sortedMembers[i][0]);
         if(usr && sortedMembers[i][1]>0) {
-            info["Most active members"].push(usr.username + ": " + sortedMembers[i][1] + " message" + (sortedMembers[i][1]==1 ? "" : "s"));
+            info["Most active members"].push(usr.username.replaceAll("\"", "'") + ": " + sortedMembers[i][1] + " message" + (sortedMembers[i][1]==1 ? "" : "s"));
         }
     }
     for(var i=sortedGames.length-1; i>sortedGames.length-6; i--) {
         if(i<0) {
             break;
         }
-        info["Most played games"].push(sortedGames[i][0] + ": " + secondsToString(sortedGames[i][1] * 3000));
+        info["Most played games"].push(sortedGames[i][0].replaceAll("\"", "'") + ": " + secondsToString(sortedGames[i][1] * 3000));
     }
-    for(var i=sortedCommands.length-1; i>-1; i--) {
+    for(var i=sortedCommands.length-1; i>sortedCommands.length-6; i--) {
+        if(i<0) {
+            break;
+        }
         if(sortedCommands[i][1]>0) {
             var p = Math.floor(100 * sortedCommands[i][1] / commandSum);
             info["Command usage"].push(("  " + p).substring(p.toString().length-1) + "% " + sortedCommands[i][0] + ": " + sortedCommands[i][1] + " use" + (sortedCommands[i][1]==1 ? "" : "s"));
@@ -3137,20 +3094,20 @@ function getProfile(usr, svr) {
         usrinfo["Avatar"] = usr.avatarURL;
     }
     if(usr.game) {
-        usrinfo["Playing"] = usr.game.name;
+        usrinfo["Playing"] = usr.game.name.replaceAll("\"", "'");
     }
     if(profileData[usr.id]) {
         for(var field in profileData[usr.id]) {
-            usrinfo[field.charAt(0).toUpperCase() + field.slice(1)] = profileData[usr.id][field];
+            usrinfo[(field.charAt(0).toUpperCase() + field.slice(1)).replaceAll("\"", "'")] = profileData[usr.id][field].replaceAll("\"", "'");
         }
     }
     var details = svr.detailsOfUser(usr);
     if(details) {
         var svrinfo = {};
         if(details.roles.length>0) {
-            svrinfo["Roles"] = details.roles[0].name;
+            svrinfo["Roles"] = details.roles[0].name.replaceAll("\"", "'");
             for(var i=1; i<details.roles.length; i++) {
-                info += ", " + details.roles[i].name;
+                info += ", " + details.roles[i].name.replaceAll("\"", "'");
             }
         }
         var joined = prettyDate(new Date(details.joinedAt));
@@ -3450,8 +3407,8 @@ function getLog(idFilter, levelFilter) {
 function getLogIDs() {
     var ids = [];
     for(var i=0; i<logs.length; i++) {
-        if(ids.indexOf(logs[i].id)==-1) {
-            ids.push(logs[i].id);
+        if(ids.indexOf(logs[i].id.replaceAll("\"", "'"))==-1) {
+            ids.push(logs[i].id.replaceAll("\"", "'"));
         }
     }
     return ids;

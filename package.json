@@ -28,7 +28,7 @@
     "mitsuku-api": "*",
     "fs": "*",
     "express": "*",
-    "http": "*",
+    "body-parser": "*",
     "unirest": "*",
     "readline": "*",
     "fast-levenshtein": "*",
