@@ -70,7 +70,7 @@ var adminconsole = {};
 var admintime = {};
 var updateconsole = false;
 var maintainerconsole = false
-var onlinemaintainerconsole = {};
+var onlineconsole = {};
 
 // List of bot commands along with usage and process for each
 var commands = {
@@ -88,7 +88,7 @@ var commands = {
     // About AwesomeBot!
     "about": {
         process: function(bot, msg) {
-            bot.sendMessage(msg.channel, "Hello! I'm **" + bot.user.username + "**, here to help everyone on this server. A full list of commands and features is available with `@" + bot.user.username + " help`. You can PM me an invite link to add me to another server. To learn more, check out my GitHub page (https://git.io/v2e1w) or join the Discord server (https://discord.gg/0pRFCTcG2aIY53Jk)\n\n*v" + version + " by @anandroiduser, made with NodeJS*");
+            bot.sendMessage(msg.channel, "Hello! I'm **" + bot.user.username + "**, here to help everyone on this server. A full list of commands and features is available with `@" + bot.user.username + " help`. You can PM me an invite link to add me to another server. To learn more, check out my GitHub page (https://git.io/vaa2F) or join the Discord server (https://discord.gg/0pRFCTcG2aIY53Jk)\n\n*v" + version + " by @BitQuote, made with NodeJS*");
         }
     },
     // Shows top 5 games and active members
@@ -104,14 +104,17 @@ var commands = {
             var data = getStats(msg.channel.server);
             var info = "**" + msg.channel.server.name + " (this week)**"
             for(var cat in data) {
-                info += "\n" + cat + ":";
-                for(var i=0; i<data[cat].length; i++) {
-                    info += "\n\t" + data[cat][i];
+                info += "\n" + cat + ":" + (cat=="Data since" ? (" " + data[cat]) : "");
+                if(cat!="Data since") {
+                    for(var i=0; i<data[cat].length; i++) {
+                        info += "\n\t" + data[cat][i];
+                    }
                 }
             }
             bot.sendMessage(msg.channel, info);
             
             if(suffix.toLowerCase()=="clear" && configs.servers[msg.channel.server.id].admins.value.indexOf(msg.author.id)>-1) {
+                stats.timestamp = new Date().getTime();
                 clearServerStats(msg.channel.server.id);
                 logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Cleared stats for at admin's request");
             }
@@ -245,13 +248,7 @@ var commands = {
                     bot.sendMessage(msg.channel, "Couldn't find anything, sorry");
                     logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Image results not found for " + suffix)
                 } else {
-                    imgur.upload(img, function(error, res) {
-                        if(error || !res.data) {
-                            bot.sendMessage(msg.channel, img);
-                        } else {
-                            bot.sendMessage(msg.channel, res.data.link);
-                        }
-                    });
+                    bot.sendMessage(msg.channel, img);
                 }
             });
         }
@@ -760,7 +757,7 @@ bot.on("ready", function() {
         runTimerExtensions();
         // Send hello message
         // TODO: re-enable hello message before release
-        //bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @anandroiduser, https://git.io/v2e1w*");
+        //bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @BitQuote, https://git.io/vaa2F*");
         bot.stopTyping(bot.servers[i].defaultChannel);
     }
     
@@ -786,6 +783,7 @@ bot.on("ready", function() {
     var bodyParser = require("body-parser");
     var app = express();
     app.use(bodyParser.urlencoded({extended: true}));
+    app.use(bodyParser.json());
     var server_port = process.env.OPENSHIFT_NODEJS_PORT || 8080;
     var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || "127.0.0.1";
     
@@ -825,7 +823,7 @@ bot.on("ready", function() {
                     uptime: secondsToString(bot.uptime/1000),
                     version: version,
                     disconnects: disconnects,
-                    avatar: bot.user.avatarURL
+                    avatar: bot.user.avatarURL || "http://i.imgur.com/fU70HJK.png"
                 };
             }
         } else if(req.query.section=="stats" && req.query.type && req.query.svrid) {
@@ -858,6 +856,33 @@ bot.on("ready", function() {
             var level = [null, "null", undefined, "undefined"].indexOf(req.query.level)>-1 ? null : decodeURI(req.query.level);
             var logList = getLog(id, level);
             data.stream = logList;
+        } else if(req.query.auth) {
+            data = getOnlineConsole(req.query.auth);
+            if(req.query.type=="maintainer" && Object.keys(data).length>0) {
+                clearTimeout(onlineconsole[data.usrid].timer);
+                var consoleid = data.usrid.slice(0);
+                onlineconsole[data.usrid].timer = setTimeout(function() {
+                    logMsg(new Date().getTime(), "INFO", "General", null, "Timeout on online maintainer console");
+                    delete onlineconsole[consoleid];
+                }, 180000);
+                
+                var servers = [];
+                for(var i=0; i<bot.servers.length; i++) {
+                    servers.push([bot.servers[i].iconURL || "http://i.imgur.com/fU70HJK.png", bot.servers[i].name, bot.servers[i].id, "@" + bot.servers[i].owner.username]);
+                }
+                data = {
+                    maintainer: bot.users.get("id", configs.maintainer) ? bot.users.get("id", configs.maintainer).username : null,
+                    commandusage: totalCommandUsage(),
+                    statsage: prettyDate(new Date(stats.timestamp)),
+                    username: bot.user.username,
+                    avatar: bot.user.avatarURL || "http://i.imgur.com/fU70HJK.png",
+                    game: bot.user.game,
+                    status: bot.user.status,
+                    servers: servers
+                };
+            } else if(req.query.type=="admin" && Object.keys(data).length>0) {
+                data = {};
+            }
         }
         
         res.json(data);
@@ -868,7 +893,26 @@ bot.on("ready", function() {
         res.writeHead(200, {"Content-Type": "text/html"});
         res.end(html);
     });
+    app.get("/maintainer", function(req, res) {
+        var html = fs.readFileSync("./web/maintainer.html");
+        res.writeHead(200, {"Content-Type": "text/html"});
+        res.end(html);
+    });
     app.use(express.static("web"));
+    
+    app.post("/config", function(req, res) {
+        if(getOnlineConsole(req.query.auth)) {
+            if(req.query.type=="maintainer") {
+                parseMaintainerConfig(req.body, function(err) {
+                    res.sendStatus(err ? 400 : 200);
+                });
+            } else if(req.query.type=="admin") {
+                parseAdminConfig(req.body, function(err) {
+                    res.sendStatus(err ? 400 : 200);
+                });
+            }
+        }
+    });
     
     try {
         app.listen(server_port, server_ip_address, function() {
@@ -909,15 +953,32 @@ bot.on("message", function (msg, user) {
                 updateBot(msg);
             }
             
-            // Maintiner control panel for overall bot things
+            // Maintainer control panel for overall bot things
             if(msg.author.id==configs.maintainer && msg.content.toLowerCase()==("config") && !maintainerconsole && !adminconsole[msg.author.id]) {
                 logMsg(new Date().getTime(), "INFO", "General", null, "Maintainer console opened");
                 if(configs.hosting) {
-                    if(!onlinemaintainerconsole[msg.author.id]) {
-                        onlinemaintainerconsole[msg.author.id] = {
-                            // TODO: Generate maintainer config key if hosting enabled
-                        }
+                    if(!onlineconsole[msg.author.id]) {
+                        onlineconsole[msg.author.id] = {
+                            token: genToken(30),
+                            type: "maintainer",
+                            timer: setTimeout(function() {
+                                logMsg(new Date().getTime(), "INFO", "General", null, "Timeout on online maintainer console");
+                                delete onlineconsole[msg.author.id];
+                            }, 180000)
+                        };
+                    } else if(onlineconsole[msg.author.id].type!="maintainer") {
+                        onlineconsole[msg.author.id] = {
+                            token: genToken(30),
+                            type: "maintainer",
+                            timer: setTimeout(function() {
+                                logMsg(new Date().getTime(), "INFO", "General", null, "Timeout on online maintainer console");
+                                delete onlineconsole[msg.author.id];
+                            }, 180000)
+                        };
                     }
+                    
+                    var url = (configs.hosting.charAt(configs.hosting.length-1)=='/' ? configs.hosting.substring(0, configs.hosting.length-1) : configs.hosting) + "?auth=" + onlineconsole[msg.author.id].token;
+                    bot.sendMessage(msg.channel, url);
                 } else {
                     bot.sendMessage(msg.channel, "**Welcome to the " + bot.user.username + " maintainer console.** I am your owner. I will do what you say. Here are your options:\n\tquit\n\tgame <name of game or `.` to remove>\n\tusername <new name>\n\tstatus <online or idle>\n\tupdate\n\tkill\nUse the syntax `<option> <parameter>` as always! :)");
                     maintainerconsole = true;
@@ -1039,7 +1100,7 @@ bot.on("message", function (msg, user) {
                         info += "\n\tarchive <channel name> <no. of messages>"
                         info += "\n\textension <name of extension to delete>"
                         info += "\n\tlist *current configs*";
-                        info += "\nUse the syntax `<option> <parameter(s)>`, or PM me a JSON file to set up an extension (to learn more about this, go to https://git.io/v2UGr)";
+                        info += "\nUse the syntax `<option> <parameter(s)>`, or PM me a JSON file to set up an extension (to learn more about this, go to https://git.io/vaaaU)";
                         bot.sendMessage(msg.channel, info);
                         admintime[msg.author.id] = setTimeout(function() {
                             if(adminconsole[msg.author.id]) {
@@ -2195,7 +2256,7 @@ bot.on("serverCreated", function(svr) {
     cleverOn[svr.id] = 0;
     spams[svr.id] = {};
     populateStats(svr);
-    adminMsg(false, svr, {username: bot.user.username}, " (me) has been added to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out https://git.io/v2e1w to learn more.");
+    adminMsg(false, svr, {username: bot.user.username}, " (me) has been added to " + svr.name + ". You're one of my admins. You can manage me in this server by PMing me `config " + svr.name + "`. Check out https://git.io/vaa2F to learn more.");
 });
 
 // Leave server if deleted
@@ -2264,7 +2325,7 @@ bot.on("presence", function(oldusr, newusr) {
                 if(oldusr.status=="online" && newusr.status!="online") {
                     stats[bot.servers[i].id].members[oldusr.id].seen = new Date().getTime();
                 }
-                if(oldusr.username!=newusr.username && configs.servers[bot.servers[i].id].servermod.value) {
+                if(oldusr.username!=newusr.username && configs.servers[bot.servers[i].id].servermod.value && stats[bot.servers[i].id].botOn[bot.servers[i].defaultChannel.id]) {
                     bot.sendMessage(bot.servers[i].defaultChannel, "**@" + oldusr.username + "** is now **@" + newusr.username + "**");
                 }
             }
@@ -2471,22 +2532,25 @@ function clearMessageCounter() {
 function clearStatCounter() {
     // Clear member activity and game popularity info if 7 days old
     if(dayDiff(new Date(stats.timestamp), new Date())>=7) {
-        logMsg(new Date().getTime(), "INFO", "General", null, "Cleared stats for this week");
+        stats.timestamp = new Date().getTime();
         for(var svrid in stats) {
             if(svrid=="timestamp") {
                 continue;
             }
             clearServerStats(svrid);
         }
+        logMsg(new Date().getTime(), "INFO", "General", null, "Cleared stats for this week");
     } else {
         for(var i=0; i<bot.servers.length; i++) {
             for(var j=0; j<bot.servers[i].members.length; j++) {
                 // If member is playing game, add 0.1 (equal to five minutes) to game tally
                 if(bot.servers[i].members[j].game) {
-                    if(!stats[bot.servers[i].id].games[bot.servers[i].members[j].game.name]) {
-                        stats[bot.servers[i].id].games[bot.servers[i].members[j].game.name] = 0;
+                    if(bot.servers[i].members[j].game.name) {
+                        if(!stats[bot.servers[i].id].games[bot.servers[i].members[j].game.name]) {
+                            stats[bot.servers[i].id].games[bot.servers[i].members[j].game.name] = 0;
+                        }
+                        stats[bot.servers[i].id].games[bot.servers[i].members[j].game.name] += 0.1;
                     }
-                    stats[bot.servers[i].id].games[bot.servers[i].members[j].game.name] += 0.1;
                 }
                 // If member's mention data is 7 days old, clear it
                 if(stats[bot.servers[i].id].members[bot.servers[i].members[j].id].mentions.stream.length>0) {
@@ -2514,10 +2578,10 @@ function clearServerStats(svrid) {
         stats[svrid].members[member].messages = 0;
     }
     for(var game in stats[svrid].games) {
-        stats[svrid].games[game] = 0;
+        delete stats[svrid].games[game];
     }
     for(var cmd in stats[svrid].commands) {
-        stats[svrid].commands[cmd] = 0;
+        delete stats[svrid].commands[cmd];
     }
 }
 
@@ -2609,15 +2673,114 @@ function secondsToString(seconds) {
 }
 
 // Generate key for online config
-function keyGen(length) {
+function genToken(length) {
     var key = "";
     var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    for(var i=0; i<5; i++) {
+    for(var i=0; i<length; i++) {
         key += possible.charAt(Math.floor(Math.random() * possible.length));
     }
 
     return key;
+}
+
+// Get online console session with given authtoken
+function getOnlineConsole(token) {
+    var session = {};
+    for(var s in onlineconsole) {
+        if(onlineconsole[s].token==token) {
+            session = {
+                usrid: s,
+                token: onlineconsole[s].token,
+                type: onlineconsole[s].type
+            };
+        }
+    }
+    return session;
+}
+
+// Parse JSON data from POST for maintainer console
+function parseMaintainerConfig(delta, callback) {
+    for(var key in delta) {
+        switch(key) {
+            case "username":
+                bot.setUsername(delta[key], function(err) {
+                    if(err) {
+                        logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to change username to '" + delta[key] + "'");
+                    } else {
+                        logMsg(new Date().getTime(), "INFO", "General", null, "Changed bot username to " + delta[key] + "'");
+                    }
+                    callback(err);
+                });
+                break;
+            case "game":
+                bot.setStatus("online", delta[key]);
+                if(delta[key]==".") {
+                    delta[key] = "";
+                    bot.setStatus("online", null);
+                }
+                logMsg(new Date().getTime(), "INFO", "General", null, "Set bot game to '" + delta[key] + "'");
+                configs.game = delta[key];
+                saveData("./config.json", function(err) {
+                    if(err) {
+                        logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save new config");
+                        throw new Error;
+                    }
+                    callback(err);
+                });
+                break;
+            case "rmserver":
+                var svr = bot.servers.get("id", delta[key]);
+                if(!svr) {
+                    callback(true);
+                    return;
+                }
+                bot.leaveServer(svr, function(err) {
+                    if(err) {
+                        logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to leave server " + svr.name);
+                    } else {
+                        delete configs.servers[svr.id];
+                        delete messages[svr.id];
+                        delete cleverOn[svr.id];
+                        delete stats[svr.id];
+                        logMsg(new Date().getTime(), "INFO", "General", null, "Left server " + svr.name);
+                    }
+                    callback(err);
+                });
+                break;
+            case "joinserver":
+                bot.joinServer(delta[key], function(err, svr) {
+                    if(err) {
+                        logMsg(new Date().getTime(), "WARN", "General", null, "Could not join new server, most likely user error");
+                    }
+                    callback(err);
+                });
+                break;
+            case "clearstats":
+                try {
+                    clearServerStats(delta[key]);
+                    callback(false);
+                } catch(err) {
+                    callback(err);
+                }
+                break;
+            case "status":
+                bot.setStatus(delta[key], function(err) {
+                    if(err) {
+                        logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to change status to " + delta[key]);
+                    } else {
+                        logMsg(new Date().getTime(), "INFO", "General", null, "Changed bot status to " + delta[key]);
+                    }
+                    callback(err);
+                });
+                break;
+            case "kill":
+                saveData("./stats.json", function(err) {
+                    process.exit(0);
+                });
+                break;
+        }
+    }
 }
 
 // Default config file
@@ -2741,7 +2904,7 @@ var defaultConfigFile = {
 function defaultConfig(svr) {
     if(!configs.servers[svr.id]) {
         var adminList = [svr.owner.id];
-        if(svr.members.get("id", configs.maintainer)) {
+        if(svr.members.get("id", configs.maintainer) && adminList.indexOf(configs.maintainer)==-1) {
             adminList.push(configs.maintainer);
         }
         for(var i=0; i<svr.members.length; i++) {
@@ -3070,7 +3233,8 @@ function getStats(svr) {
     var info = {
         "Most active members": [],
         "Most played games": [],
-        "Command usage": []
+        "Command usage": [],
+        "Data since": prettyDate(new Date(stats.timestamp))
     };
     for(var i=sortedMembers.length-1; i>sortedMembers.length-6; i--) {
         if(i<0) {
@@ -3104,6 +3268,37 @@ function getStats(svr) {
     return info;
 } 
 
+// Get total command usage across all servers
+function totalCommandUsage() {
+    var usage = {};
+    for(var svrid in stats) {
+        if(svrid=="timestamp") {
+            continue;
+        }
+        for(var cmd in stats[svrid].commands) {
+            if(!usage[cmd]) {
+                usage[cmd] = 0;
+            }
+            usage[cmd] += stats[svrid].commands[cmd];
+        }
+    }
+    
+    var commands = [];
+    var sum = 0;
+    for(var cmd in usage) {
+        sum += usage[cmd]; 
+        commands.push([cmd, usage[cmd]]);
+    }
+    commands.sort(function(a, b) {
+        return a[1] - b[1];
+    });
+    for(var i=0; i<commands.length; i++) {
+        var p = Math.floor(100 * commands[i][1] / sum);
+        commands[i] = ("  " + p).substring(p.toString().length-1) + "% " + commands[i][0] + ": " + commands[i][1] + " use" + (commands[i][1]==1 ? "" : "s");
+    }
+    return commands;
+}
+
 // Generate printable user profile
 function getProfile(usr, svr) {
     var usrinfo = {
@@ -3115,7 +3310,9 @@ function getProfile(usr, svr) {
         usrinfo["Avatar"] = usr.avatarURL;
     }
     if(usr.game) {
-        usrinfo["Playing"] = usr.game.name.replaceAll("\"", "'");
+        if(usr.game.name) {
+            usrinfo["Playing"] = usr.game.name.replaceAll("\"", "'");
+        }
     }
     if(profileData[usr.id]) {
         for(var field in profileData[usr.id]) {
@@ -3131,12 +3328,11 @@ function getProfile(usr, svr) {
                 info += ", " + details.roles[i].name.replaceAll("\"", "'");
             }
         }
-        var joined = prettyDate(new Date(details.joinedAt));
-        svrinfo["Joined"] = joined.substring(1, joined.length-2);
+        svrinfo["Joined"] = prettyDate(new Date(details.joinedAt));
     }
     if(usr.status!="online" && configs.servers[svr.id].stats.value) {
         var seen = prettyDate(new Date(stats[svr.id].members[usr.id].seen));
-        svrinfo["Last seen"] = secondsToString((new Date().getTime() - stats[svr.id].members[usr.id].seen)/1000);
+        svrinfo["Last seen"] = secondsToString((new Date().getTime() - stats[svr.id].members[usr.id].seen)/1000) + "ago";
     }
     var other = 0;
     for(var i=0; i<bot.servers.length; i++) {
@@ -3338,7 +3534,7 @@ function adminMsg(error, svr, author, info) {
 
 // Ouput a pretty date for logging
 function prettyDate(date) {
-    return "[" + date.getUTCFullYear() + "-" + ("0" + (date.getUTCMonth() + 1)).slice(-2) + "-" + ("0" + date.getUTCDate()).slice(-2) + " " + ("0" + date.getUTCHours()).slice(-2) + ":" + ("0" + date.getUTCMinutes()).slice(-2) + ":" + ("0" + date.getUTCSeconds()).slice(-2) + " UTC] ";
+    return date.getUTCFullYear() + "-" + ("0" + (date.getUTCMonth() + 1)).slice(-2) + "-" + ("0" + date.getUTCDate()).slice(-2) + " " + ("0" + date.getUTCHours()).slice(-2) + ":" + ("0" + date.getUTCMinutes()).slice(-2) + ":" + ("0" + date.getUTCSeconds()).slice(-2) + " UTC";
 }
 
 // Number of days between two dates
@@ -3378,7 +3574,7 @@ function getHelp(svr) {
         }
     }
 
-    info += "\n\nFor example, you could do `@" + bot.user.username + " remindme 5 s Hello`. You can get app links from the Google Play store by using `linkme <some app>`.\n\nThe following commands are also available via PM:\n\tpoll " + svr.name + " <channel>\n\tvote " + svr.name + " <channel> <no. of option>\n\tmentions " + svr.name + "\n\tprofile <key>,<value>\n\tconfig " + svr.name + "\n\tsay " + svr.name + " <channel> <something to say>\n\nOn top of all this, you can talk to me about anything privately or in the main chat (by tagging me). Have fun! ;)\n\nVersion " + version + " by @anandroiduser, https://git.io/v2e1w";
+    info += "\n\nFor example, you could do `@" + bot.user.username + " remindme 5 s Hello`. You can get app links from the Google Play store by using `linkme <some app>`.\n\nThe following commands are also available via PM:\n\tpoll " + svr.name + " <channel>\n\tvote " + svr.name + " <channel> <no. of option>\n\tmentions " + svr.name + "\n\tprofile <key>,<value>\n\tconfig " + svr.name + "\n\tsay " + svr.name + " <channel> <something to say>\n\nOn top of all this, you can talk to me about anything privately or in the main chat (by tagging me). Have fun! ;)\n\nVersion " + version + " by @BitQuote, https://git.io/vaa2F";
     return info;
 }
 
@@ -3401,7 +3597,7 @@ function printLog(log) {
         var usr = bot.users.get("id", log.id);
         printnm = usr ? ("@" + usr.username) : log.id;
     }
-    return prettyDate(new Date(log.timestamp)) + "[" + log.level + "] [" + printnm + "] " + log.msg;
+    return "[" + prettyDate(new Date(log.timestamp)) + "] [" + log.level + "] [" + printnm + "] " + log.msg;
 }
 
 // Filter and print logs by parameter
@@ -3493,7 +3689,7 @@ function checkVersion() {
                         send += response.body[i][1];
                     }
                 }
-                send += "\nLearn more at https://git.io/vg5mc";
+                send += "\nLearn more at https://git.io/vaa2F";
                 
                 if(configs.maintainer && configs.maintainer!="") {
                     var usr = bot.users.get("id", configs.maintainer);

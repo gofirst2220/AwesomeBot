@@ -58,6 +58,18 @@ body {
     transition: all .25s;
 }
 
+*::-webkit-input-placeholder {
+    color: #212121;
+}
+*:-moz-placeholder {
+    color: #212121;
+}
+*::-moz-placeholder {
+    color: #212121;
+}
+*:-ms-input-placeholder {
+    color: #212121;
+}
 button, select, input {
     background-color: #EEEEEE;
     color: black;
@@ -98,7 +110,7 @@ button:active, select:active, input:active, input:focus {
     border-radius: 0px;
 }
 
-#stats {
+#stats, .container {
     margin-top: 0.5%;
     padding-top: 0px;
     -webkit-transition: opacity .125s, height .25s;

@@ -6,6 +6,39 @@ var logID = "null";
 var logLevel = "null";
 
 function doSetup() {
+    var param = Object.keys(getQueryParams(document.URL))[0];
+    if(param) {
+        if(param.indexOf("?auth")==param.length-5) {
+            var token = getQueryParams(document.URL)[param];
+            if(token) {
+                checkAuth(token, true);
+            } else {
+                alert("Authentication failed");
+                writeInterface();
+            }
+        } else {
+            writeInterface();
+        }
+    } else {
+        writeInterface();
+    }
+}
+
+function getQueryParams(qs) {
+    qs = qs.split("+").join(" ");
+
+    var params = {};
+    var tokens;
+    var re = /[?&]?([^=]+)=([^&]*)/g;
+
+    while(tokens = re.exec(qs)) {
+        params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
+    }
+
+    return params;
+}
+    
+function writeInterface() {
     switchColors(localStorage.getItem("theme") || "contrast");
     showLoader();
     document.body.style.opacity = 1;
@@ -36,11 +69,11 @@ function doSetup() {
                         }
                     }
                     
-                    switchLog();
+                    switchLog(true);
                     
                     setTimeout(function() {
                         destroyLoader();
-                    }, 500);
+                    }, 750);
                 });
             });
         });
@@ -56,9 +89,11 @@ function showLoader() {
         document.getElementById("loader").style.backgroundColor = "#EEEEEE";
     }
     document.getElementById("loader").style.opacity = 1;
+    document.body.style.overflow = "hidden";
 }
 
 function destroyLoader() {
+    document.body.style.overflow= "auto";
     document.getElementById("loader").style.opacity = 0;
     document.body.removeChild(document.getElementById("loader"));
     document.getElementById("darkener").style.display = "none";
@@ -114,12 +149,18 @@ function switchColors(n) {
             break;
     }
     
-    document.getElementById("console").style.backgroundColor = document.body.style.backgroundColor.slice(0);
-    document.getElementById("console").style.color = document.body.style.color.slice(0);
+    var contrastables = document.querySelectorAll(".contrastable");
+    for(var i=0; i<contrastables.length; i++) {
+        contrastables[i].style.backgroundColor = document.body.style.backgroundColor.slice(0);
+        contrastables[i].style.color = document.body.style.color.slice(0);
+    }
+    
     if(n=="contrast") {
         document.body.style.color = "#212121";
-        document.getElementById("console").style.backgroundColor = "#212121";
-        document.getElementById("console").style.color = "#F5F5F5";
+        for(var i=0; i<contrastables.length; i++) {
+            contrastables[i].style.backgroundColor = "#212121";
+            contrastables[i].style.color = "#F5F5F5";
+        } 
     }
 }
 
@@ -158,9 +199,11 @@ function switchStats(n, nodestroy) {
                 if(Object.keys(data).length>1) {
                     for(var cat in data) {
                         if(cat!="name") {
-                            html += "<br>" + cat + ":";
-                            for(var i=0; i<data[cat].length; i++) {
-                                html += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + data[cat][i];
+                            html += "<br>" + cat + ":" + (cat=="Data since" ? (" " + data[cat]) : "");;
+                            if(cat!="Data since") {
+                                for(var i=0; i<data[cat].length; i++) {
+                                    html += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + data[cat][i];
+                                }
                             }
                         }
                     }
@@ -217,6 +260,7 @@ function switchProfile(n) {
                 document.getElementById("stats").innerHTML = html || "<i>Nothing here</i>";
                 document.getElementById("stats").style.height = (document.getElementById("stats").innerHTML.match(/<br>/ig).length + 1) * 18;
                 document.getElementById("stats").style.opacity = 1;
+                switchColors(localStorage.getItem("theme") || "contrast");
                 setTimeout(function() {
                     destroyLoader();
                 }, 250);
@@ -241,7 +285,7 @@ function switchLogLevel(n) {
     switchLog();
 }
 
-function switchLog() {
+function switchLog(nodestroy) {
     var ogcolor = document.getElementById("console").style.color.slice(0);
     document.getElementById("console").style.color = document.getElementById("console").style.backgroundColor;
     showLoader();
@@ -264,15 +308,37 @@ function switchLog() {
             
             document.getElementById("console").innerHTML = html || "<i>Nothing here</i>";
             document.getElementById("console").scrollTop = document.getElementById("console").scrollHeight;document.getElementById("console").style.color = ogcolor;
-            setTimeout(function() {
-                destroyLoader();
-            }, 250);
+            if(!nodestroy) {
+                setTimeout(function() {
+                    destroyLoader();
+                }, 250);
+            }
         });    
     }, 125);
 }
 
-function checkAuth(key) {
-    alert(key);
+function checkAuth(token, write) {
+    getJSON("/data?auth=" + token, function(data) {
+        console.log(data);
+        if(Object.keys(data).length>0) {
+            localStorage.setItem("auth", JSON.stringify(data));
+            document.body.style.opacity = 1;
+            setTimeout(function() {
+                if(data.type=="maintainer") {
+                    window.location.replace("/maintainer");
+                } else {
+                    window.location.replace("/admin");
+                }
+            }, 250);
+        } else {
+            alert("Authentication failed");
+            if(write) {
+                writeInterface();
+            } else {
+                document.getElementById("authinput").value = "";
+            }
+        }
+    });
 }
 
 function getJSON(url, callback) {
@@ -283,9 +349,13 @@ function getJSON(url, callback) {
     var status = xhr.status;
         if(status==200) {
             callback(xhr.response);
-        } else {
-            callback(null);
         }
     };
-    xhr.send();
+    try {
+        xhr.send();
+    } catch(err) {
+        setTimeout(function() {
+            getJSON(url, callback);
+        }, 500);
+    }
 };

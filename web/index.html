@@ -47,7 +47,7 @@
             <option id="level-WARN" value="WARN">Warning</option>
             <option id="level-ERROR" value="ERROR">Error</option>
         </select>
-        <div id="console"></div>
+        <div class="contrastable" id="console"></div>
         <br>
         
         <button id="refresher" onclick="javascript:document.body.style.opacity = 0;setTimeout(function() {location.reload();}, 250);">Refresh</button>
@@ -62,7 +62,7 @@
             <option id="theme-deep" value="deep">Deep</option>
         </select>
         
-        <input type="text" style="width: 200;" placeholder="Config Auth Key" onkeydown="if(event.keyCode==13){checkAuth(this.value)}"></input>
+        <input id="authinput" type="text" style="width: 200;" placeholder="Config Auth Key" onkeydown="if(event.keyCode==13){checkAuth(this.value)}"></input>
         <br><br>
         
         <span id="credit">
