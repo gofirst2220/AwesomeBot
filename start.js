@@ -2946,20 +2946,26 @@ function updateBot(msg) {
         console.log(data.toString());
     });
     fetch.on("close", function(code) {
-        var checkout = spawn("git", ["checkout","--", "start.js", "package.json"]);
-        checkout.stdout.on("data", function(data) {
+        var add = spawn("git", ["add", "auth.json", "config.json", "stats.json", "reminders.json", "profiles.json"]);
+        add.stdout.on("data", function(data) {
             console.log(data.toString());
         });
-        checkout.on("close", function(code) {
-            var npm = spawn("npm", ["install"]);
-            npm.stdout.on("data", function(data) {
+        add.on("close", function(code) {
+            var checkout = spawn("git", ["checkout", "."]);
+            checkout.stdout.on("data", function(data) {
                 console.log(data.toString());
             });
-            npm.on("close", function(code) {
-                logMsg(new Date().getTime(), "INFO", "General", null, "Successfully updated");
-                bot.sendMessage(msg.channel, "Done! Shutting down...", function() {
-                    bot.logout(function() {
-                        process.exit(1);
+            checkout.on("close", function(code) {
+                var npm = spawn("npm", ["install"]);
+                npm.stdout.on("data", function(data) {
+                    console.log(data.toString());
+                });
+                npm.on("close", function(code) {
+                    logMsg(new Date().getTime(), "INFO", "General", null, "Successfully updated");
+                    bot.sendMessage(msg.channel, "Done! Shutting down...", function() {
+                        bot.logout(function() {
+                            process.exit(1);
+                        });
                     });
                 });
             });
