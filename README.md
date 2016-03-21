@@ -1,4 +1,4 @@
-AwesomeBot [![Build Status](https://travis-ci.org/anandroiduser/AwesomeBot.svg?branch=master)](https://travis-ci.org/anandroiduser/AwesomeBot)
+AwesomeBot [![Build Status](https://travis-ci.org/BitQuote/AwesomeBot.svg?branch=master)](https://travis-ci.org/BitQuote/AwesomeBot)
 ==========
 
 The best Discord bot!
