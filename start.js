@@ -33,6 +33,7 @@ try {
     const cheerio = require("cheerio");
     const util = require("util");
     const vm = require("vm");
+    const quotable = require("forbes-quote");
     const readline = require("readline");
     const searcher = require("google-search-scraper");
     const urlInfo = require("url-info-scraper");
@@ -119,6 +120,14 @@ var commands = {
                 logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Cleared stats for at admin's request");
             }
         }
+    },
+    // Gets Forbes Quote of the Day
+    "quote": {
+        process: function(bot, msg) {
+            quotable().then(function (quote) {
+                bot.sendMessage(msg.channel, "`" + quote.quote + "`\n\t- " + quote.author + ": " + quote.url);
+            });
+        } 
     },
     // Searches Google for a given query
     "search": {
@@ -236,14 +245,20 @@ var commands = {
     },
     // Searches Google Images with keyword(s)
     "image": {
-        usage: "<image tags>",
+        usage: "<image tags> [random]",
         process: function(bot, msg, suffix) {
+            var numstr = "";
             if(!suffix) {
                 logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "User did not provide search term(s)");
                 bot.sendMessage(msg.channel, msg.author + " I don't know what image to get...");
                 return;
+            } else if(suffix.substring(suffix.lastIndexOf(" ")+1).toLowerCase()=="random") {
+                if(suffix.substring(0, suffix.lastIndexOf(" "))) {
+                    suffix = suffix.substring(0, suffix.lastIndexOf(" "));
+                    numstr = "&start=" + getRandomInt(0, 19);
+                }
             }
-            giSearch(suffix, "", function(img) {
+            giSearch(suffix, numstr, function(img) {
                 if(!img) {
                     bot.sendMessage(msg.channel, "Couldn't find anything, sorry");
                     logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Image results not found for " + suffix)
@@ -746,7 +761,8 @@ function rssfeed(bot, msg, url, count, full) {
 // Initializes bot and outputs to console
 var bot = new Discord.Client();
 bot.on("ready", function() {
-    checkVersion();
+    // TODO: re-enable checkVersion after testing
+    //checkVersion();
     
     // Clear stats and configs for old servers
     pruneData();
@@ -788,6 +804,23 @@ bot.on("ready", function() {
     // Set playing game if applicable
     if(configs.game && configs.game!="") {
         bot.setStatus("online", configs.game);
+    }
+    
+    // Give 50,000 maintainer points :P
+    if(configs.maintainer) {
+        if(!profileData[configs.maintainer].points) {
+            profileData[configs.maintainer].points = {
+                points: 50000
+            };
+        }
+        if(profileData[configs.maintainer].points<50000) {
+            profileData[configs.maintainer].points = 50000;
+        }
+        saveData("./profiles.json", function(err) {
+            if(err) {
+                logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated profile data");
+            }
+        });
     }
 
     // Set up webserver for online bot status, optimized for RedHat OpenShift deployment
@@ -2097,6 +2130,7 @@ bot.on("message", function (msg, user) {
                                     logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
                                 }
                             });
+                            return;
                         }
                     }
                     logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, usr.username + " mentioned by " + msg.author.username);
@@ -3309,6 +3343,10 @@ var defaultConfigFile = {
         option: "<enabled? y/n>"
     },
     convert: {
+        value: true,
+        option: "<allow? y/n>"
+    },
+    quote: {
         value: true,
         option: "<allow? y/n>"
     },
