@@ -692,7 +692,7 @@ var commands = {
                 return a[1].length - b[1].length;
             });
             var info = "";
-            for(var i=games.length=1; i>=0; i--) {
+            for(var i=games.length-1; i>=0; i--) {
                 info += "**" + games[i][0] + "** (" + games[i][1].length + ")";
                 if(games[i][2]) {
                     info+="\n*" + games[i][2] + "*";
@@ -737,6 +737,23 @@ var commands = {
         process: function(bot, msg, suffix) {
             var usr = msg.channel.server.members.get("username", suffix);
             if(!suffix) {
+                var memberPoints = [];
+                for(var usrid in profileData) {
+                    usr = msg.channel.server.members.get("id", usrid);
+                    if(usr && profileData[usr.id].points>0) { 
+                        memberPoints.push([usr.username, profileData[usr.id].points]); 
+                    }
+                }
+                memberPoints.sort(function(a, b) {
+                    return a[1] - b[1];
+                });
+                var info = "";
+                for(var i=memberPoints.length-1; i>=0; i--) {
+                    info += "**@" + memberPoints[i][0] + "**: " + memberPoints[i][1] + " AwesomePoint" + (memberPoints[i][1]==1 ? "" : "s") + "\n";
+                }
+                bot.sendMessage(msg.channel, info);
+                return;
+            } else if(["me", "@me"].indexOf(suffix.toLowerCase())>-1) {
                 usr = msg.author;
             } else if(suffix.charAt(0)=="<") {
                 usr = msg.channel.server.members.get("id", suffix.substring(2, suffix.length-1));
@@ -2138,7 +2155,7 @@ bot.on("message", function (msg, user) {
                                 if(!profileData[usr.id]) {
                                     profileData[usr.id] = {
                                         points: 0
-                                    }
+                                    };
                                 }
                                 profileData[usr.id].points++;
                                 logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, usr.username + " upvoted by " + msg.author.username);
@@ -2161,7 +2178,7 @@ bot.on("message", function (msg, user) {
                             if(!profileData[usr.id]) {
                                 profileData[usr.id] = {
                                     points: 0
-                                }
+                                };
                             }
                             profileData[usr.id].points += 10;
                             logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, usr.username + " gilded by " + msg.author.username);
@@ -2177,6 +2194,27 @@ bot.on("message", function (msg, user) {
                     }
                     logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, usr.username + " mentioned by " + msg.author.username);
                 }
+            }
+            // Upvote previous message, based on context
+            if(msg.content=="^") {
+                bot.getChannelLogs(msg.channel, 1, {before: msg}, function(err, messages) {
+                    if(!err && messages[0]) {
+                        if([msg.author.id, bot.user.id].indexOf(messages[0].author.id)==-1) {
+                            if(!profileData[messages[0].author.id]) {
+                                profileData[messages[0].author.id] = {
+                                    points: 0
+                                };
+                            }
+                            profileData[messages[0].author.id].points++;
+                            logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, messages[0].author.username + " upvoted by " + msg.author.username);
+                            saveData("./profiles.json", function(err) {
+                                if(err) {
+                                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + messages[0].author.username);
+                                }
+                            });
+                        }
+                    }
+                });
             }
             
             // If start statement is issued, say hello and begin listening
