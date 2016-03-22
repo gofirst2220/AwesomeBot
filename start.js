@@ -44,7 +44,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3.1-BETA";
+var version = "3.3.1";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -746,8 +746,7 @@ function rssfeed(bot, msg, url, count, full) {
 // Initializes bot and outputs to console
 var bot = new Discord.Client();
 bot.on("ready", function() {
-    // TODO: re-enable checkVersion before release
-    //checkVersion();
+    checkVersion();
     
     // Clear stats and configs for old servers
     pruneData();
@@ -769,8 +768,7 @@ bot.on("ready", function() {
         // Run timer extensions
         runTimerExtensions();
         // Send hello message
-        // TODO: re-enable hello message before release
-        //bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @BitQuote, https://git.io/vaa2F*");
+        bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @BitQuote, https://git.io/vaa2F*");
         bot.stopTyping(bot.servers[i].defaultChannel);
     }
     
@@ -1057,8 +1055,7 @@ bot.on("ready", function() {
 });
 
 bot.on("message", function (msg, user) {
-    // TODO: re-enable massive try/catch before release
-    //try {
+    try {
         // Stuff that only applies to PMs
         if(msg.channel.isPrivate && msg.author.id!=bot.user.id) {
             // Ensure that message is not from another AwesomeBot and block if so
@@ -2444,14 +2441,14 @@ bot.on("message", function (msg, user) {
                 bot.sendMessage(msg.channel,msg.author + ", you called?");
             }
         }
-    /*} catch(mainError) {
+    } catch(mainError) {
         bot.stopTyping(msg.channel);
         if(msg.channel.isPrivate) {
             logMsg(new Date().getTime(), "ERROR", msg.author.id, null, "Failed to process new message: " + mainError);
         } else {
             logMsg(new Date().getTime(), "ERROR", msg.channel.server.name, msg.channel.name, "Failed to process new message: " + mainError);
         }
-    }*/
+    }
 });
 
 // Add server if joined outisde of bot
@@ -2541,6 +2538,16 @@ bot.on("presence", function(oldusr, newusr) {
     if(newusr.id!=bot.user.id) {
         for(var i=0; i<bot.servers.length; i++) {
             if(bot.servers[i].members.get("id", newusr.id)) {
+                if(!stats[bot.servers[i].id].members[oldusr.id]) {
+                    stats[bot.servers[i].id].members[oldusr.id] = {
+                        messages: 0,
+                        seen: new Date().getTime(),
+                        mentions: {
+                            pm: false,
+                            stream: []
+                        }
+                    };
+                }
                 if(oldusr.status=="online" && newusr.status!="online") {
                     stats[bot.servers[i].id].members[oldusr.id].seen = new Date().getTime();
                 }
@@ -2793,7 +2800,6 @@ function clearStatCounter() {
 
 // Clear stats.json for a server
 function clearServerStats(svrid) {
-    // TODO: respect points server config
     var topMembers = [];
     for(var member in stats[svrid].members) {
         topMembers.push([member, stats[svrid].members[member].messages]);
@@ -3011,6 +3017,7 @@ function parseMaintainerConfig(delta, callback) {
             case "clearstats":
                 try {
                     clearServerStats(delta[key]);
+                    logMsg(new Date().getTime(), "INFO", "General", null, "Cleared stats for " + svr.name);
                     callback(false);
                 } catch(err) {
                     callback(err);
@@ -3348,10 +3355,6 @@ var defaultConfigFile = {
         option: "<allow? y/n>"
     },
     profile: {
-        value: true,
-        option: "<allow? y/n>"
-    },
-    char: {
         value: true,
         option: "<allow? y/n>"
     },

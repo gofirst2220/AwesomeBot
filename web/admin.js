@@ -249,3 +249,13 @@ function filterMembers(toRemove) {
     }
     return filtered;
 }
+
+function leaveServer() {
+    var u = "Bot will leave this server. Are you sure?";
+    if(u) {
+        config("leave", true, function(err) {
+            localStorage.removeItem("auth");
+            document.location.replace("/");
+        });
+    }
+}

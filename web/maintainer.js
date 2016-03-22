@@ -18,7 +18,9 @@ function doMaintainerSetup() {
 
 function configStatus(statstr) {
     document.getElementById("statusswitcher").value = statstr;
-    config("status", statstr, function() {document.getElementById("statusswitcher").value = botData.status;});
+    config("status", statstr, function() {
+        document.getElementById("statusswitcher").value = botData.status;
+    });
 }
 
 function switchUsage() {
