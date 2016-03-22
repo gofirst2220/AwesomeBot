@@ -1,7 +1,4 @@
-var botData;
-
-function doMaintainerSetup(mData) {
-    botData = mData;
+function doMaintainerSetup() {
     document.title = botData.username + " Maintainer Console";
     document.getElementById("botname").innerHTML = botData.username;
     document.getElementById("profilepic").src = botData.avatar;
@@ -31,7 +28,7 @@ function switchUsage() {
     
     document.getElementById("commandusage").innerHTML = "";
     if(botData.commandusage.length>0) {
-        for(var i=0; i<botData.commandusage.length; i++) {
+        for(var i=botData.commandusage.length-1; i>=0; i--) {
             document.getElementById("commandusage").innerHTML += botData.commandusage[i] + "<br>";
         }
         document.getElementById("commandusage").innerHTML += "<i>Data since " + botData.statsage + "</i>";
@@ -49,7 +46,7 @@ function switchUsage() {
 function switchServers() {
     document.getElementById("servertablebody").innerHTML = "";
     for(var i=0; i<botData.servers.length; i++) {
-        document.getElementById("servertablebody").innerHTML += "<tr id=\"serverentry-" + botData.servers[i][2] + "\"><td><img width=25 src=\"" + botData.servers[i][0] + "\" /></td><td>" + botData.servers[i][1] + "</td><td>" + botData.servers[i][2] + "</td><td>" + botData.servers[i][3] + "</td><td><span class=\"removetool\" onclick=\"javascript:removeServer(this.parentNode.parentNode.id)\"><i>(remove)</i></span>&nbsp;<span class=\"removetool\" onclick=\"javascript:config('clearstats', this.parentNode.parentNode.id.substring(12), function(err) {if(!err) {switchUsage()}});\"><i>(clear stats)</i></span></td></tr>"
+        document.getElementById("servertablebody").innerHTML += "<tr id=\"serverentry-" + botData.servers[i][2] + "\"><td><img class=\"profilepic\" width=25 src=\"" + botData.servers[i][0] + "\" /></td><td>" + botData.servers[i][1] + "</td><td>" + botData.servers[i][2] + "</td><td>" + botData.servers[i][3] + "</td><td><span class=\"removetool\" onclick=\"javascript:removeServer(this.parentNode.parentNode.id)\"><i>(remove)</i></span>&nbsp;<span class=\"removetool\" onclick=\"javascript:config('clearstats', this.parentNode.parentNode.id.substring(12), function(err) {if(!err) {switchUsage()}});\"><i>(clear stats)</i></span></td></tr>";
     }
 }
 
@@ -100,11 +97,17 @@ function configGame(remove) {
     }
 }
 
-function configUpdate() {
+function kill() {
     var u = confirm(botData.username + " will save data and shut down. Continue?");
     if(u) {
-        config("kill", true, function() {
-            document.body.innerHTML = "Bot has shut down.";
+        postJSON({kill: true}, function(response) {
+            if(response==200) {
+                document.body.innerHTML = "Bot has shut down.";
+            } else {
+                alert("Session timeout");
+                localStorage.removeItem("auth");
+                document.location.replace("/");
+            }
         });
     }
 }

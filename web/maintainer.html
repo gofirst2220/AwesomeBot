@@ -14,7 +14,7 @@
         <span style="font-size: 28;">
             <b><span class="botheader" id="botname" onclick="javascript:configUsername();"></span></b> Config
         </span>
-        <img id="profilepic" onclick="javascript:configUpdate();" src="" />
+        <img class="profilepic" id="profilepic" onclick="javascript:kill();" src="" />
         <br>
         <span class="botheader" id="botgame" onclick="javascript:configGame();"></span>
         <span class="removetool" id="botgameremove" onclick="javascript:config('game', '.', function(){configGame(true)});"></span>
@@ -48,7 +48,7 @@
                 </thead>
                 <tbody id="servertablebody"></tbody>
             </table>
-            <input id="addserverinput" type="text" style="width: 300;" placeholder="Join server: Provide invite link" onkeydown="if(event.keyCode==13){addServer(this.value)}"></input>
+            <input id="addserverinput" type="text" style="width: 300;" placeholder="Join Server: Invite Link" onkeydown="if(event.keyCode==13){addServer(this.value)}"></input>
         </div>
         <br>
         
@@ -63,10 +63,12 @@
             <option id="theme-red" value="red">Red</option>
             <option id="theme-deep" value="deep">Deep</option>
         </select>
+        
+        <button id="logout" onclick="javascript:doLogout();">Logout</button>
         <br><br>
         
         <span id="credit">
-            <i>Created by @anandroiduser, <a href='https://git.io/v2e1w'>https://git.io/v2e1w</a></i>
+            <i>Created by @BitQuote, <a href="https://git.io/vaa2F">https://git.io/vaa2F</a></i>
         </span>
     </span>
     <div id="darkener" style="display:none"></div>

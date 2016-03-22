@@ -44,7 +44,7 @@ body {
     display: 0;
     -moz-opacity: 0.50;
     z-index: 20;
-    height: 100%;
+    height: 100000px;
     width: 100%;
     background-repeat: no-repeat;
     background-position: center;
@@ -70,7 +70,7 @@ body {
 *:-ms-input-placeholder {
     color: #212121;
 }
-button, select, input {
+button, select, input, textarea {
     background-color: #EEEEEE;
     color: black;
     padding: 1px 7px;
@@ -85,12 +85,12 @@ button, select, input {
     -o-transition: all .25s;
     transition: all .25s;
 }
-button:hover, select:hover, input:hover {
+button:hover, select:hover, input:hover, textarea:hover {
     background-color: #212121;
     color: #EEEEEE;
     border-radius: 3px;
 }
-button:active, select:active, input:active, input:focus {
+button:active, select:active, input:active, input:focus, textarea:active, textarea:focus {
     background-color: #212121;
     color: #EEEEEE;
     border-radius: 1px;
@@ -99,6 +99,9 @@ button:active, select:active, input:active, input:focus {
 #profilepic {
     float: right;
     width: 10%;
+}
+
+.profilepic {
     border-radius: 100%;
     -webkit-transition: border-radius .25s;
     -moz-transition: border-radius .25s;
@@ -106,7 +109,7 @@ button:active, select:active, input:active, input:focus {
     -o-transition: border-radius .25s;
     transition: border-radius .25s;
 }
-#profilepic:hover {
+.profilepic:hover {
     border-radius: 0px;
 }
 
@@ -124,12 +127,16 @@ button:active, select:active, input:active, input:focus {
     margin-top: 0.5%;
 }
 
-#console{
+.contrastable {
+    max-height: 50%;
+    overflow: scroll;
+    overflow-x: hidden;
+}
+
+#console {
     font-family: "Consolas", "Droid Sans Mono";
     height: 50%;
     padding: 5px;
-    overflow: scroll;
-    overflow-x: hidden;
     border: 1px solid gray;
     margin-top: 0.5%;
     -webkit-transition: background-color .25s, color .25s, opacity .125s;

@@ -319,14 +319,13 @@ function switchLog(nodestroy) {
 
 function checkAuth(token, write) {
     getJSON("/data?auth=" + token, function(data) {
-        console.log(data);
         if(Object.keys(data).length>0) {
             localStorage.setItem("auth", JSON.stringify(data));
             document.body.style.opacity = 1;
             setTimeout(function() {
                 if(data.type=="maintainer") {
                     window.location.replace("/maintainer");
-                } else {
+                } else if(data.type=="admin") {
                     window.location.replace("/admin");
                 }
             }, 250);
