@@ -45,7 +45,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3.2";
+var version = "3.3.2p1";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -865,8 +865,8 @@ bot.on("ready", function() {
     
     // Give 50,000 maintainer points :P
     if(configs.maintainer) {
-        if(!profileData[configs.maintainer].points) {
-            profileData[configs.maintainer].points = {
+        if(!profileData[configs.maintainer]) {
+            profileData[configs.maintainer] = {
                 points: 50000
             };
         }

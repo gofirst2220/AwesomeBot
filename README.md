@@ -114,6 +114,8 @@ Latest, version **3.3.2**:
  - Added option for random result in image command
  - New quote of the day command  
  
+Patch #1: Fixed maintainer points crash  
+ 
 Open an issue to report a bug or suggest a new feature!
 
 Contribute
