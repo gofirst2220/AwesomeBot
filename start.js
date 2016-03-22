@@ -671,20 +671,34 @@ var commands = {
     // Show list of games being played
     "games": {
         process: function(bot, msg) {
-            var games = {};
+            var rawGames = {};
             for(var i=0; i<msg.channel.server.members.length; i++) {
-                if(msg.channel.server.members[i].game && msg.channel.server.members[i].status!="offline") {
-                    if(!games[msg.channel.server.members[i].game.name]) {
-                        games[msg.channel.server.members[i].game.name] = [];
+                if(msg.channel.server.members[i].id!=bot.user.id && msg.channel.server.members[i].game && msg.channel.server.members[i].status!="offline") {
+                    if(!rawGames[msg.channel.server.members[i].game.name]) {
+                        rawGames[msg.channel.server.members[i].game.name] = [];
                     }
-                    games[msg.channel.server.members[i].game.name].push(msg.channel.server.members[i].username);
+                    rawGames[msg.channel.server.members[i].game.name].push(msg.channel.server.members[i].username);
                 }
             }
+            var games = [];
+            for(var game in rawGames) {
+                var playingFor;
+                if(stats[msg.channel.server.id].games[game]) {
+                    playingFor = secondsToString(stats[msg.channel.server.id].games[game] * 3000) + "this week"; 
+                }
+                games.push([game, rawGames[game], playingFor]);
+            }
+            games.sort(function(a, b) {
+                return a[1].length - b[1].length;
+            });
             var info = "";
-            for(var game in games) {
-                info += "**" + game + "** (" + games[game].length + ")";
-                for(var i=0; i<games[game].length; i++) {
-                    info += "\n\t" + games[game][i];
+            for(var i=games.length=1; i>=0; i--) {
+                info += "**" + games[i][0] + "** (" + games[i][1].length + ")";
+                if(games[i][2]) {
+                    info+="\n*" + games[i][2] + "*";
+                }
+                for(var j=0; j<games[i][1].length; j++) {
+                    info += "\n\t@" + games[i][1][j];
                 }
                 info += "\n";
             }
@@ -714,6 +728,34 @@ var commands = {
             } else {
                 logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Requested member does not exist so profile cannot be shown");
                 bot.sendMessage(msg.channel, "That user doesn't exist :/");
+            }
+        }
+    },
+    // Quickly gets a user's points
+    "points": {
+        usage: "<username>",
+        process: function(bot, msg, suffix) {
+            var usr = msg.channel.server.members.get("username", suffix);
+            if(!suffix) {
+                usr = msg.author;
+            } else if(suffix.charAt(0)=="<") {
+                usr = msg.channel.server.members.get("id", suffix.substring(2, suffix.length-1));
+            }
+            if(usr) {
+                if(!profileData[usr.id]) {
+                    profileData[usr.id] = {
+                        points: 0,
+                    }
+                    saveData("./profiles.json", function(err) {
+                        if(err) {
+                            logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
+                        }
+                    });
+                }
+                bot.sendMessage(msg.channel, "**@" + usr.username + "** has `" + profileData[usr.id].points + "` AwesomePoint" + (profileData[usr.id].points==1 ? "" : "s"));
+            } else {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Requested member does not exist so profile cannot be shown");
+                bot.sendMessage(msg.channel, "That user doesn't exist :confused:");
             }
         }
     },
@@ -3854,8 +3896,8 @@ function getProfile(usr, svr) {
         usrinfo[(field.charAt(0).toUpperCase() + field.slice(1)).replaceAll("\"", "'")] = profileData[usr.id][field].toString().replaceAll("\"", "'");
     }
     var details = svr.detailsOfUser(usr);
+    var svrinfo = {};
     if(details) {
-        var svrinfo = {};
         if(details.roles.length>0) {
             svrinfo["Roles"] = details.roles[0].name.replaceAll("\"", "'");
             for(var i=1; i<details.roles.length; i++) {
