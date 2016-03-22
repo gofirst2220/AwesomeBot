@@ -33,6 +33,7 @@ try {
     const cheerio = require("cheerio");
     const util = require("util");
     const vm = require("vm");
+    const quotable = require("forbes-quote");
     const readline = require("readline");
     const searcher = require("google-search-scraper");
     const urlInfo = require("url-info-scraper");
@@ -44,7 +45,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3.1";
+var version = "3.3.2";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -119,6 +120,14 @@ var commands = {
                 logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Cleared stats for at admin's request");
             }
         }
+    },
+    // Gets Forbes Quote of the Day
+    "quote": {
+        process: function(bot, msg) {
+            quotable().then(function (quote) {
+                bot.sendMessage(msg.channel, "`" + quote.quote + "`\n\t- " + quote.author + ": " + quote.url);
+            });
+        } 
     },
     // Searches Google for a given query
     "search": {
@@ -236,14 +245,20 @@ var commands = {
     },
     // Searches Google Images with keyword(s)
     "image": {
-        usage: "<image tags>",
+        usage: "<image tags> [random]",
         process: function(bot, msg, suffix) {
+            var numstr = "";
             if(!suffix) {
                 logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "User did not provide search term(s)");
                 bot.sendMessage(msg.channel, msg.author + " I don't know what image to get...");
                 return;
+            } else if(suffix.substring(suffix.lastIndexOf(" ")+1).toLowerCase()=="random") {
+                if(suffix.substring(0, suffix.lastIndexOf(" "))) {
+                    suffix = suffix.substring(0, suffix.lastIndexOf(" "));
+                    numstr = "&start=" + getRandomInt(0, 19);
+                }
             }
-            giSearch(suffix, "", function(img) {
+            giSearch(suffix, numstr, function(img) {
                 if(!img) {
                     bot.sendMessage(msg.channel, "Couldn't find anything, sorry");
                     logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Image results not found for " + suffix)
@@ -656,20 +671,34 @@ var commands = {
     // Show list of games being played
     "games": {
         process: function(bot, msg) {
-            var games = {};
+            var rawGames = {};
             for(var i=0; i<msg.channel.server.members.length; i++) {
-                if(msg.channel.server.members[i].game && msg.channel.server.members[i].status!="offline") {
-                    if(!games[msg.channel.server.members[i].game.name]) {
-                        games[msg.channel.server.members[i].game.name] = [];
+                if(msg.channel.server.members[i].id!=bot.user.id && msg.channel.server.members[i].game && msg.channel.server.members[i].status!="offline") {
+                    if(!rawGames[msg.channel.server.members[i].game.name]) {
+                        rawGames[msg.channel.server.members[i].game.name] = [];
                     }
-                    games[msg.channel.server.members[i].game.name].push(msg.channel.server.members[i].username);
+                    rawGames[msg.channel.server.members[i].game.name].push(msg.channel.server.members[i].username);
                 }
             }
+            var games = [];
+            for(var game in rawGames) {
+                var playingFor;
+                if(stats[msg.channel.server.id].games[game]) {
+                    playingFor = secondsToString(stats[msg.channel.server.id].games[game] * 3000) + "this week"; 
+                }
+                games.push([game, rawGames[game], playingFor]);
+            }
+            games.sort(function(a, b) {
+                return a[1].length - b[1].length;
+            });
             var info = "";
-            for(var game in games) {
-                info += "**" + game + "** (" + games[game].length + ")";
-                for(var i=0; i<games[game].length; i++) {
-                    info += "\n\t" + games[game][i];
+            for(var i=games.length-1; i>=0; i--) {
+                info += "**" + games[i][0] + "** (" + games[i][1].length + ")";
+                if(games[i][2]) {
+                    info+="\n*" + games[i][2] + "*";
+                }
+                for(var j=0; j<games[i][1].length; j++) {
+                    info += "\n\t@" + games[i][1][j];
                 }
                 info += "\n";
             }
@@ -699,6 +728,51 @@ var commands = {
             } else {
                 logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Requested member does not exist so profile cannot be shown");
                 bot.sendMessage(msg.channel, "That user doesn't exist :/");
+            }
+        }
+    },
+    // Quickly gets a user's points
+    "points": {
+        usage: "<username>",
+        process: function(bot, msg, suffix) {
+            var usr = msg.channel.server.members.get("username", suffix);
+            if(!suffix) {
+                var memberPoints = [];
+                for(var usrid in profileData) {
+                    usr = msg.channel.server.members.get("id", usrid);
+                    if(usr && profileData[usr.id].points>0) { 
+                        memberPoints.push([usr.username, profileData[usr.id].points]); 
+                    }
+                }
+                memberPoints.sort(function(a, b) {
+                    return a[1] - b[1];
+                });
+                var info = "";
+                for(var i=memberPoints.length-1; i>=0; i--) {
+                    info += "**@" + memberPoints[i][0] + "**: " + memberPoints[i][1] + " AwesomePoint" + (memberPoints[i][1]==1 ? "" : "s") + "\n";
+                }
+                bot.sendMessage(msg.channel, info);
+                return;
+            } else if(["me", "@me"].indexOf(suffix.toLowerCase())>-1) {
+                usr = msg.author;
+            } else if(suffix.charAt(0)=="<") {
+                usr = msg.channel.server.members.get("id", suffix.substring(2, suffix.length-1));
+            }
+            if(usr) {
+                if(!profileData[usr.id]) {
+                    profileData[usr.id] = {
+                        points: 0,
+                    }
+                    saveData("./profiles.json", function(err) {
+                        if(err) {
+                            logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
+                        }
+                    });
+                }
+                bot.sendMessage(msg.channel, "**@" + usr.username + "** has `" + profileData[usr.id].points + "` AwesomePoint" + (profileData[usr.id].points==1 ? "" : "s"));
+            } else {
+                logMsg(new Date().getTime(), "WARN", msg.channel.server.name, msg.channel.name, "Requested member does not exist so profile cannot be shown");
+                bot.sendMessage(msg.channel, "That user doesn't exist :confused:");
             }
         }
     },
@@ -787,6 +861,23 @@ bot.on("ready", function() {
     // Set playing game if applicable
     if(configs.game && configs.game!="") {
         bot.setStatus("online", configs.game);
+    }
+    
+    // Give 50,000 maintainer points :P
+    if(configs.maintainer) {
+        if(!profileData[configs.maintainer].points) {
+            profileData[configs.maintainer].points = {
+                points: 50000
+            };
+        }
+        if(profileData[configs.maintainer].points<50000) {
+            profileData[configs.maintainer].points = 50000;
+        }
+        saveData("./profiles.json", function(err) {
+            if(err) {
+                logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated profile data");
+            }
+        });
     }
 
     // Set up webserver for online bot status, optimized for RedHat OpenShift deployment
@@ -2061,7 +2152,7 @@ bot.on("message", function (msg, user) {
                                 if(!profileData[usr.id]) {
                                     profileData[usr.id] = {
                                         points: 0
-                                    }
+                                    };
                                 }
                                 profileData[usr.id].points++;
                                 logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, usr.username + " upvoted by " + msg.author.username);
@@ -2084,7 +2175,7 @@ bot.on("message", function (msg, user) {
                             if(!profileData[usr.id]) {
                                 profileData[usr.id] = {
                                     points: 0
-                                }
+                                };
                             }
                             profileData[usr.id].points += 10;
                             logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, usr.username + " gilded by " + msg.author.username);
@@ -2095,10 +2186,32 @@ bot.on("message", function (msg, user) {
                                     logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
                                 }
                             });
+                            return;
                         }
                     }
                     logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, usr.username + " mentioned by " + msg.author.username);
                 }
+            }
+            // Upvote previous message, based on context
+            if(msg.content=="^") {
+                bot.getChannelLogs(msg.channel, 1, {before: msg}, function(err, messages) {
+                    if(!err && messages[0]) {
+                        if([msg.author.id, bot.user.id].indexOf(messages[0].author.id)==-1) {
+                            if(!profileData[messages[0].author.id]) {
+                                profileData[messages[0].author.id] = {
+                                    points: 0
+                                };
+                            }
+                            profileData[messages[0].author.id].points++;
+                            logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, messages[0].author.username + " upvoted by " + msg.author.username);
+                            saveData("./profiles.json", function(err) {
+                                if(err) {
+                                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + messages[0].author.username);
+                                }
+                            });
+                        }
+                    }
+                });
             }
             
             // If start statement is issued, say hello and begin listening
@@ -3310,6 +3423,10 @@ var defaultConfigFile = {
         value: true,
         option: "<allow? y/n>"
     },
+    quote: {
+        value: true,
+        option: "<allow? y/n>"
+    },
     twitter: {
         value: true,
         option: "<allow? y/n>"
@@ -3814,8 +3931,8 @@ function getProfile(usr, svr) {
         usrinfo[(field.charAt(0).toUpperCase() + field.slice(1)).replaceAll("\"", "'")] = profileData[usr.id][field].toString().replaceAll("\"", "'");
     }
     var details = svr.detailsOfUser(usr);
+    var svrinfo = {};
     if(details) {
-        var svrinfo = {};
         if(details.roles.length>0) {
             svrinfo["Roles"] = details.roles[0].name.replaceAll("\"", "'");
             for(var i=1; i<details.roles.length; i++) {

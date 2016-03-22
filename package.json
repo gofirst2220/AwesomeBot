@@ -43,7 +43,8 @@
     "url-info-scraper": "*",
     "cross-spawn": "*",
     "write-file-atomic": "*",
-    "money": "*"
+    "money": "*",
+    "forbes-quote": "*"
   },
   "scripts": {
     "start": "node start.js"
