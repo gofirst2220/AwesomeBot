@@ -45,7 +45,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3.2-ALPHA";
+var version = "3.3.2";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -820,8 +820,7 @@ function rssfeed(bot, msg, url, count, full) {
 // Initializes bot and outputs to console
 var bot = new Discord.Client();
 bot.on("ready", function() {
-    // TODO: re-enable checkVersion after testing
-    //checkVersion();
+    checkVersion();
     
     // Clear stats and configs for old servers
     pruneData();
@@ -843,8 +842,7 @@ bot.on("ready", function() {
         // Run timer extensions
         runTimerExtensions();
         // Send hello message
-        // TODO: re-enable hello message after testing
-        //bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @BitQuote, https://git.io/vaa2F*");
+        bot.sendMessage(bot.servers[i].defaultChannel, "*I am " + bot.user.username + " v" + version + " by @BitQuote, https://git.io/vaa2F*");
         bot.stopTyping(bot.servers[i].defaultChannel);
     }
     
@@ -1148,8 +1146,7 @@ bot.on("ready", function() {
 });
 
 bot.on("message", function (msg, user) {
-    // TODO: re-enable massive try/catch after testing
-    //try {
+    try {
         // Stuff that only applies to PMs
         if(msg.channel.isPrivate && msg.author.id!=bot.user.id) {
             // Ensure that message is not from another AwesomeBot and block if so
@@ -2557,14 +2554,14 @@ bot.on("message", function (msg, user) {
                 bot.sendMessage(msg.channel,msg.author + ", you called?");
             }
         }
-    /*} catch(mainError) {
+    } catch(mainError) {
         bot.stopTyping(msg.channel);
         if(msg.channel.isPrivate) {
             logMsg(new Date().getTime(), "ERROR", msg.author.id, null, "Failed to process new message: " + mainError);
         } else {
             logMsg(new Date().getTime(), "ERROR", msg.channel.server.name, msg.channel.name, "Failed to process new message: " + mainError);
         }
-    }*/
+    }
 });
 
 // Add server if joined outisde of bot

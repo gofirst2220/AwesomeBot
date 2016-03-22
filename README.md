@@ -110,8 +110,9 @@ Latest, version **3.3.2**:
 
  - Improved games command with sorting and time played
  - New points command to quickly check users' karma
+ - Ability to upvote messages simply with `^`
  - Added option for random result in image command
- - New quote of the day command    
+ - New quote of the day command  
  
 Open an issue to report a bug or suggest a new feature!
 
