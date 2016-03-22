@@ -37,7 +37,7 @@ About
 This repository provides the source for the already-running `@AwesomeBot` instance. You are free to use this code as a base for your own bot, so long as you follow the following terms as well as the license:
 
 1. If you modify the promotional message when the bot starts, you *must* add `-UNOFFICIAL` to the verison number on line 4
-2. You may **not** remove the credit to @anandroiduser in the help section. If you wish, you may rephrase this along the lines of: `based on AwesomeBot <version> by @anandroiduser`
+2. You may **not** remove the credit to @BitQuote in the help section. If you wish, you may rephrase this along the lines of: `based on AwesomeBot <version> by @BitQuote`
 3. Join our private server if you are modifying the code in any way: [Join BotMakers, Inc.](https://discord.gg/0pRFCTcG2aIY53Jk)
 
 Note that I am very busy with work, so this repository will only be updated for milestone releases and development may cease at any time. Also, I know this project is *very* poorly written; keep in mind that I have spent embarrassingly little time on this.
