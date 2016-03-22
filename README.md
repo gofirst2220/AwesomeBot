@@ -106,11 +106,11 @@ Outside of this sandbox, the extension cannot use other Node modules or methods.
 Changelog
 ---------
 
-Latest, version **3.3.1**:
+Latest, version **3.3.2**:
 
- - Moved admin and maintainer console to web interface
- - AwesomePoints optional karma system
- - Many bug fixes and misc. enhancements  
+ - Improved games command with sorting and time played
+ - New points command to quickly check users' karma
+ - Added option for random result in image command  
  
 Open an issue to report a bug or suggest a new feature!
 
