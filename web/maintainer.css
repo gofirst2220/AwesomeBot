@@ -1,0 +1,13 @@
+.botheader:hover {
+    cursor: pointer;
+}
+
+#botnameinput {
+    height: 35px;
+    font-size: 24;
+}
+
+#botgameinput {
+    height: 25px;
+    font-size: 14;
+}

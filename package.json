@@ -1,10 +1,10 @@
 {
   "name": "AwesomeBot",
   "version": "0.1.1",
-  "author": "anandroiduser",
+  "author": "BitQuote",
   "repository": {
     "type": "git",
-    "url": "https://github.com/anandroiduser/AwesomeBot.git"
+    "url": "https://github.com/BitQuote/AwesomeBot.git"
   },
   "license": "GNU",
   "dependencies": {
@@ -28,7 +28,7 @@
     "mitsuku-api": "*",
     "fs": "*",
     "express": "*",
-    "http": "*",
+    "body-parser": "*",
     "unirest": "*",
     "readline": "*",
     "fast-levenshtein": "*",

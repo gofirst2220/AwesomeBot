@@ -1,0 +1,17 @@
+table {
+    border: 1px solid gray;
+    margin-bottom: 5;
+    -webkit-transition: background-color .25s, color .25s, opacity .125s;
+    -moz-transition: background-color .25s, color .25s, opacity .125s;
+    -ms-transition: background-color .25s, color .25s, opacity .125s;
+    -o-transition: background-color .25s, color .25s, opacity .125s;
+    transition: background-color .25s, color .25s, opacity .125s;
+}
+
+td {
+    padding: 10;
+}
+
+.removetool:hover {
+    cursor: pointer;
+}

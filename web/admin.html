@@ -1,0 +1,172 @@
+<html>
+<head>
+    <title>Admin Console Loading...</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="./index.css">
+    <link rel="stylesheet" type="text/css" href="./config.css">
+    <script type="text/javascript" src="./admin.js"></script>
+    <script type="text/javascript" src="./config.js"></script>
+    <script type="text/javascript" src="./index.js"></script>
+</head>
+<body onload="javascript:doAuth();">
+    <span style="font-family: 'Arial'; margin-bottom: 0px;">
+        <span style="font-size: 28;">
+            <b><span id="servername"></span></b> Config
+        </span>
+        <img class="profilepic" id="profilepic" src="" />
+        <br>
+        <span id="botsince"></span>
+        <span class="removetool" id="botleave" onclick="javascript:leaveServer();"><i>(leave)</i></span>
+        &nbsp;
+        <br><br>
+        
+        <span style="font-size: 20;">
+            <u>Bot Admins</u>
+            <br>
+        </span>
+        <div class="container" id="admins">
+            <table class="tablelist contrastable" id="adminstable">
+                <thead>
+                    <tr>
+                        <th>Avatar</th>
+                        <th>Name</th>
+                        <th>ID</td>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="adminstablebody"></tbody>
+            </table>
+            <span id="adminsadd">
+                Add: 
+                <select id="adminsselector" onChange="javascript:config('admins', this.value, function() {switchAdmins();switchBlocked();});">
+                </select>
+            </span>
+        </div>
+        <br>
+        
+        <span style="font-size: 20;">
+            <u>Blocked Members</u>
+            <br>
+        </span>
+        <div class="container" id="blocked">
+            <table class="tablelist contrastable" id="blockedtable">
+                <thead>
+                    <tr>
+                        <th>Avatar</th>
+                        <th>Name</th>
+                        <th>ID</td>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="blockedtablebody"></tbody>
+            </table>
+            <span id="blockedadd">
+                Block: 
+                <select id="blockedselector" onChange="javascript:config('blocked', this.value, function() {switchAdmins();switchBlocked();});"></select>
+            </span>
+        </div>
+        <br>
+        
+        <span style="font-size: 20;">
+            <u>RSS Feeds</u>
+            <br>
+        </span>
+        <div class="container" id="rss">
+            <table class="tablelist contrastable" id="rsstable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>URL</td>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="rsstablebody"></tbody>
+            </table>
+            New:
+            <input id="rssnewname" type="text" style="width: 100;" placeholder="Feed Name"></input>
+            <input id="rssnewurl" type="text" style="width: 250;" placeholder="RSS URL" onkeydown="if(event.keyCode==13){newRss()}"></input>
+        </div>
+        <br>
+        
+        <span style="font-size: 20;">
+            <u>Command Settings</u>
+        </span>
+        <div class="container" id="commands"></div>
+        <br>
+        
+        <span style="font-size: 20;">
+            <u>Management</u>
+        </span>
+        <div class="container" id="management">
+            <label><input style="height: auto;" id="manageentry-servermod" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchManage);">Act as a server moderator</label>
+            <br>
+            <label><input style="height: auto;" id="manageentry-spamfilter" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchManage);">Spam filter</label>
+            <br>
+            <label><input style="height: auto;" id="manageentry-nsfwfilter" type="checkbox" onclick="javascript:config(this.id.substring(12), this.checked, switchManage);">NSFW filter</label>
+            <br>
+            <span id="manageentry-newgreeting">
+                <textarea id="newgreetinginput" style="float: left; height: 40; width: 400;" placeholder="Message shown to new members, in markdown"></textarea>
+                &nbsp;
+                <span class="removetool" id="newgreetingsubmit" onclick="javascript:newNewgreeting();"><i>(submit)</i></span>
+                <br>&nbsp;
+                <span class="removetool" id="newgreetingremove" onclick="javascript:configNewgreeting();"><i>(remove)</i></span>
+                <br>
+            </span>
+            <br><br>
+            
+            <button id="closeall" onclick="javascript:config('close', true, switchManage);"></button>
+            <span id="closeallspace" style="font-size: 6;"><br><br></span>
+            Clean: 
+            <select id="cleanselector"></select>
+            <input id="cleaninput" type="text" style="width: 25;" placeholder="#" onkeydown="if(event.keyCode==13){configCA('clean')}"></input>
+            <span style="font-size: 6;"><br><br></span>
+            Archive: 
+            <select id="archiveselector"></select>
+            <input id="archiveinput" type="text" style="width: 25;" placeholder="#" onkeydown="if(event.keyCode==13){configCA('archive')}"></input>
+        </div>
+        <br>
+        
+        <span style="font-size: 20;">
+            <u>Extensions</u>
+            <br>
+        </span>
+        <div id="extensions">
+            <i>Extensions allow you to add server-specific functionality to the bot. Learn more <a href="https://git.io/vaaaU">here</a>.</i><br>
+            <table class="tablelist contrastable" id="extensionstable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</td>
+                        <th>Channel(s)</td>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="extensionstablebody"></tbody>
+            </table>
+            Upload: 
+            <input id="extensionsupload" type="file" style="width: 300;" accept="application/json" onchange="javascript:newExtension(this.files)" />
+        </div>
+        <br>
+        
+        <button id="refresher" onclick="javascript:document.body.style.opacity = 0;setTimeout(function() {location.reload();}, 250);">Refresh</button>
+        
+        <select id="themeswitcher" onChange="javascript:switchColors(this.value);">
+            <option id="theme-white" value="white">White</option>
+            <option id="theme-contrast" value="contrast">Contrast</option>
+            <option id="theme-black" value="black">Black</option>
+            <option id="theme-dark" value="dark">Dark</option>
+            <option id="theme-blue" value="blue">Blue</option>
+            <option id="theme-red" value="red">Red</option>
+            <option id="theme-deep" value="deep">Deep</option>
+        </select>
+        
+        <button id="logout" onclick="javascript:doLogout();">Logout</button>
+        <br><br>
+        
+        <span id="credit">
+            <i>Created by @BitQuote, <a href="https://git.io/vaa2F">https://git.io/vaa2F</a></i>
+        </span>
+    </span>
+    <div id="darkener" style="display:none"></div>
+</body>
+</html>

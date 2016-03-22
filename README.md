@@ -1,4 +1,4 @@
-AwesomeBot [![Build Status](https://travis-ci.org/anandroiduser/AwesomeBot.svg?branch=master)](https://travis-ci.org/anandroiduser/AwesomeBot)
+AwesomeBot [![Build Status](https://travis-ci.org/BitQuote/AwesomeBot.svg?branch=master)](https://travis-ci.org/BitQuote/AwesomeBot)
 ==========
 
 The best Discord bot!
@@ -29,7 +29,7 @@ In addition, he has many built-in utility functions:
  - Year countdown
  - Stats for members, games, and commands
 
-And finally, AwesomeBot can conduct **in-chat polls** and offers a fun **live trivia game**. He is fully configurable via private message, and can be controlled independently between servers. New servers can be added simply by PMing the bot an invite link, and admins are automatically detected.
+And finally, AwesomeBot can conduct **in-chat polls**, offers a fun **live trivia game**, and provides **karma for Discord**. He is fully configurable via private message or online, and can be controlled independently between servers. New servers can be added simply by PMing the bot an invite link, and admins are automatically detected.
 
 About
 -----
@@ -37,7 +37,7 @@ About
 This repository provides the source for the already-running `@AwesomeBot` instance. You are free to use this code as a base for your own bot, so long as you follow the following terms as well as the license:
 
 1. If you modify the promotional message when the bot starts, you *must* add `-UNOFFICIAL` to the verison number on line 4
-2. You may **not** remove the credit to @anandroiduser in the help section. If you wish, you may rephrase this along the lines of: `based on AwesomeBot <version> by @anandroiduser`
+2. You may **not** remove the credit to @BitQuote in the help section. If you wish, you may rephrase this along the lines of: `based on AwesomeBot <version> by @BitQuote`
 3. Join our private server if you are modifying the code in any way: [Join BotMakers, Inc.](https://discord.gg/0pRFCTcG2aIY53Jk)
 
 Note that I am very busy with work, so this repository will only be updated for milestone releases and development may cease at any time. Also, I know this project is *very* poorly written; keep in mind that I have spent embarrassingly little time on this.
@@ -64,7 +64,8 @@ You'll be prompted for authentication and configuration details, but here's a qu
  - **config.json**:
     - `hosting`: Publicly available URL of bot's web interface (optional)
     - `maintainer`: Your *personal* Discord ID to be notified of updates and to access the maintainer console where you can change the bot status, game, etc. (highly recommended)
-    - `game`: String of game that the bot will "play". If you fill in `maintainer`, you can change this live  
+    - `game`: String of game that the bot will "play". If you fill in `maintainer`, you can change this live
+    - `botblocked` and `setup`: Just stuff for the bot, nothing to see here!    
 
 You can PM the bot `config <server name>` to access the admin console for the bot in any server where you are the admin and just `config` to access the maintainer console.
 
@@ -105,34 +106,11 @@ Outside of this sandbox, the extension cannot use other Node modules or methods.
 Changelog
 ---------
 
-Latest, version **3.3**:
+Latest, version **3.3.1**:
 
- - Added last seen in user profiles
- - New `say` command, just for fun
- - Added currency conversion
- - Added timer extension type
- - New auto-update system (beta)
- - Maintainer console to change bot game, status, etc.
- - Prevent bot spam with verification system
- - Added message archiving in admin console
- - Option for PMs when mentioned
- - New stats system for members and games
- - Per-server command usage info
- - Improved toggles in admin console
- - Command-line setup on first run 
- - Persistent reminders with PM support
- - About command for bot info
- - Revamped logging system with filters
- - Added poll timestamps and PM voting
- - Enhanced web interface with themes and stats
- - Made bot status persistent
- - Support for YouTube playlists and channels
- - Improved roll command with optional min and max
- - Fixed many, many bugs  
-
-Patch #1: Fixed username quote bug in web interface  
-Patch #2: Another web interface fix  
-Patch #3: Tweaked button/select color in web interface
+ - Moved admin and maintainer console to web interface
+ - AwesomePoints optional karma system
+ - Many bug fixes and misc. enhancements  
  
 Open an issue to report a bug or suggest a new feature!
 

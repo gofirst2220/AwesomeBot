@@ -1,0 +1,169 @@
+::-webkit-scrollbar {
+    width: 12px;
+}
+::-webkit-scrollbar-track {
+    opacity: 0;
+}
+::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+}
+
+body {
+    opacity: 0;
+    -webkit-transition: all .25s;
+    -moz-transition: all .25s;
+    -ms-transition: all .25s;
+    -o-transition: all .25s;
+    transition: all .25s;
+}
+
+#loader {
+    position: fixed;
+    opacity: 0;
+    z-index: 25;
+    top: 25%;
+    width: 15%;
+    left: 42.5%;
+    border-radius: 5px;
+    -moz-box-shadow: 0 0 3px #616161;
+    -webkit-box-shadow: 0 0 3px #616161;
+    box-shadow: 0 0 3px #616161;
+    -webkit-transition: opacity .25s;
+    -moz-transition: opacity .25s;
+    -ms-transition: opacity .25s;
+    -o-transition: opacity .25s;
+    transition: opacity .25s;
+}
+
+#darkener {
+    background-color: black;
+    filter: alpha(opacity=50);
+    opacity: 0.5;
+    display: 0;
+    -moz-opacity: 0.50;
+    z-index: 20;
+    height: 100000px;
+    width: 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    -webkit-transition: all .25s;
+    -moz-transition: all .25s;
+    -ms-transition: all .25s;
+    -o-transition: all .25s;
+    transition: all .25s;
+}
+
+*::-webkit-input-placeholder {
+    color: #212121;
+}
+*:-moz-placeholder {
+    color: #212121;
+}
+*::-moz-placeholder {
+    color: #212121;
+}
+*:-ms-input-placeholder {
+    color: #212121;
+}
+button, select, input, textarea {
+    background-color: #EEEEEE;
+    color: black;
+    padding: 1px 7px;
+    text-align: center;
+    font-size: 12;
+    border-radius: 10px;
+    height: 20px;
+    border: 1px solid #616161;
+    -webkit-transition: all .25s;
+    -moz-transition: all .25s;
+    -ms-transition: all .25s;
+    -o-transition: all .25s;
+    transition: all .25s;
+}
+button:hover, select:hover, input:hover, textarea:hover {
+    background-color: #212121;
+    color: #EEEEEE;
+    border-radius: 3px;
+}
+button:active, select:active, input:active, input:focus, textarea:active, textarea:focus {
+    background-color: #212121;
+    color: #EEEEEE;
+    border-radius: 1px;
+}
+
+#profilepic {
+    float: right;
+    width: 10%;
+}
+
+.profilepic {
+    border-radius: 100%;
+    -webkit-transition: border-radius .25s;
+    -moz-transition: border-radius .25s;
+    -ms-transition: border-radius .25s;
+    -o-transition: border-radius .25s;
+    transition: border-radius .25s;
+}
+.profilepic:hover {
+    border-radius: 0px;
+}
+
+#stats, .container {
+    margin-top: 0.5%;
+    padding-top: 0px;
+    -webkit-transition: opacity .125s, height .25s;
+    -moz-transition: opacity .125s, height .25s;
+    -ms-transition: opacity .125s, height .25s;
+    -o-transition: opacity .125s, height .25s;
+    transition: opacity .125s, height .25s;
+}
+
+#servers {
+    margin-top: 0.5%;
+}
+
+.contrastable {
+    max-height: 50%;
+    overflow: scroll;
+    overflow-x: hidden;
+}
+
+#console {
+    font-family: "Consolas", "Droid Sans Mono";
+    height: 50%;
+    padding: 5px;
+    border: 1px solid gray;
+    margin-top: 0.5%;
+    -webkit-transition: background-color .25s, color .25s, opacity .125s;
+    -moz-transition: background-color .25s, color .25s, opacity .125s;
+    -ms-transition: background-color .25s, color .25s, opacity .125s;
+    -o-transition: background-color .25s, color .25s, opacity .125s;
+    transition: background-color .25s, color .25s, opacity .125s;
+}
+
+a {
+    color: #212121;
+}
+a:visited {
+    color: #212121;
+}
+
+#credit {
+    font-family: "Arial";
+    font-size: 10;
+    -webkit-transition: all .25s;
+    -moz-transition: all .25s;
+    -ms-transition: all .25s;
+    -o-transition: all .25s;
+    transition: all .25s;
+}
+#credit:hover {
+    font-size: 16pt;
+    font-weight: bold;
+    color: teal;
+}
