@@ -45,7 +45,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3.2p1";
+var version = "3.3.2p2";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -487,7 +487,7 @@ var commands = {
                     if(!triviaOn) {
                         logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Trivia game started");
                         trivia[msg.channel.id] = {answer: "", attempts: 0, score: 0, possible: 0};
-                        bot.sendMessage(msg.channel, "Welcome to **AwesomeTrivia**! Here's your first question: " + triviaQ(msg.channel.id) + "\nAnswer by tagging me like this: `@" + bot.user.username + " trivia <no. of choice>` or skip by doing this: `@" + bot.user.username + " trivia next`\nGood Luck!");
+                        bot.sendMessage(msg.channel, "Welcome to **AwesomeTrivia**! Here's your first question: " + triviaQ(msg.channel.id) + "\nAnswer by tagging me like this: `@" + bot.user.username + " trivia <answer>` or skip by doing this: `@" + bot.user.username + " trivia next`\nGood Luck!");
                         trivia[msg.channel.id].possible++;
                         if(!stats[msg.channel.server.id].commands.trivia) {
                             stats[msg.channel.server.id].commands.trivia = 0;
@@ -527,6 +527,21 @@ var commands = {
                         if(levenshtein.get(suffix.toLowerCase(), trivia[msg.channel.id].answer.toLowerCase())<3 && triviaOn) {
                             logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, "Correct trivia game answer by " + msg.author.username);
                             bot.sendMessage(msg.channel, msg.author + " got it right! The answer is " + trivia[msg.channel.id].answer);
+                            
+                            // Award AwesomePoints to author
+                            if(!profileData[msg.author.id]) {
+                                profileData[msg.author.id] = {
+                                    points: 0
+                                };
+                            }
+                            profileData[msg.author.id].points += 5;
+                            saveData("./profiles.json", function(err) {
+                                if(err) {
+                                    logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
+                                }
+                            });
+                            
+                            // Move on to next question
                             if(trivia[msg.channel.id].attempts<=2) {
                                 trivia[msg.channel.id].score++;
                             }

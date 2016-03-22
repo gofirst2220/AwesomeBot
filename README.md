@@ -115,6 +115,7 @@ Latest, version **3.3.2**:
  - New quote of the day command  
  
 Patch #1: Fixed maintainer points crash  
+Patch #2: Trivia fixes  
  
 Open an issue to report a bug or suggest a new feature!
 
