@@ -1,12 +1,12 @@
 try {
     // Get all the basic modules and files setup
     const Discord = require("discord.js");
-    var configs = require("./config.json");
+    var configs = require("./data/config.json");
     const AuthDetails = require("./auth.json");
-    var profileData = require("./profiles.json");
-    var stats = require("./stats.json");
+    var profileData = require("./data/profiles.json");
+    var stats = require("./data/stats.json");
     var filter = require("./filter.json");
-    var reminders = require("./reminders.json");
+    var reminders = require("./data/reminders.json");
 
     // Hijack spawn for auto-update to work properly
     (function() {
@@ -45,7 +45,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3.2p2";
+var version = "3.3.2p3";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -535,7 +535,7 @@ var commands = {
                                 };
                             }
                             profileData[msg.author.id].points += 5;
-                            saveData("./profiles.json", function(err) {
+                            saveData("./data/profiles.json", function(err) {
                                 if(err) {
                                     logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
                                 }
@@ -617,7 +617,7 @@ var commands = {
                                     }
                                 }
                                 profileData[msg.author.id].points -= 50;
-                                saveData("./profiles.json", function(err) {
+                                saveData("./data/profiles.json", function(err) {
                                     if(err) {
                                         logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
                                     }
@@ -778,7 +778,7 @@ var commands = {
                     profileData[usr.id] = {
                         points: 0,
                     }
-                    saveData("./profiles.json", function(err) {
+                    saveData("./data/profiles.json", function(err) {
                         if(err) {
                             logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
                         }
@@ -888,7 +888,7 @@ bot.on("ready", function() {
         if(profileData[configs.maintainer].points<50000) {
             profileData[configs.maintainer].points = 50000;
         }
-        saveData("./profiles.json", function(err) {
+        saveData("./data/profiles.json", function(err) {
             if(err) {
                 logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated profile data");
             }
@@ -1104,6 +1104,7 @@ bot.on("ready", function() {
         res.end(html);
     });
     app.use(express.static("web"));
+    app.use(express.static("data"));
     
     app.post("/config", function(req, res) {
         if(getOnlineConsole(req.query.auth)) {
@@ -1172,7 +1173,7 @@ bot.on("message", function (msg, user) {
                 if(configs.botblocked.indexOf(msg.author.id)==-1) {
                     configs.botblocked.push(msg.author.id);
                     logMsg(new Date().getTime(), "INFO", "General", null, "Blocked bot " + msg.author.username);
-                    saveData("./config.json", function(err) {
+                    saveData("./data/config.json", function(err) {
                         if(err) {
                             logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save updated config");
                         }
@@ -1248,7 +1249,7 @@ bot.on("message", function (msg, user) {
                         }
                         logMsg(new Date().getTime(), "INFO", "General", null, "Set bot game to '" + suffix + "'");
                         configs.game = suffix;
-                        saveData("./config.json", function(err) {
+                        saveData("./data/config.json", function(err) {
                             if(err) {
                                 logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save new config");
                                 bot.sendMessage(msg.channel, "An unknown error occurred *saving* that change :crying_cat_face:");
@@ -1464,7 +1465,7 @@ bot.on("message", function (msg, user) {
                             for(var i=0; i<configs.servers[svr.id].admins.value.length; i++) {
                                 info += "\n\t" + bot.users.get("id", configs.servers[svr.id].admins.value[i]).username + ", ID " + configs.servers[svr.id].admins.value[i];
                             }
-                            saveData("./config.json", function(err) {
+                            saveData("./data/config.json", function(err) {
                                 if(err) {
                                     logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "An unknown error occurred.");
@@ -1517,7 +1518,7 @@ bot.on("message", function (msg, user) {
                                     info += "\n\tNo users are blocked.";
                                 }
                             }
-                            saveData("./config.json", function(err) {
+                            saveData("./data/config.json", function(err) {
                                 if(err) {
                                     logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "An unknown error occurred.");
@@ -1536,7 +1537,7 @@ bot.on("message", function (msg, user) {
                                 configs.servers[svr.id].newgreeting.value = suffix;
                                 info = "will now include: `" + suffix + "`";
                             }
-                            saveData("./config.json", function(err) {
+                            saveData("./data/config.json", function(err) {
                                 if(err) {
                                     logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "An unknown error occurred.");
@@ -1587,7 +1588,7 @@ bot.on("message", function (msg, user) {
                                     info += "No matching feed found.";
                                 }
                             }
-                            saveData("./config.json", function(err) {
+                            saveData("./data/config.json", function(err) {
                                 if(err) {
                                     logMsg(new Date().getTime(), "ERROR", msg.author.id, null, "Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "There was an error saving your changes.");
@@ -1707,7 +1708,7 @@ bot.on("message", function (msg, user) {
                                 logMsg(new Date().getTime(), "WARN", msg.author.id, null, "Extension " + suffix + " not found in " + svr.name);
                                 bot.sendMessage(msg.channel, "Extension " + suffix + " isn't on this server.");
                             }
-                            saveData("./config.json", function(err) {
+                            saveData("./data/config.json", function(err) {
                                 if(err) {
                                     logMsg(new Date().getTime(), "ERROR", msg.author.id, null, "Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "There was an error saving your changes.");
@@ -1796,7 +1797,7 @@ bot.on("message", function (msg, user) {
                                 return;
                             }
                             logMsg(new Date().getTime(), "INFO", msg.author.id, null, "Command " + n + " turned " + yn + " in " + svr.name);
-                            saveData("./config.json", function(err) {
+                            saveData("./data/config.json", function(err) {
                                 if(err) {
                                     logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save new config for " + svr.name);
                                     bot.sendMessage(msg.channel, "There was an error saving your changes.");
@@ -1848,7 +1849,7 @@ bot.on("message", function (msg, user) {
                     info = "Alright, got it! PM me `" + key + ",.` to delete that.";
                     profileData[msg.author.id][key] = value;
                 }
-                saveData("./profiles.json", function(err) {
+                saveData("./data/profiles.json", function(err) {
                     if(err) {
                         logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
                         bot.sendMessage(msg.channel, "Uh-oh, something went wrong. It wasn't you though.");
@@ -2097,7 +2098,7 @@ bot.on("message", function (msg, user) {
                 } else {
                     bot.sendMessage(msg.channel, "Turned off PMs for mentions in " + svr.name + ". Enable them again by replying with `pmmentions " + svr.name + "`");
                 }
-                saveData("./stats.json", function(err) {
+                saveData("./data/stats.json", function(err) {
                     if(err) {
                         logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save updated PM preferences for " + msg.author.username);
                     } else {
@@ -2196,7 +2197,7 @@ bot.on("message", function (msg, user) {
                             logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, usr.username + " gilded by " + msg.author.username);
                         }
                         if(voted) {
-                            saveData("./profiles.json", function(err) {
+                            saveData("./data/profiles.json", function(err) {
                                 if(err) {
                                     logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
                                 }
@@ -2219,7 +2220,7 @@ bot.on("message", function (msg, user) {
                             }
                             profileData[messages[0].author.id].points++;
                             logMsg(new Date().getTime(), "INFO", msg.channel.server.name, msg.channel.name, messages[0].author.username + " upvoted by " + msg.author.username);
-                            saveData("./profiles.json", function(err) {
+                            saveData("./data/profiles.json", function(err) {
                                 if(err) {
                                     logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + messages[0].author.username);
                                 }
@@ -2280,7 +2281,7 @@ bot.on("message", function (msg, user) {
                         
                         if(negative && configs.servers[msg.channel.server.id].points.value) {
                             profileData[msg.author.id].points -= negative;
-                            saveData("./profiles.json", function(err) {
+                            saveData("./data/profiles.json", function(err) {
                                 if(err) {
                                     logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
                                 }
@@ -2477,7 +2478,7 @@ bot.on("message", function (msg, user) {
                             }
                         }
                         profileData[msg.author.id].points -= 50;
-                        saveData("./profiles.json", function(err) {
+                        saveData("./data/profiles.json", function(err) {
                             if(err) {
                                 logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + msg.author.username);
                             }
@@ -2618,7 +2619,7 @@ bot.on("serverNewMember", function(svr, usr) {
     };
     if(usr.id==configs.maintainer) {
         configs.servers[svr.id].admins.value.push(configs.maintainer);
-        saveData("./config.json", function(err) {
+        saveData("./data/config.json", function(err) {
             if(err) {
                 logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save update configs for " + svr.name);
             }
@@ -2765,7 +2766,7 @@ function pruneData() {
         }
     }
     if(changed) {
-        saveData("./config.json", function(err) {
+        saveData("./data/config.json", function(err) {
             if(err) {
                 logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to clean old server configs");
             }
@@ -2916,7 +2917,7 @@ function clearStatCounter() {
             }
         }
     }
-    saveData("./stats.json", function(err) {
+    saveData("./data/stats.json", function(err) {
         if(err) {
             logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save updated stats");
         }
@@ -2954,7 +2955,7 @@ function clearServerStats(svrid) {
                 profileData[usr.id].points += amount;
             }
         }
-        saveData("./profiles.json", function(err) {
+        saveData("./data/profiles.json", function(err) {
             if(err) {
                 logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save update profile data");
             }
@@ -3107,7 +3108,7 @@ function parseMaintainerConfig(delta, callback) {
                 }
                 logMsg(new Date().getTime(), "INFO", "General", null, "Set bot game to '" + delta[key] + "'");
                 configs.game = delta[key];
-                saveData("./config.json", function(err) {
+                saveData("./data/config.json", function(err) {
                     if(err) {
                         logMsg(new Date().getTime(), "ERROR", "General", null, "Could not save new config");
                         throw new Error;
@@ -3162,7 +3163,7 @@ function parseMaintainerConfig(delta, callback) {
                 });
                 break;
             case "kill":
-                saveData("./stats.json", function(err) {
+                saveData("./data/stats.json", function(err) {
                     process.exit(0);
                 });
                 break;
@@ -3295,7 +3296,7 @@ function parseAdminConfig(delta, svr, consoleid, callback) {
                 break;
         }
     }
-    saveData("./config.json", function(err) {
+    saveData("./data/config.json", function(err) {
         if(err) {
             logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated configs for " + svr.name);
         }
@@ -3369,7 +3370,7 @@ function addExtension(extension, svr, consoleid, callback) {
         }
         logMsg(new Date().getTime(), "INFO", consoleid, null, "Extension " + extension.name + " added to server " + svr.name);
         delete configs.servers[svr.id].extensions[extension.name].name;
-        saveData("./config.json", function(err) {
+        saveData("./data/config.json", function(err) {
             if(err) {
                 logMsg(new Date().getTime(), "ERROR", consoleid, null, "Could not save new config for " + svr.name);
                 callback(true);
@@ -3523,7 +3524,7 @@ function defaultConfig(svr) {
         }
         configs.servers[svr.id] = JSON.parse(JSON.stringify(defaultConfigFile)); 
         configs.servers[svr.id].admins.value = adminList;
-        saveData("./config.json", function(err) {
+        saveData("./data/config.json", function(err) {
             if(err) {
                 logMsg(new Date().getTime(), "ERROR", svr.name, null, "Failed to save default configs");
             } else {
@@ -3599,7 +3600,7 @@ function checkConfig(svr) {
     }
     
     if(changed) {
-        saveData("./config.json", function(err) {
+        saveData("./data/config.json", function(err) {
             if(err) {
                 logMsg(new Date().getTime(), "ERROR", svr.name, null, "Failed to update server configs");
             } else {
@@ -3613,19 +3614,19 @@ function checkConfig(svr) {
 function saveData(file, callback) {
     var object;
     switch(file) {
-        case "./profiles.json": 
+        case "./data/profiles.json": 
             object = profileData;
             break;
-        case "./stats.json":
+        case "./data/stats.json":
             object = stats;
             break;
-        case "./config.json":
+        case "./data/config.json":
             object = configs;
             break;
         case "./auth.json":
             object = AuthDetails;
             break;
-        case "./reminders.json":
+        case "./data/reminders.json":
             object = reminders;
             break;
     }
@@ -3696,7 +3697,7 @@ function kickUser(msg, desc1, desc2) {
         if(err) {
             bot.sendMessage(msg.author, "Stop " + desc2 + ". The chat mods have been notified about this, and you have been blocked from using me.");
             adminMsg(false, msg.channel.server, msg.author, " " + desc1 + " in " + msg.channel.server.name + ", so I blocked them from using me.");
-            saveData("./config.json", function(error) {
+            saveData("./data/config.json", function(error) {
                 if(error) {
                     logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save updated configs for " + svr.name);
                 }
@@ -3936,7 +3937,7 @@ function getProfile(usr, svr) {
         profileData[usr.id] = {
             points: 0,
         }
-        saveData("./profiles.json", function(err) {
+        saveData("./data/profiles.json", function(err) {
             if(err) {
                 logMsg(new Date().getTime(), "ERROR", "General", null, "Failed to save profile data for " + usr.username);
             }
@@ -4092,7 +4093,7 @@ function saveReminder(usrid, remind, countdown) {
         time: new Date().getTime() + countdown
     });
     setReminder(reminders.length-1);
-    saveData("./reminders.json", function(err) {
+    saveData("./data/reminders.json", function(err) {
         if(err) {
             logMsg(new Date().getTime(), "ERROR", usrid, null, "Failed to save reminder");
         }
@@ -4109,7 +4110,7 @@ function setReminder(i) {
             bot.sendMessage(usr, "**Reminder:** " + obj.note);
             logMsg(new Date().getTime(), "INFO", usr.id, null, "Reminded user " + usr.username);
             reminders.splice(i, 1);
-            saveData("./reminders.json", function(err) {
+            saveData("./data/reminders.json", function(err) {
                 if(err) {
                     logMsg(new Date().getTime(), "ERROR", usr.id, null, "Failed to save reminder");
                 }
@@ -4360,7 +4361,7 @@ function setup(i) {
                             setup(i+1);
                         } else {
                             configs.maintainer = input;
-                            saveData("./config.json", function(err) {
+                            saveData("./data/config.json", function(err) {
                                 if(err) {
                                     console.log("Error saving configuration");
                                     process.exit(1);
@@ -4381,7 +4382,7 @@ function setup(i) {
                             setup(i+1);
                         } else {
                             configs.hosting = input;
-                            saveData("./config.json", function(err) {
+                            saveData("./data/config.json", function(err) {
                                 if(err) {
                                     console.log("Error saving configuration");
                                     process.exit(1);
@@ -4401,7 +4402,7 @@ function setup(i) {
                             setup(i+1);
                         } else {
                             configs.maintainer = input;
-                            saveData("./config.json", function(err) {
+                            saveData("./data/config.json", function(err) {
                                 if(err) {
                                     console.log("Error saving configuration");
                                     process.exit(1);
@@ -4424,7 +4425,7 @@ function setup(i) {
                     }
                     readyToGo = true;
                     configs.setup = true;
-                    saveData("./config.json", function(err) {
+                    saveData("./data/config.json", function(err) {
                         if(err) {
                             console.log("Error saving configuration");
                             process.exit(1);
