@@ -118,6 +118,7 @@ Patch #1: Fixed maintainer points crash
 Patch #2: Trivia fixes  
 Patch #3: Created folder for bot data  
 Patch #4: Tweaked caret upvoting  
+Patch #5: Fixed server members list bug  
  
 Open an issue to report a bug or suggest a new feature!
 

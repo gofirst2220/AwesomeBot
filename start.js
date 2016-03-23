@@ -45,7 +45,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3.2p4";
+var version = "3.3.2p5";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -833,7 +833,7 @@ function rssfeed(bot, msg, url, count, full) {
 }
 
 // Initializes bot and outputs to console
-var bot = new Discord.Client();
+var bot = new Discord.Client({forceFetchUsers: true});
 bot.on("ready", function() {
     checkVersion();
     
