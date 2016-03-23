@@ -45,7 +45,7 @@ try {
 }
 
 // Bot setup
-var version = "3.3.2p3";
+var version = "3.3.2p4";
 var outOfDate = 0;
 var readyToGo = false;
 var logs = [];
@@ -2209,7 +2209,7 @@ bot.on("message", function (msg, user) {
                 }
             }
             // Upvote previous message, based on context
-            if(msg.content=="^") {
+            if(msg.content.indexOf("^")==0) {
                 bot.getChannelLogs(msg.channel, 1, {before: msg}, function(err, messages) {
                     if(!err && messages[0]) {
                         if([msg.author.id, bot.user.id].indexOf(messages[0].author.id)==-1) {

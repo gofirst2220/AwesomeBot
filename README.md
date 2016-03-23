@@ -117,6 +117,7 @@ Latest, version **3.3.2**:
 Patch #1: Fixed maintainer points crash  
 Patch #2: Trivia fixes  
 Patch #3: Created folder for bot data  
+Patch #4: Tweaked caret upvoting  
  
 Open an issue to report a bug or suggest a new feature!
 
