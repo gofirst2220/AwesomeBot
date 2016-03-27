@@ -106,7 +106,7 @@ Outside of this sandbox, the extension cannot use other Node modules or methods.
 Changelog
 ---------
 
-Latest, version **3.3.2**:
+Latest, version **3.3.3**:
 
  - Improved games command with sorting and time played
  - New points command to quickly check users' karma

@@ -57,7 +57,7 @@ function writeInterface() {
             
             getJSON("/data?section=servers", function(data) {
                 for(var i=0; i<data.stream.length; i++) {
-                    document.getElementById("servers").innerHTML += "<br><b>" + data.stream[i][0] + ":</b> " + data.stream[i][1]; 
+                    document.getElementById("servertablebody").innerHTML += "<tr><td><img class=\"profilepic\" width=25 src=\"" + data.stream[i][0] + "\" /></td><td>" + data.stream[i][1] + "</td><td>" + data.stream[i][2] + "</td><td>" + data.stream[i][3] + "</td><td>" + data.stream[i][4] + "</td></tr>";
                 }
                 
                 getJSON("/data?section=list&type=logids", function(data) {
