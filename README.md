@@ -108,17 +108,11 @@ Changelog
 
 Latest, version **3.3.3**:
 
- - Improved games command with sorting and time played
- - New points command to quickly check users' karma
- - Ability to upvote messages simply with `^`
- - Added option for random result in image command
- - New quote of the day command  
- 
-Patch #1: Fixed maintainer points crash  
-Patch #2: Trivia fixes  
-Patch #3: Created folder for bot data  
-Patch #4: Tweaked caret upvoting  
-Patch #5: Fixed server members list bug  
+ - Extended help command
+ - Auto-add bot admins
+ - Controls on AwesomePoints
+ - New lottery game
+ - Consolidated PM commands  
  
 Open an issue to report a bug or suggest a new feature!
 
